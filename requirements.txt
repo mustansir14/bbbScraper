@@ -4,3 +4,4 @@ requests==2.25.1
 selenium==3.141.0
 mariadb==1.0.8
 pyvirtualdisplay==2.2
+cryptography==36.0.1
