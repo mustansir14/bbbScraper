@@ -4,6 +4,7 @@ import time
 import requests
 from BBBScraper import BBBScraper
 from sys import platform
+from config import *
 
 api = Flask(__name__)
 
@@ -11,7 +12,7 @@ api = Flask(__name__)
 def grab_company():
 
     def scrape_company(company_id, webhook_url):
-        scraper = BBBScraper()
+        scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
         if "http" in company_id:
             company = scraper.scrape_company_details(company_url=company_id)
             company.reviews = scraper.scrape_company_reviews(company_url=company_id)
@@ -53,7 +54,7 @@ def grab_company():
 def grab_review():
 
     def scrape_review(review_id, webhook_url):
-        scraper = BBBScraper()
+        scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
         scraper.db.cur.execute("SELECT company_id from review where review_id = %s;", (review_id,))
         company_id = scraper.db.cur.fetchall()[0]["company_id"]
         if "http" in company_id:
@@ -88,7 +89,7 @@ def grab_review():
 def grab_complaint():
 
     def scrape_complaint(complaint_id, webhook_url):
-        scraper = BBBScraper(proxy='50.114.107.54', proxy_port=45785, proxy_user='Selmustansir2001', proxy_pass='G0o6PkY')
+        scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
         scraper.db.cur.execute("SELECT company_id from complaint where complaint_id = %s;", (complaint_id,))
         company_id = scraper.db.cur.fetchall()[0]["company_id"]
         if "http" in company_id:

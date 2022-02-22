@@ -1,9 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.proxy import Proxy, ProxyType
 import time
 from typing import List
 from DB import DB
@@ -30,8 +30,11 @@ class BBBScraper():
         options.add_argument("--no-sandbox")
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36")
+        capabilities = webdriver.DesiredCapabilities.CHROME
         if proxy:
-            if proxy_port and proxy_user and proxy_pass:
+            if not proxy_port:
+                raise Exception("Proxy Port missing.")
+            if proxy_user and proxy_pass:
                 manifest_json = """
                 {
                     "version": "1.0.0",
@@ -89,7 +92,10 @@ class BBBScraper():
                     zp.writestr("background.js", background_js)
                 options.add_extension(pluginfile)
             else:
-                raise Exception("Proxy data missing")
+                prox = Proxy()
+                prox.proxy_type = ProxyType.MANUAL
+                prox.http_proxy = proxy + ":" + proxy_port 
+                prox.add_to_capabilities(capabilities)
         if headless:
             display = Display(visible=0, size=(1920, 1080))
             display.start()
@@ -488,7 +494,7 @@ if __name__ == '__main__':
         parser.print_help(sys.stderr)
         sys.exit(1)
     args = parser.parse_args()
-    scraper = BBBScraper()
+    scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
     if args.bulk_scrape:
         if os.path.isfile("last_scrape_info.json"):
             scraper.bulk_scrape(continue_from_last_scrape=True)
