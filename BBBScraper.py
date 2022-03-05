@@ -23,14 +23,13 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S
 
 class BBBScraper():
 
-    def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, headless=True) -> None:
+    def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="https", headless=True) -> None:
         options = Options()
         options.add_argument("window-size=1920,1080")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36")
-        capabilities = webdriver.DesiredCapabilities.CHROME
         if proxy:
             if not proxy_port:
                 raise Exception("Proxy Port missing.")
@@ -61,7 +60,7 @@ class BBBScraper():
                         mode: "fixed_servers",
                         rules: {
                         singleProxy: {
-                            scheme: "http",
+                            scheme: "%s",
                             host: "%s",
                             port: parseInt(%s)
                         },
@@ -85,17 +84,14 @@ class BBBScraper():
                             {urls: ["<all_urls>"]},
                             ['blocking']
                 );
-                """ % (proxy, proxy_port, proxy_user, proxy_pass)
+                """ % (proxy_type, proxy, proxy_port, proxy_user, proxy_pass)
                 pluginfile = 'proxy_auth_plugin.zip'
                 with zipfile.ZipFile(pluginfile, 'w') as zp:
                     zp.writestr("manifest.json", manifest_json)
                     zp.writestr("background.js", background_js)
                 options.add_extension(pluginfile)
             else:
-                prox = Proxy()
-                prox.proxy_type = ProxyType.MANUAL
-                prox.http_proxy = proxy + ":" + proxy_port 
-                prox.add_to_capabilities(capabilities)
+                options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
         if headless:
             display = Display(visible=0, size=(1920, 1080))
             display.start()
@@ -441,6 +437,7 @@ class BBBScraper():
 
         logging.info("Starting scrape (gathering sitemap urls...)")
         self.driver.get("https://www.bbb.org/sitemap-business-profiles-index.xml")
+        self.driver.save_screenshot("first.png")
         root = ET.fromstring(self.driver.page_source)
         urls = []
         for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
@@ -494,7 +491,7 @@ if __name__ == '__main__':
         parser.print_help(sys.stderr)
         sys.exit(1)
     args = parser.parse_args()
-    scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
+    scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
     if args.bulk_scrape:
         if os.path.isfile("last_scrape_info.json"):
             scraper.bulk_scrape(continue_from_last_scrape=True)

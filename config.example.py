@@ -3,6 +3,7 @@ DB_HOST = "127.0.0.1"
 DB_USER = "root"
 DB_PASSWORD = "12345678"
 DB_NAME = "site_jabber"
+PROXY_TYPE = "https" # socks5 or https
 PROXY = None
 PROXY_PORT = None
 
