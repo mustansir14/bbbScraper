@@ -479,7 +479,7 @@ class BBBScraper():
             if platform == "linux" or platform == "linux2":
                 processes = []
                 for i in range(no_of_threads):
-                    processes.append(Process(target=self.scrape_urls_from_queue, args=(urls_to_scrape)))
+                    processes.append(Process(target=self.scrape_urls_from_queue, args=(urls_to_scrape, )))
                     processes[i].start()
 
                 for i in range(no_of_threads):
