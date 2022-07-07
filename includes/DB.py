@@ -1,6 +1,6 @@
 from config import *
 from typing import List
-from models import *
+from includes.models import *
 import datetime
 if USE_MARIA_DB:
     import mariadb
