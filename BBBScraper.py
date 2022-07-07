@@ -20,8 +20,6 @@ import logging, zipfile
 from pyvirtualdisplay import Display
 from sys import platform
 from multiprocessing import Process, Queue
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-
 
 
 class BBBScraper():
