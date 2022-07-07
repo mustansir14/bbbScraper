@@ -7,8 +7,8 @@ from selenium.webdriver.common.proxy import Proxy, ProxyType
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 from typing import List
-from DB import DB
-from models import Company, Complaint, Review
+from includes.DB import DB
+from includes.models import Company, Complaint, Review
 from config import *
 import xml.etree.ElementTree as ET
 import datetime

@@ -2,7 +2,7 @@ from flask import Flask, json, request
 from multiprocessing import Process
 import time
 import requests
-from BBBScraper import BBBScraper
+from api import BBBScraper
 from sys import platform
 from config import *
 
