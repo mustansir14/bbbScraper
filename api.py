@@ -1,3 +1,9 @@
+##########################################
+# Coded by Mustansir Muzaffar
+# mustansir2001@gmail.com
+# +923333487952
+##########################################
+
 from flask import Flask, json, request
 from multiprocessing import Process
 import time

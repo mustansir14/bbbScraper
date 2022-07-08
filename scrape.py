@@ -1,3 +1,9 @@
+##########################################
+# Coded by Mustansir Muzaffar
+# mustansir2001@gmail.com
+# +923333487952
+##########################################
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -30,7 +36,7 @@ class BBBScraper():
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
         options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--single-process'); # one process to take less memory
+        # options.add_argument('--single-process'); # one process to take less memory
         options.add_argument('--renderer-process-limit=1'); # do not allow take more resources
         options.add_argument('--disable-crash-reporter'); # disable crash reporter process
         options.add_argument('--no-zygote'); # disable zygote process
@@ -90,7 +96,9 @@ class BBBScraper():
                             ['blocking']
                 );
                 """ % (proxy_type, proxy, proxy_port, proxy_user, proxy_pass)
-                pluginfile = 'proxy_auth_plugin.zip'
+                pluginfile = 'temp/proxy_auth_plugin.zip'
+                if not os.path.isdir("temp"):
+                    os.mkdir("temp")
                 with zipfile.ZipFile(pluginfile, 'w') as zp:
                     zp.writestr("manifest.json", manifest_json)
                     zp.writestr("background.js", background_js)

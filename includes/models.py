@@ -1,3 +1,9 @@
+##########################################
+# Coded by Mustansir Muzaffar
+# mustansir2001@gmail.com
+# +923333487952
+##########################################
+
 class Company:
 
     def __init__(self) -> None:
