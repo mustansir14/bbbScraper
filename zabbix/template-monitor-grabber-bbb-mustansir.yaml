@@ -1,0 +1,69 @@
+zabbix_export:
+  version: '6.0'
+  date: '2022-07-07T18:02:32Z'
+  groups:
+    -
+      uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    -
+      uuid: f54c3814e76c4c0cae7490c2024d2947
+      template: 'Grabber bbb mustansir'
+      name: 'Grabber bbb mustansir'
+      description: 'Bbb mustansir statistics'
+      groups:
+        -
+          name: Templates/Applications
+      items:
+        -
+          uuid: 247cb9d184084b33bc131b453cfd1cfa
+          name: 'companies.inserted (grabber-bbb-mustansir)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["mysql -u {$GRABBER.BBB.MUSTANSIR.MYSQL.USER} -p{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS} -D {$GRABBER.BBB.MUSTANSIR.MYSQL.DB} -s -e \"select count(*) from company where date_created BETWEEN timestamp(curdate()) AND timestamp(curdate(),''23:59'')\" | tail -n +1"]'
+          delay: 1h
+          trends: '0'
+        -
+          uuid: 69c7161d0433414a8d469df83a341b4d
+          name: 'companies.updated (grabber-bbb-mustansir)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["mysql -u {$GRABBER.BBB.MUSTANSIR.MYSQL.USER} -p{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS} -D {$GRABBER.BBB.MUSTANSIR.MYSQL.DB} -s -e \"select count(*) from company where date_updated BETWEEN timestamp(curdate()) AND timestamp(curdate(),''23:59'')\" | tail -n +1"]'
+          delay: 1h
+          trends: '0'
+        -
+          uuid: b6bde998f1c0498f9ba60d65c739b730
+          name: 'complaints.inserted (grabber-bbb-mustansir)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["mysql -u {$GRABBER.BBB.MUSTANSIR.MYSQL.USER} -p{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS} -D {$GRABBER.BBB.MUSTANSIR.MYSQL.DB} -s -e \"select count(*) from complaint where date_created BETWEEN timestamp(curdate()) AND timestamp(curdate(),''23:59'')\" | tail -n +1"]'
+          delay: 1h
+          trends: '0'
+        -
+          uuid: ce713596d06e4454b2e3fe7b038a5fd4
+          name: 'complaints.updated (grabber-bbb-mustansir)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["mysql -u {$GRABBER.BBB.MUSTANSIR.MYSQL.USER} -p{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS} -D {$GRABBER.BBB.MUSTANSIR.MYSQL.DB} -s -e \"select count(*) from complaint where date_updated BETWEEN timestamp(curdate()) AND timestamp(curdate(),''23:59'')\" | tail -n +1"]'
+          delay: 1h
+          trends: '0'
+        -
+          uuid: c500a95364a740bf95ea4d69d40f1e74
+          name: 'reviews.inserted (grabber-bbb-mustansir)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["mysql -u {$GRABBER.BBB.MUSTANSIR.MYSQL.USER} -p{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS} -D {$GRABBER.BBB.MUSTANSIR.MYSQL.DB} -s -e \"select count(*) from review where date_created BETWEEN timestamp(curdate()) AND timestamp(curdate(),''23:59'')\" | tail -n +1"]'
+          delay: 1h
+          trends: '0'
+        -
+          uuid: 1dd71e91f962426eab1ef2f7f33c9df6
+          name: 'reviews.updated (grabber-bbb-mustansir)'
+          type: ZABBIX_ACTIVE
+          key: 'system.run["mysql -u {$GRABBER.BBB.MUSTANSIR.MYSQL.USER} -p{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS} -D {$GRABBER.BBB.MUSTANSIR.MYSQL.DB} -s -e \"select count(*) from review where date_updated BETWEEN timestamp(curdate()) AND timestamp(curdate(),''23:59'')\" | tail -n +1"]'
+          delay: 1h
+          trends: '0'
+      macros:
+        -
+          macro: '{$GRABBER.BBB.MUSTANSIR.MYSQL.DB}'
+          description: 'Mysql database name'
+        -
+          macro: '{$GRABBER.BBB.MUSTANSIR.MYSQL.PASS}'
+          description: 'Mysql client password'
+        -
+          macro: '{$GRABBER.BBB.MUSTANSIR.MYSQL.USER}'
+          description: 'Mysql client user'
