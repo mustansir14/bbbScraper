@@ -28,6 +28,15 @@ class DB:
             self.con = pymysql.connect(host=self.host, user=self.user, password=self.password, db=self.db, cursorclass=pymysql.cursors.DictCursor)
         self.cur = self.con.cursor()
 
+    def queryArray(self,sql,args):
+        cur = self.con.cursor()
+        cur.execute( sql,args )
+        rows = cur.fetchall()
+
+        cur.close()
+
+        return rows
+
     def insert_or_update_company(self, company : Company):
         while True:
             try:

@@ -8,11 +8,17 @@ from flask import Flask, json, request
 from multiprocessing import Process
 import time
 import requests
-from api import BBBScraper
+from scrape import BBBScraper
 from sys import platform
+from includes.DB import DB
 from config import *
 
 api = Flask(__name__)
+
+def response(errors,data):
+    isFail = True if isinstance(errors,list) and len(errors) > 0 else False
+    errors = errors if isinstance(errors,list) else []
+    return json.dumps( { 'success': ( not isFail ), 'errors': errors, 'data': ( None if isFail else data ) } )
 
 @api.route('/api/v1/regrab-company', methods=['GET'])
 def grab_company():
@@ -126,7 +132,21 @@ def grab_complaint():
         scrape_complaint(request.args["id"], request.args["webhookUrl"])
     return json.dumps(request.args)
 
-
+@api.route('/api/v1/company', methods=['GET'])
+def flush_company_data():
+    if "name" not in request.args:
+        return json.dumps({"error" : "missing name argument"})
+        
+    db = DB()
+    errors = []
+        
+    sql = 'select * from company where company_name=%s'
+    
+    rows = db.queryArray( sql, (request.args["name"]))
+    if rows is None:
+        errors.append( "Internal error" )
+        
+    return response( errors, rows )
 
 if __name__ == "__main__":
     api.run(port=5000)
