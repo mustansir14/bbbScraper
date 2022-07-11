@@ -183,7 +183,7 @@ class BBBScraper():
             except:
                 company.is_accredited = False
             try:
-                company.rating = self.driver.find_elements_by_class_name("dtm-rating")[-1].text.strip().split()[0]
+                company.rating = self.driver.find_elements_by_class_name("dtm-rating")[-1].text.strip().split()[0][:2]
             except:
                 company.rating = None
             try:
