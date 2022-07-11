@@ -171,13 +171,21 @@ class BBBScraper():
                 self.driver.close()
                 self.driver.switch_to.window(self.driver.window_handles[0])
         except Exception as e:
-            logging.error("Error in saving logo to disk. " + str(e))
             company.logo = ""
         try:
             company.categories = " > ".join([x.text for x in self.driver.find_element_by_class_name("dtm-breadcrumbs").find_elements_by_tag_name("li")[:4]])
             company.phone = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-phone"))
             company.address = self.driver.find_element_by_tag_name("address").text
             company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"))
+            try:
+                self.driver.find_element_by_class_name("dtm-accreditation-badge")
+                company.is_accredited = True
+            except:
+                company.is_accredited = False
+            try:
+                company.rating = self.driver.find_elements_by_class_name("dtm-rating")[-1].text.strip().split()[0]
+            except:
+                company.rating = None
             try:
                 review_box = self.driver.find_element_by_class_name("MuiPaper-root.MuiCard-root.sc-ik3rfd-0.sc-152egbn-0.irOmjJ.jUdTvA.MuiPaper-elevation1.MuiPaper-rounded")
                 company.number_of_stars = round(float(review_box.find_element_by_tag_name("strong").text), 1)
@@ -196,10 +204,11 @@ class BBBScraper():
             self.driver.get(company_url + "/details")
             detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.sc-vg6n3p-0.kCsitr").text.split("\n")
             try:
-                button = self.driver.find_element_by_class_name("business-details-card__content").find_element_by_class_name("styles__LinkStyled-sc-m9tecn-0.ixymiX")
-                if "Read More" in button.text:
-                    button.click()
-                    time.sleep(0.5)
+                buttons = self.driver.find_element_by_class_name("MuiCardContent-root.sc-vg6n3p-0.kCsitr").find_elements_by_tag_name("button")
+                for button in buttons:
+                    if "Read More" in button.text:
+                        button.click()
+                        time.sleep(0.5)
             except:
                 pass
             fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media"]

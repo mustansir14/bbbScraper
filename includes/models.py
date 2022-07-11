@@ -14,6 +14,8 @@ class Company:
         self.phone = None
         self.address = None
         self.website = None
+        self.is_accredited = None
+        self.rating = None
         self.working_hours = None
         self.number_of_stars = None
         self.number_of_reviews = None
@@ -48,6 +50,10 @@ class Company:
                 return_string += '\nAddress: ' + self.address
         if self.website:
                 return_string += '\nWebsite: ' + self.website
+        if self.is_accredited:
+                return_string += '\nIs Accredited: ' + str(self.is_accredited)
+        if self.rating:
+                return_string += '\nRating: ' + self.rating
         if self.working_hours:
                 return_string += '\nWorking hours: ' + self.working_hours
         if self.number_of_stars:
