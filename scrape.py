@@ -154,12 +154,10 @@ class BBBScraper():
         try:
             company.name = self.driver.find_element_by_class_name("MuiTypography-root.MuiTypography-h3").text.strip()
         except:
-            logging.error("Error in scraping: " + company_url)
+            logging.error("Error in scraping: " + company_url + " Page Broken (502)")
             company.name = company_url
             company.status = "error"
-            company.log = "Page broken"
-            if save_to_db:
-                self.db.insert_or_update_company(company)
+            company.log = "Page broken (502)"
             return company
         try:
             logo = self.driver.find_element_by_class_name("dtm-logo").find_element_by_tag_name("img").get_attribute("src")
