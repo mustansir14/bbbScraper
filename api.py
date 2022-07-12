@@ -73,7 +73,7 @@ def grab_company():
     try:
         
         if "sync" not in request.args and ( platform == "linux" or platform == "linux2" ):
-            p = Process(target=scrape_company, args=(request.args["id"], request.args["webhookUrl"],))
+            p = Process(target=scrape_company, args=(request.args["id"], request.args["webhookUrl"], False))
             p.start()
         else:
             return scrape_company(request.args["id"], request.args["webhookUrl"], "sync" in request.args )
