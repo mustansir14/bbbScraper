@@ -23,7 +23,7 @@ def response(errors,data):
 @api.route('/api/v1/regrab-company', methods=['GET'])
 def grab_company():
 
-    def scrape_company(company_id, webhook_url):
+    def scrape_company(company_id, webhook_url, is_sync):
         scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
         if "http" in company_id:
             company = scraper.scrape_company_details(company_url=company_id)
@@ -46,20 +46,25 @@ def grab_company():
                 if complaint.status == "error":
                     status = "error"
                     log = "Error in scraping some of the complaints"
-        if status == "success":
-            requests.post(webhook_url, json={"company_id": company_id, "status" : "success"})
-        else:
-            requests.post(webhook_url, json={"company_id": company_id, "status" : status, "log": log})
+                    
+        if is_sync == False:
+            if status == "success":
+                requests.post(webhook_url, json={"company_id": company_id, "status" : "success"})
+            else:
+                requests.post(webhook_url, json={"company_id": company_id, "status" : status, "log": log})
         
     if "id" not in request.args:
         return json.dumps({"error" : "missing id argument"})
-    if "webhookUrl" not in request.args:
+        
+    if "sync" not in request.args and "webhookUrl" not in request.args:
         return json.dumps({"error" : "missing webhookUrl argument"})
-    if platform == "linux" or platform == "linux2":
+        
+    if "sync" not in request.args and ( platform == "linux" or platform == "linux2" ):
         p = Process(target=scrape_company, args=(request.args["id"], request.args["webhookUrl"],))
         p.start()
     else:
-        scrape_company(request.args["id"], request.args["webhookUrl"])
+        scrape_company(request.args["id"], request.args["webhookUrl"], "sync" in request.args )
+        
     return json.dumps(request.args)
 
 @api.route('/api/v1/regrab-review', methods=['GET'])
