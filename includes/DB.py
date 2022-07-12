@@ -30,6 +30,7 @@ class DB:
 
     def queryArray(self,sql,args):
         cur = self.con.cursor()
+        
         cur.execute( sql,args )
         rows = cur.fetchall()
 

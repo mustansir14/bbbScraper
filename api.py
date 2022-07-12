@@ -140,9 +140,9 @@ def flush_company_data():
     db = DB()
     errors = []
         
-    sql = 'select * from company where company_name=%s'
+    sql = 'select * from company where company_name=?'
     
-    rows = db.queryArray( sql, (request.args["name"]))
+    rows = db.queryArray( sql, (request.args["name"],))
     if rows is None:
         errors.append( "Internal error" )
         
