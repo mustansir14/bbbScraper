@@ -25,7 +25,7 @@ def grab_company():
 
     def scrape_company(company_id, webhook_url, is_sync):
         try:
-            scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
+            scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
             
             if "http" in company_id:
                 company = scraper.scrape_company_details(company_url=company_id)

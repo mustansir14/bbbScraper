@@ -30,7 +30,7 @@ from multiprocessing import Process, Queue
 
 class BBBScraper():
 
-    def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="https") -> None:
+    def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http") -> None:
         options = Options()
         options.add_argument("window-size=1920,1080")
         options.add_argument("--log-level=3")
