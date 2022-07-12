@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS `company` (
   PRIMARY KEY (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+ALTER TABLE `company` ADD INDEX(`company_name`); 
+ALTER TABLE `company` ADD INDEX(`url`); 
+
 CREATE TABLE IF NOT EXISTS `review` (
   `review_id` int NOT NULL AUTO_INCREMENT,
   `company_id` int NOT NULL,
