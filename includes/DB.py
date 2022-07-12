@@ -49,24 +49,24 @@ class DB:
                     else:
                         company_id = fetched_results[0]["company_id"]
                     sql = """UPDATE company set company_name = %s, url = %s, logo = %s, categories = %s, phone = %s, address = %s, 
-                    website = %s, is_accredited = %s, rating = %s, working_hours = %s, number_of_stars = %s, number_of_reviews = %s, 
+                    website = %s, hq = %s, is_accredited = %s, rating = %s, working_hours = %s, number_of_stars = %s, number_of_reviews = %s, 
                     overview = %s, products_and_services = %s, business_started = %s, business_incorporated = %s, type_of_entity = %s,
                     number_of_employees = %s, business_management = %s, contact_information = %s, customer_contact = %s, 
                     fax_numbers = %s, serving_area = %s, date_updated = %s, status = %s, log = %s where company_id = %s;"""
                     args = (company.name, company.url, company.logo, company.categories, company.phone, company.address, 
-                    company.website, company.is_accredited, company.rating, company.working_hours, company.number_of_stars, 
+                    company.website, company.hq, company.is_accredited, company.rating, company.working_hours, company.number_of_stars, 
                     company.number_of_reviews, company.overview, company.products_and_services, company.business_started, 
                     company.business_incorporated, company.type_of_entity, company.number_of_employees, company.business_management, 
                     company.contact_information, company.customer_contact, company.fax_numbers, company.serving_area, 
                     datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), company.status, company.log, company_id)
                     success_statement = "Company " + company.name + " details updated successfully!"
                 else:
-                    sql = """INSERT INTO company (company_name, url, logo, categories, phone, address, website, is_accredited, 
+                    sql = """INSERT INTO company (company_name, url, logo, categories, phone, address, website, hq, is_accredited, 
                     rating, working_hours, number_of_stars, number_of_reviews, overview, products_and_services, business_started, 
                     business_incorporated, type_of_entity, number_of_employees, business_management, contact_information, 
-                    customer_contact, fax_numbers, serving_area, date_created, date_updated, status, log) VALUES (""" + "%s, " * 26 + "%s);"
+                    customer_contact, fax_numbers, serving_area, date_created, date_updated, status, log) VALUES (""" + "%s, " * 27 + "%s);"
                     args = (company.name, company.url, company.logo, company.categories, company.phone, company.address, 
-                    company.website, company.is_accredited, company.rating, company.working_hours, company.number_of_stars, 
+                    company.website, company.hq, company.is_accredited, company.rating, company.working_hours, company.number_of_stars, 
                     company.number_of_reviews, company.overview, company.products_and_services, company.business_started, 
                     company.business_incorporated, company.type_of_entity, company.number_of_employees, company.business_management, 
                     company.contact_information, company.customer_contact, company.fax_numbers, company.serving_area, 

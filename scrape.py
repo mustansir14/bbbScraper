@@ -175,6 +175,12 @@ class BBBScraper():
             company.phone = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-phone"))
             company.address = self.driver.find_element_by_tag_name("address").text
             company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"))
+            icons = self.driver.find_elements_by_class_name("with-icon")
+            company.hq = False
+            for icon in icons:
+                if "Headquarters" in icon.text:
+                    company.hq = True
+                    break
             try:
                 self.driver.find_element_by_class_name("dtm-accreditation-badge")
                 company.is_accredited = True

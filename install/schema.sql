@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS `company` (
   `phone` varchar(18) DEFAULT NULL,
   `address` varchar(255) DEFAULT NULL,
   `website` varchar(500) DEFAULT NULL,
+  `hq` tinyint(1) DEFAULT NULL,
   `is_accredited` tinyint(1) DEFAULT NULL,
   `rating` varchar(2) DEFAULT NULL,
   `working_hours` varchar(500) DEFAULT NULL,

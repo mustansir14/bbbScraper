@@ -14,6 +14,7 @@ class Company:
         self.phone = None
         self.address = None
         self.website = None
+        self.hq = None
         self.is_accredited = None
         self.rating = None
         self.working_hours = None
@@ -50,6 +51,8 @@ class Company:
                 return_string += '\nAddress: ' + self.address
         if self.website:
                 return_string += '\nWebsite: ' + self.website
+        if self.hq:
+                return_string += '\HQ: ' + str(self.hq)
         if self.is_accredited:
                 return_string += '\nIs Accredited: ' + str(self.is_accredited)
         if self.rating:
