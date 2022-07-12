@@ -149,4 +149,4 @@ def flush_company_data():
     return response( errors, rows )
 
 if __name__ == "__main__":
-    api.run(port=5000)
+    api.run(host='0.0.0.0',port=5000)
