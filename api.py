@@ -12,6 +12,8 @@ from scrape import BBBScraper
 from sys import platform
 from includes.DB import DB
 from config import *
+import logging
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
 api = Flask(__name__)
 
