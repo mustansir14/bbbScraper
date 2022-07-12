@@ -15,7 +15,7 @@ from config import *
 
 api = Flask(__name__)
 
-def response(errors,data):
+def response( errors, data = None):
     isFail = True if isinstance(errors,list) and len(errors) > 0 else False
     errors = errors if isinstance(errors,list) else []
     return json.dumps( { 'success': ( not isFail ), 'errors': errors, 'data': ( None if isFail else data ) } )
@@ -24,11 +24,9 @@ def response(errors,data):
 def grab_company():
 
     def scrape_company(company_id, webhook_url, is_sync):
-        print("---")
         try:
-            print("000")
             scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
-            print("111")
+            
             if "http" in company_id:
                 company = scraper.scrape_company_details(company_url=company_id)
                 company.reviews = scraper.scrape_company_reviews(company_url=company_id)
@@ -37,7 +35,7 @@ def grab_company():
                 company = scraper.scrape_company_details(company_id=company_id)
                 company.reviews = scraper.scrape_company_reviews(company_id=company_id)
                 company.reviews = scraper.scrape_company_complaints(company_id=company_id)
-            print("222")
+            
             status = "success"
             if company.status == "error":
                 status = "error"
@@ -59,18 +57,18 @@ def grab_company():
                     requests.post(webhook_url, json={"company_id": company_id, "status" : status, "log": log})
             else:
                 if status == "success":
-                    return json.dumps({ 'success': True, 'errors': [], 'data': None })
+                    return response( [] )
                 else:
-                    return json.dumps({ 'success': False, 'errors': [ log ], 'data': None })
+                    return response( [ log ] )
             
         except Exception as e:
-            return json.dumps({ 'success': False, 'errors': [ str(e) ], 'data': None })
+            return response( [ str(e) ] )
         
     if "id" not in request.args:
-        return json.dumps({"error" : "missing id argument"})
+        return response( [ "missing id argument" ] )
         
     if "sync" not in request.args and "webhookUrl" not in request.args:
-        return json.dumps({"error" : "missing webhookUrl argument"})
+        return response( [ "missing webhookUrl argument" ] )
         
     try:
         
@@ -78,13 +76,12 @@ def grab_company():
             p = Process(target=scrape_company, args=(request.args["id"], request.args["webhookUrl"],))
             p.start()
         else:
-            print("in")
             return scrape_company(request.args["id"], request.args["webhookUrl"], "sync" in request.args )
             
     except Exception as e:
-        return json.dumps({ 'success': False, 'errors': [str(e)], 'data': None })
+        return response( [ str(e) ] )
         
-    return json.dumps({ 'success': True, 'errors': [], 'data': 'pending' })
+    return response( [], 'pending' )
 
 @api.route('/api/v1/regrab-review', methods=['GET'])
 def grab_review():
