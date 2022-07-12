@@ -24,9 +24,11 @@ def response(errors,data):
 def grab_company():
 
     def scrape_company(company_id, webhook_url, is_sync):
+        print("---")
         try:
+            print("000")
             scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
-            
+            print("111")
             if "http" in company_id:
                 company = scraper.scrape_company_details(company_url=company_id)
                 company.reviews = scraper.scrape_company_reviews(company_url=company_id)
@@ -35,6 +37,7 @@ def grab_company():
                 company = scraper.scrape_company_details(company_id=company_id)
                 company.reviews = scraper.scrape_company_reviews(company_id=company_id)
                 company.reviews = scraper.scrape_company_complaints(company_id=company_id)
+            print("222")
             status = "success"
             if company.status == "error":
                 status = "error"
@@ -56,12 +59,12 @@ def grab_company():
                     requests.post(webhook_url, json={"company_id": company_id, "status" : status, "log": log})
             else:
                 if status == "success":
-                    return json.dumps({ 'success': True, 'errors': [], data: None })
+                    return json.dumps({ 'success': True, 'errors': [], 'data': None })
                 else:
-                    return json.dumps({ 'success': False, 'errors': [ log ], data: None })
+                    return json.dumps({ 'success': False, 'errors': [ log ], 'data': None })
             
         except Exception as e:
-            return json.dumps({ 'success': False, 'errors': [ str(e) ], data: None })
+            return json.dumps({ 'success': False, 'errors': [ str(e) ], 'data': None })
         
     if "id" not in request.args:
         return json.dumps({"error" : "missing id argument"})
@@ -69,13 +72,19 @@ def grab_company():
     if "sync" not in request.args and "webhookUrl" not in request.args:
         return json.dumps({"error" : "missing webhookUrl argument"})
         
-    if "sync" not in request.args and ( platform == "linux" or platform == "linux2" ):
-        p = Process(target=scrape_company, args=(request.args["id"], request.args["webhookUrl"],))
-        p.start()
-    else:
-        return scrape_company(request.args["id"], request.args["webhookUrl"], "sync" in request.args )
+    try:
         
-    return json.dumps({ 'success': True, 'errors': [], data: 'pending' })
+        if "sync" not in request.args and ( platform == "linux" or platform == "linux2" ):
+            p = Process(target=scrape_company, args=(request.args["id"], request.args["webhookUrl"],))
+            p.start()
+        else:
+            print("in")
+            return scrape_company(request.args["id"], request.args["webhookUrl"], "sync" in request.args )
+            
+    except Exception as e:
+        return json.dumps({ 'success': False, 'errors': [str(e)], 'data': None })
+        
+    return json.dumps({ 'success': True, 'errors': [], 'data': 'pending' })
 
 @api.route('/api/v1/regrab-review', methods=['GET'])
 def grab_review():
