@@ -22,7 +22,7 @@ def response( errors, data = None):
     errors = errors if isinstance(errors,list) else []
     return json.dumps( { 'success': ( not isFail ), 'errors': errors, 'data': ( None if isFail else data ) } )
 
-@api.route('/api/v1/regrab-company', methods=['GET'])
+@api.route('/api/v1/scrape/company', methods=['GET'])
 def grab_company():
 
     def scrape_company(company_id, webhook_url, is_sync):
@@ -89,7 +89,7 @@ def grab_company():
         
     return response( [], 'pending' )
 
-@api.route('/api/v1/regrab-review', methods=['GET'])
+@api.route('/api/v1/scrape/review', methods=['GET'])
 def grab_review():
 
     def scrape_review(review_id, webhook_url):
@@ -124,7 +124,7 @@ def grab_review():
         scrape_review(request.args["id"], request.args["webhookUrl"])
     return json.dumps(request.args)
 
-@api.route('/api/v1/regrab-complaint', methods=['GET'])
+@api.route('/api/v1/scrape/complaint', methods=['GET'])
 def grab_complaint():
 
     def scrape_complaint(complaint_id, webhook_url):
