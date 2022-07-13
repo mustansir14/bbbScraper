@@ -275,6 +275,8 @@ class BBBScraper():
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
                 self.db.cur.execute("Select company_id from company where url = %s;", (company_url, ))
                 fetched_results = self.db.cur.fetchall()
+            if len(fetched_results) == 0:
+                return []
             if USE_MARIA_DB:
                 company_id = fetched_results[0][0]
             else:
@@ -377,6 +379,8 @@ class BBBScraper():
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
                 self.db.cur.execute("Select company_id from company where url = %s;", (company_url, ))
                 fetched_results = self.db.cur.fetchall()
+            if len(fetched_results) == 0:
+                return []
             if USE_MARIA_DB:
                 company_id = fetched_results[0][0]
             else:
