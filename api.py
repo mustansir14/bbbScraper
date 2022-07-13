@@ -20,7 +20,7 @@ api = Flask(__name__)
 def response( errors, data = None):
     isFail = True if isinstance(errors,list) and len(errors) > 0 else False
     errors = errors if isinstance(errors,list) else []
-    return json.dumps( { 'success': ( not isFail ), 'errors': errors, 'data': ( None if isFail else data ) } )
+    return json.dumps( { 'success': ( not isFail ), 'errors': errors, 'data': ( None if isFail else data ) }, default=str )
 
 @api.route('/api/v1/scrape/company', methods=['GET'])
 def grab_company():
