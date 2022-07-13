@@ -167,7 +167,7 @@ def flush_company_data():
     db = DB()
     errors = []
         
-    sql = 'select * from company where company_name=?'
+    sql = 'select * from company where company_name=%s'
     
     rows = db.queryArray( sql, (request.args["name"],))
     if rows is None:
