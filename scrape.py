@@ -228,7 +228,7 @@ class BBBScraper():
                         company.business_started = datetime.datetime.strptime(detail_lines[i+1].strip(), "%d/%m/%Y").strftime('%Y-%m-%d')
                 elif "Business Incorporated:" in line:
                     try:
-                        company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip(), "%m/%d/%Y").strftime('%Y-%m-%d')
+                        company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
                     except:
                         company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip(), "%d/%m/%Y").strftime('%Y-%m-%d')
                 elif "Type of Entity:" in line:
