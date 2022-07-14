@@ -26,7 +26,7 @@ def response( errors, data = None):
 def grab_company():
 
     def scrape_company(company_id, webhook_url, is_sync):
-        
+
         logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         try:
             scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
@@ -84,6 +84,7 @@ def grab_company():
             p = Process(target=scrape_company, args=(request.args["id"], webhook, False, ))
             p.start()
         else:
+            print("yes")
             return scrape_company(request.args["id"], webhook, "sync" in request.args )
             
     except Exception as e:
