@@ -26,6 +26,7 @@ import logging, zipfile
 from pyvirtualdisplay import Display
 from sys import platform
 from multiprocessing import Process, Queue
+from includes.telegram_reporter import send_message
 
 
 class BBBScraper():
@@ -257,6 +258,7 @@ class BBBScraper():
 
         except Exception as e:
             logging.error(str(e))
+            send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e))
             company.status = "error"
             company.log = "details page error: " + str(e)
         if not company.status:
@@ -360,6 +362,8 @@ class BBBScraper():
                     review.company_response_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
             except:
                 pass
+            if review.status == "error":
+                send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log)
             reviews.append(review)
             if scrape_specific_review:
                 break
@@ -454,6 +458,8 @@ class BBBScraper():
                     complaint.company_response_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
             except:
                 pass
+            if complaint.status == "error":
+                send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log)
             complaints.append(complaint)
             if scrape_specific_complaint:
                 break
