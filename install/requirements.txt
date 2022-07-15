@@ -5,4 +5,4 @@ selenium==3.141.0
 mariadb==1.0.8
 pyvirtualdisplay==2.2
 cryptography==36.0.1
-webdriver_manager==3.8.0
+webdriver_manager>=3.7
