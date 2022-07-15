@@ -3,6 +3,11 @@ DB_HOST = "127.0.0.1"
 DB_USER = "root"
 DB_PASSWORD = "12345678"
 DB_NAME = "bbb"
+
+# Telegram Bot Configurations to report errors (don't set if not needed)
+TELEGRAM_BOT_TOKEN = None
+TELEGRAM_CHAT_IDS = []
+
 PROXY_TYPE = "http" # socks5 or http
 PROXY = None
 PROXY_PORT = None

@@ -258,7 +258,7 @@ class BBBScraper():
 
         except Exception as e:
             logging.error(str(e))
-            send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e))
+            send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
             company.status = "error"
             company.log = "details page error: " + str(e)
         if not company.status:
@@ -363,7 +363,7 @@ class BBBScraper():
             except:
                 pass
             if review.status == "error":
-                send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log)
+                send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
             reviews.append(review)
             if scrape_specific_review:
                 break
@@ -459,7 +459,7 @@ class BBBScraper():
             except:
                 pass
             if complaint.status == "error":
-                send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log)
+                send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
             complaints.append(complaint)
             if scrape_specific_complaint:
                 break
