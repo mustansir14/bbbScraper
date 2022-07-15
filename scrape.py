@@ -573,19 +573,28 @@ if __name__ == '__main__':
         for url in args.urls:
             company = scraper.scrape_company_details(company_url=url, save_to_db=args.save_to_db)
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
-            print(company)
+            try:
+                print(company)
+            except Exception as e:
+                print(e)
             print("\n")
             company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=args.save_to_db)
             logging.info("Reviews for %s scraped successfully.\n" % company.name)
             for i, review in enumerate(company.reviews, start=1):
                 print("Review# " + str(i))
-                print(review)
+                try:
+                    print(review)
+                except Exception as e:
+                    print(e)
                 print("\n")
             company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=args.save_to_db)
             logging.info("Complaints for %s scraped successfully.\n" % company.name)
             for i, complaint in enumerate(company.complaints, start=1):
                 print("Complaint# " + str(i))
-                print(complaint)
+                try:
+                    print(complaint)
+                except Exception as e:
+                    print(e)
                 print("\n")
 
         
