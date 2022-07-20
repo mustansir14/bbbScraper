@@ -62,6 +62,8 @@ def grab_company():
                     return response( [] )
                 else:
                     return response( [ log ] )
+
+            del scraper
             
         except Exception as e:
             return response( [ str(e) ] )
