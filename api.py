@@ -51,6 +51,8 @@ def grab_company():
                     if complaint.status == "error":
                         status = "error"
                         log = "Error in scraping some of the complaints"
+            
+            del scraper
                         
             if is_sync == False:
                 if status == "success":
@@ -63,7 +65,7 @@ def grab_company():
                 else:
                     return response( [ log ] )
 
-            del scraper
+            
             
         except Exception as e:
             return response( [ str(e) ] )
