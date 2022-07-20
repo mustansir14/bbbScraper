@@ -172,7 +172,10 @@ class BBBScraper():
         except Exception as e:
             company.logo = ""
         try:
-            company.categories = " > ".join([x.text for x in self.driver.find_element_by_class_name("dtm-breadcrumbs").find_elements_by_tag_name("li")[:4]])
+            try:
+                company.categories = " > ".join([x.text for x in self.driver.find_element_by_class_name("dtm-breadcrumbs").find_elements_by_tag_name("li")[:4]])
+            except:
+                pass
             company.phone = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-phone"))
             company.address = self.driver.find_element_by_tag_name("address").text
             company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"))
