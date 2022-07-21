@@ -524,7 +524,7 @@ class BBBScraper():
                     processes[i].join()
             else:
                 for company_url in urls_to_scrape:
-                    scraper.scrape_url(company_url)
+                    self.scrape_url(company_url)
 
 
     def scrape_urls_from_queue(self, q):
