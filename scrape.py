@@ -546,7 +546,6 @@ class BBBScraper():
 
     def kill_chrome(self):
         try:
-            print("Delete method running")
             self.driver.quit()
             if os.name != "nt":
                 self.display.stop()
