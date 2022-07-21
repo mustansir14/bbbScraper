@@ -546,6 +546,7 @@ class BBBScraper():
 
     def __del__(self):
         try:
+            print("Delete method running")
             self.driver.quit()
         except:
             pass
