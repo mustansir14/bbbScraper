@@ -52,7 +52,7 @@ def grab_company():
                         status = "error"
                         log = "Error in scraping some of the complaints"
             
-            del scraper
+            scraper.kill_chrome()
                         
             if is_sync == False:
                 if status == "success":

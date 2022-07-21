@@ -109,8 +109,8 @@ class BBBScraper():
             else:
                 options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
         if os.name != "nt":
-            display = Display(visible=0, size=(1920, 1080))
-            display.start()
+            self.display = Display(visible=0, size=(1920, 1080))
+            self.display.start()
         if chromedriver_path:
             self.driver = webdriver.Chrome(executable_path=chromedriver_path, options=options)
         else:
@@ -535,7 +535,7 @@ class BBBScraper():
             company_url = q.get()
             scraper.scrape_url(company_url)
         
-        del scraper
+        scraper.kill_chrome()
                     
     def _get_first_with_text(self, elements):
         for element in elements:
@@ -544,10 +544,12 @@ class BBBScraper():
                 return elem_text
         return None
 
-    def __del__(self):
+    def kill_chrome(self):
         try:
             print("Delete method running")
             self.driver.quit()
+            if os.name != "nt":
+                self.display.stop()
         except:
             pass
 
@@ -606,6 +608,8 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(e)
                 print("\n")
+
+    scraper.kill_chrome()
 
         
     
