@@ -38,11 +38,9 @@ def grab_company():
                 company.reviews = scraper.scrape_company_reviews(company_id=company_id)
                 company.reviews = scraper.scrape_company_complaints(company_id=company_id)
             
-            status = "success"
-            if company.status == "error":
-                status = "error"
-                log = "Error in scraping company details"
-            else:
+            status = company.status
+            log = company.log
+            if company.status == "success":
                 for review in company.reviews:
                     if review.status == "error":
                         status = "error"
