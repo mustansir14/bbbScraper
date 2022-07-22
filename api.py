@@ -168,8 +168,6 @@ def flush_company_data():
         
     db = DB()
     errors = []
-    
-    print( "Name: ", request.args["name"] )
         
     sql = 'select * from company where company_name=%s'
     
