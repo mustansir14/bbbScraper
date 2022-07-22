@@ -529,12 +529,15 @@ class BBBScraper():
 
     def scrape_urls_from_queue(self, q):
 
-        scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
-        
-        while q.qsize():
-            company_url = q.get()
-            scraper.scrape_url(company_url)
-        
+        try:
+            scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
+            
+            while q.qsize():
+                company_url = q.get()
+                scraper.scrape_url(company_url)
+            
+        except:
+            pass
         scraper.kill_chrome()
                     
     def _get_first_with_text(self, elements):
