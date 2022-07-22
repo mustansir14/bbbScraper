@@ -209,7 +209,7 @@ class BBBScraper():
                 company.products_and_services = self.driver.find_element_by_class_name("dtm-products-services").text
             except:
                 pass
-            self.driver.get(company_url + "/details")
+            self.driver.get(company_url.split("?")[0] + "/details")
             detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.sc-vg6n3p-0.kCsitr").text.split("\n")
             try:
                 buttons = self.driver.find_element_by_class_name("MuiCardContent-root.sc-vg6n3p-0.kCsitr").find_elements_by_tag_name("button")
