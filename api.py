@@ -38,11 +38,9 @@ def grab_company():
                 company.reviews = scraper.scrape_company_reviews(company_id=company_id)
                 company.reviews = scraper.scrape_company_complaints(company_id=company_id)
             
-            status = "success"
-            if company.status == "error":
-                status = "error"
-                log = "Error in scraping company details"
-            else:
+            status = company.status
+            log = company.log
+            if company.status == "success":
                 for review in company.reviews:
                     if review.status == "error":
                         status = "error"
@@ -169,15 +167,15 @@ def grab_complaint():
 
 @api.route('/api/v1/company', methods=['GET'])
 def flush_company_data():
-    if "name" not in request.args:
-        return json.dumps({"error" : "missing name argument"})
+    if "url" not in request.args or len( request.args["url"] ) == 0:
+        return json.dumps({"error" : "missing url argument"})
         
     db = DB()
     errors = []
         
-    sql = 'select * from company where company_name=%s'
+    sql = 'select * from company where company_name=%s limit 1'
     
-    rows = db.queryArray( sql, (request.args["name"],))
+    rows = db.queryArray( sql, (request.args["url"],))
     if rows is None:
         errors.append( "Internal error" )
         
