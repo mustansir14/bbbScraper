@@ -163,19 +163,17 @@ def grab_complaint():
 
 @api.route('/api/v1/company', methods=['GET'])
 def flush_company_data():
-    if "name" not in request.args or len( request.args["name"] ) == 0:
-        return json.dumps({"error" : "missing name argument"})
+    if "url" not in request.args or len( request.args["url"] ) == 0:
+        return json.dumps({"error" : "missing url argument"})
         
     db = DB()
     errors = []
         
-    sql = 'select * from company where company_name=%s'
+    sql = 'select * from company where company_name=%s limit 1'
     
-    rows = db.queryArray( sql, (request.args["name"],))
+    rows = db.queryArray( sql, (request.args["url"],))
     if rows is None:
         errors.append( "Internal error" )
-    elif len( rows ) == 0:
-        errors.append( "No companies with such name" )
         
     return response( errors, rows )
 
