@@ -68,6 +68,10 @@ def grab_company():
             
             
         except Exception as e:
+            try:
+                scraper.kill_chrome()
+            except:
+                pass
             return response( [ str(e) ] )
         
     if "id" not in request.args:
