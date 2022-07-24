@@ -9,7 +9,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.proxy import Proxy, ProxyType
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 from typing import List
@@ -314,9 +313,9 @@ class BBBScraper():
         reviews = []
         while True:
             try:
-                self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.styles__Button-sc-1jgsape-0.eevMuP.MuiButton-fullWidth").click()     
-                time.sleep(1)
-                WebDriverWait(self.driver, 10).until(EC.invisibility_of_element_located((By.CLASS_NAME, "FullPageLoadingSpinner__Overlay-sc-1vxe47i-0")))
+                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.sc-1jgsape-0.fkzLkw.MuiButton-fullWidth")
+                self.driver.execute_script("arguments[0].click();", load_more)  
+                time.sleep(2)
             except:
                 break
 
@@ -420,9 +419,9 @@ class BBBScraper():
         complaints = []
         while True:
             try:
-                self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.styles__Button-sc-1jgsape-0.eevMuP.MuiButton-fullWidth").click()     
-                time.sleep(1)
-                WebDriverWait(self.driver, 10).until(EC.invisibility_of_element_located((By.CLASS_NAME, "FullPageLoadingSpinner__Overlay-sc-1vxe47i-0")))
+                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.sc-1jgsape-0.fkzLkw.MuiButton-fullWidth")
+                self.driver.execute_script("arguments[0].click();", load_more)  
+                time.sleep(2)
             except:
                 break
         try:
@@ -610,6 +609,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(e)
                 print("\n")
+
 
     scraper.kill_chrome()
 
