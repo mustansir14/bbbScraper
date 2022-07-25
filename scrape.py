@@ -432,7 +432,10 @@ class BBBScraper():
         for complaint_tag in complaint_tags:
             complaint = Complaint()
             complaint.company_id = company_id
-            complaint.complaint_type = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2").text.replace("Complaint Type:", "").strip()
+            try:
+                complaint.complaint_type = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2").text.replace("Complaint Type:", "").strip()
+            except:
+                continue
             try:
                 date = complaint_tag.find_element_by_class_name("MuiTypography-root.sc-16tc58z-1.aWSwL.MuiTypography-body2").text.strip()
                 try:
