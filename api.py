@@ -59,7 +59,7 @@ def grab_company():
                     requests.post(webhook_url, json={"company_id": company_id, "status" : status, "log": log})
             else:
                 if status == "success":
-                    return response( [] )
+                    return response( [], data= f"{company.name} with {len(company.reviews)} reviews and {len(company.complaints)} complaints." )
                 else:
                     return response( [ log ] )
 
