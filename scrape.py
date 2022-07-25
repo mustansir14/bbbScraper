@@ -353,8 +353,7 @@ class BBBScraper():
             try:
                 review.review_rating = round(float(review_tag.find_element_by_class_name("sc-3wcfn7-3").find_element_by_class_name("visually-hidden").text.split()[0]), 1)
             except:
-                review.status = "error"
-                review.log += "error while scraping review stars\n"
+                pass
             try:
                 review.company_response_text = review_texts[1].text
                 date = review_tag.find_element_by_class_name("MuiTypography-root.text-gray-70.MuiTypography-body1").text.strip()
