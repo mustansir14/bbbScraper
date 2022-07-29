@@ -209,9 +209,9 @@ class BBBScraper():
             except:
                 pass
             self.driver.get(company_url.split("?")[0] + "/details")
-            detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.sc-vg6n3p-0.kCsitr").text.split("\n")
+            detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
             try:
-                buttons = self.driver.find_element_by_class_name("MuiCardContent-root.sc-vg6n3p-0.kCsitr").find_elements_by_tag_name("button")
+                buttons = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").find_elements_by_tag_name("button")
                 for button in buttons:
                     if "Read More" in button.text:
                         button.click()
