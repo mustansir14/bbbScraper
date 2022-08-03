@@ -173,7 +173,7 @@ def flush_company_data():
     db = DB()
     errors = []
         
-    sql = 'select * from company where company_name=%s limit 1'
+    sql = 'select * from company where url=%s limit 1'
     
     rows = db.queryArray( sql, (request.args["url"],))
     if rows is None:
