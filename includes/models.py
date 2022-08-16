@@ -4,6 +4,9 @@
 # +923333487952
 ##########################################
 
+from tkinter.messagebox import NO
+
+
 class Company:
 
     def __init__(self) -> None:
@@ -13,6 +16,10 @@ class Company:
         self.categories = None
         self.phone = None
         self.address = None
+        self.street_address = None
+        self.address_locality = None
+        self.address_region = None
+        self.postal_code = None
         self.website = None
         self.hq = None
         self.is_accredited = None
@@ -49,6 +56,14 @@ class Company:
                 return_string += '\nPhone: ' + self.phone
         if self.address:
                 return_string += '\nAddress: ' + self.address
+        if self.street_address:
+                return_string += '\nStreet Address: ' + self.street_address
+        if self.address_locality:
+                return_string += '\nAddress Locality: ' + self.address_locality
+        if self.address_region:
+                return_string += '\nAddress Region: ' + self.address_region
+        if self.postal_code:
+                return_string += '\nPostal Code: ' + self.postal_code
         if self.website:
                 return_string += '\nWebsite: ' + self.website
         if self.hq:

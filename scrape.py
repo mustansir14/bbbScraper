@@ -178,6 +178,14 @@ class BBBScraper():
             company.phone = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-phone"))
             company.address = self.driver.find_element_by_tag_name("address").text
             company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"))
+            lines = company.address.split("\n")
+            company.street_address = lines[0]
+            if len(lines) > 1:
+                comma_split = lines[1].split(",")
+                company.address_locality = comma_split[0].strip()
+                if len(comma_split) > 1:
+                    company.address_region = comma_split[1].split()[0]
+                    company.postal_code = " ".join(comma_split[1].split()[1:])
             icons = self.driver.find_elements_by_class_name("with-icon")
             company.hq = False
             for icon in icons:
@@ -194,8 +202,8 @@ class BBBScraper():
             except:
                 company.rating = None
             try:
-                review_box = self.driver.find_element_by_class_name("MuiPaper-root.MuiCard-root.sc-ik3rfd-0.sc-152egbn-0.irOmjJ.jUdTvA.MuiPaper-elevation1.MuiPaper-rounded")
-                company.number_of_stars = round(float(review_box.find_element_by_tag_name("strong").text), 1)
+                review_box = self.driver.find_element_by_class_name("MuiCardContent-root.e1bq2n4p0.css-qo261a")
+                company.number_of_stars = round(float(review_box.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-size-70.css-8gocr").text.split("/")[0]), 2)
                 company.number_of_reviews = int(review_box.text.split("Average of ")[1].split(" Customer")[0].replace(",", ""))
             except:
                 company.number_of_stars = None
@@ -214,11 +222,11 @@ class BBBScraper():
                 buttons = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").find_elements_by_tag_name("button")
                 for button in buttons:
                     if "Read More" in button.text:
-                        button.click()
+                        self.driver.execute_script("arguments[0].click();", button)
                         time.sleep(0.5)
             except:
                 pass
-            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media"]
+            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses"]
             fields_dict = {}
             current_field = None
             for i, line in enumerate(detail_lines):
@@ -254,9 +262,21 @@ class BBBScraper():
             if "Customer Contact" in fields_dict:
                 company.customer_contact = fields_dict["Customer Contact"].strip()
             if "Fax Numbers" in fields_dict:
-                company.fax_numbers = fields_dict["Fax Numbers"].replace("Primary Fax", "").replace("Other Fax", "").strip()
+                company.fax_numbers = fields_dict["Fax Numbers"].replace("Primary Fax", "").replace("Other Fax", "").replace("Read More", "").replace("Read Less", "").strip()
             if "Serving Area" in fields_dict:
-                company.serving_area = fields_dict["Serving Area"].replace("Read More", "").strip()
+                company.serving_area = fields_dict["Serving Area"].replace("Read More", "").replace("Read Less", "").strip()
+            if "Phone Numbers" in fields_dict:
+                if company.phone is None:
+                    company.phone = ""
+                else:
+                    company.phone += "\n"
+                company.phone += fields_dict["Phone Numbers"].replace("Read More", "").replace("Read Less", "").replace("Primary Phone", "").replace("Other Phone", "").strip()
+            if "Website Addresses" in fields_dict:
+                if company.website is None:
+                    company.website = ""
+                else:
+                    company.website += "\n"
+                company.website += fields_dict["Website Addresses"].replace("Read More", "").replace("Read Less", "").strip()
 
         except Exception as e:
             logging.error(str(e))
@@ -313,14 +333,14 @@ class BBBScraper():
         reviews = []
         while True:
             try:
-                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.sc-1jgsape-0.fkzLkw.MuiButton-fullWidth")
+                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.MuiButton-containedPrimary.MuiButton-sizeMedium.MuiButton-containedSizeMedium.MuiButton-fullWidth.ezpahdb0.css-1uz6nmt")
                 self.driver.execute_script("arguments[0].click();", load_more)  
                 time.sleep(2)
             except:
                 break
 
         try:
-            review_tags = self.driver.find_element_by_class_name("sc-5fl4b5-1.hehzCO.stack").find_elements_by_tag_name("li")
+            review_tags = self.driver.find_element_by_class_name("stack.css-zyn7di.e62xhj40").find_elements_by_tag_name("li")
         except:
             logging.info("No reviews for company: " + company_url)
             return []
@@ -343,7 +363,7 @@ class BBBScraper():
                 review.status = "error"
             if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
                 continue
-            review_texts = review_tag.find_elements_by_class_name("MuiTypography-root.sc-19d5fbu-0.erktZW.text-black.MuiTypography-body2")
+            review_texts = review_tag.find_elements_by_class_name("MuiTypography-root.text-black.MuiTypography-body2")
             if not review_texts:
                 review_texts = review_tag.find_elements_by_class_name("sc-3wcfn7-5")
             try:
@@ -351,7 +371,7 @@ class BBBScraper():
             except:
                 review.review_text = ""
             try:
-                review.review_rating = round(float(review_tag.find_element_by_class_name("sc-3wcfn7-3").find_element_by_class_name("visually-hidden").text.split()[0]), 1)
+                review.review_rating = round(float(review_tag.find_element_by_class_name("css-amhf5.ei2kcdu2").find_element_by_class_name("visually-hidden").text.split()[0]), 1)
             except:
                 pass
             try:
@@ -418,13 +438,13 @@ class BBBScraper():
         complaints = []
         while True:
             try:
-                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.sc-1jgsape-0.fkzLkw.MuiButton-fullWidth")
+                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.MuiButton-containedPrimary.MuiButton-sizeMedium.MuiButton-containedSizeMedium.MuiButton-fullWidth.ezpahdb0.css-1uz6nmt")
                 self.driver.execute_script("arguments[0].click();", load_more)  
                 time.sleep(2)
             except:
                 break
         try:
-            complaint_tags = self.driver.find_element_by_class_name("sc-5fl4b5-1.hehzCO.stack").find_elements_by_tag_name("li")
+            complaint_tags = self.driver.find_element_by_class_name("stack.css-zyn7di.e62xhj40").find_elements_by_tag_name("li")
         except:
             logging.info("No Complaints for company: " + company_url)
             return []
@@ -432,11 +452,11 @@ class BBBScraper():
             complaint = Complaint()
             complaint.company_id = company_id
             try:
-                complaint.complaint_type = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2").text.replace("Complaint Type:", "").strip()
+                complaint.complaint_type = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2").text.replace("Complaint Type:", "").replace("Anonymous complaint:", "").strip()
             except:
                 continue
             try:
-                date = complaint_tag.find_element_by_class_name("MuiTypography-root.sc-16tc58z-1.aWSwL.MuiTypography-body2").text.strip()
+                date = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-gray-70.css-8gocr").text.strip()
                 try:
                     complaint.complaint_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
                 except:
@@ -446,7 +466,7 @@ class BBBScraper():
                 complaint.log += "Error while scraping/parsing date\n"
                 complaint.status = "error"
             try:
-                complaint.complaint_text = complaint_tag.find_element_by_class_name("MuiTypography-root.sc-16tc58z-2.jbifKF.MuiTypography-body2").text
+                complaint.complaint_text = complaint_tag.find_elements_by_class_name("MuiTypography-root.MuiTypography-body2.css-8gocr")[-1].text
             except:
                 complaint.complaint_text = None
                 complaint.log += "Error while scraping complaint text\n"
@@ -454,8 +474,8 @@ class BBBScraper():
             if scrape_specific_complaint and (complaint.complaint_type != complaint_results[0]["complaint_type"] or str(complaint.complaint_date) != str(complaint_results[0]["complaint_date"]) or complaint.complaint_text != complaint_results[0]["complaint_text"]):
                 continue
             try:
-                complaint.company_response_text = complaint_tag.find_element_by_class_name("MuiTypography-root.sc-19d5fbu-0.erktZW.text-black.MuiTypography-body2").text.replace("Business Response", "").strip()
-                date = complaint_tag.find_element_by_class_name("MuiTypography-root.text-gray-70.MuiTypography-body1").text.strip()
+                complaint.company_response_text = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-black.eeijlg00.css-jzmzv").text.replace("Business Response", "").strip()
+                date = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body1.text-gray-70.css-a4lmh5").text.strip()
                 try:
                     complaint.company_response_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
                 except:
