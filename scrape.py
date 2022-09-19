@@ -577,7 +577,10 @@ class BBBScraper():
             
         except:
             pass
-        scraper.kill_chrome()
+        try:
+            scraper.kill_chrome()
+        except:
+            pass
                     
     def _get_first_with_text(self, elements):
         for element in elements:
