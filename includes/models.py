@@ -4,9 +4,6 @@
 # +923333487952
 ##########################################
 
-from tkinter.messagebox import NO
-
-
 class Company:
 
     def __init__(self) -> None:
