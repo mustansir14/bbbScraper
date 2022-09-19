@@ -55,7 +55,7 @@ if __name__ == "__main__":
             if not found_url:
                 continue
 
-            if platform == "linux" or platform == "linux2":
+            if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 processes = []
                 for i in range(no_of_threads):
                     processes.append(Process(target=scraper.scrape_urls_from_queue, args=(urls_to_scrape, False, )))
