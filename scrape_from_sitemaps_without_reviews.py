@@ -45,6 +45,7 @@ if __name__ == "__main__":
                 scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
                 data = scraper.db.cur.fetchall()
                 if len(data) > 0:
+                    logging.info("Company " + company_url + " exits. Skipping")
                     continue
                 found_url = True
                 if platform == "linux" or platform == "linux2":
