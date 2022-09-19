@@ -42,6 +42,7 @@ class Company:
         self.complaints = []
         self.log = ""
         self.status = None
+        self.half_scraped = None
 
     def __str__(self) -> str:
         if self.name:

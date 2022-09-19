@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import requests
 import time
 from typing import List
 from includes.DB import DB
@@ -19,7 +20,6 @@ import xml.etree.ElementTree as ET
 import datetime
 import os
 import argparse
-import json
 import sys
 import logging, zipfile
 from pyvirtualdisplay import Display
@@ -31,6 +31,17 @@ from includes.telegram_reporter import send_message
 class BBBScraper():
 
     def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http") -> None:
+        
+        self.session = requests.session()
+        headers = {
+            "authority": "www.bbb.org",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "accept-language": "en-US,en;q=0.9",
+            "cache-control": "max-age=0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
+            "sec-ch-ua": "^\^Google"
+            }
+        self.session.headers.update(headers)
         options = Options()
         options.add_argument("window-size=1920,1080")
         options.add_argument("--log-level=3")
@@ -47,6 +58,7 @@ class BBBScraper():
             if not proxy_port:
                 raise Exception("Proxy Port missing.")
             if proxy_user and proxy_pass:
+                self.session.proxies.update({PROXY_TYPE: PROXY_TYPE + "://" + PROXY_USER + ":" + PROXY_PASS + "@" + PROXY + ":" + str(PROXY_PORT)})
                 manifest_json = """
                 {
                     "version": "1.0.0",
@@ -106,6 +118,7 @@ class BBBScraper():
                     zp.writestr("background.js", background_js)
                 options.add_extension(pluginfile)
             else:
+                self.session.proxies.update({PROXY_TYPE: PROXY_TYPE + "://" + PROXY + ":" + PROXY_PORT})
                 options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
         if os.name != "nt":
             self.display = Display(visible=0, size=(1920, 1080))
@@ -119,20 +132,21 @@ class BBBScraper():
         self.db = DB()
 
 
-    def scrape_url(self, url, save_to_db=True) -> Company:
+    def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True) -> Company:
         
         if "https://www.bbb.org/" not in url and "profile" not in url:
             raise Exception("Invalid URL")
         url_split = url.split("/")
         if url_split[-1] in ["details", "customer-reviews", "complaints"]:
             url = "/".join(url_split[:-1]) 
-        company = self.scrape_company_details(company_url=url, save_to_db=save_to_db)
-        company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
-        company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
+        company = self.scrape_company_details(company_url=url, save_to_db=save_to_db, half_scraped= not scrape_reviews_and_complaints)
+        if scrape_reviews_and_complaints:
+            company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
+            company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
         return company
 
 
-    def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True) -> Company:
+    def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True, half_scraped=False) -> Company:
 
         if not company_url and not company_id:
             raise Exception("Please provide either company URL or company ID")
@@ -150,9 +164,10 @@ class BBBScraper():
         logging.info("Scraping Company Details for " + company_url)
         company = Company()
         company.url = company_url
+        company.half_scraped = half_scraped
         self.driver.get(company_url)
         try:
-            company.name = self.driver.find_element_by_class_name("MuiTypography-root.MuiTypography-h3").text.strip()
+            company.name = self.driver.find_element_by_class_name("MuiTypography-root.MuiTypography-h2").text.strip()
         except:
             logging.error("Error in scraping: " + company_url + " Page Broken (502)")
             company.name = company_url
@@ -494,68 +509,71 @@ class BBBScraper():
         return complaints
 
 
-    def bulk_scrape(self, no_of_threads=1):
+    def bulk_scrape(self, no_of_threads=1, scrape_reviews_and_complaints=True):
 
             
+        sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
         logging.info("Starting scrape (gathering sitemap urls...)")
-        self.driver.get("https://www.bbb.org/sitemap-business-profiles-index.xml")
-        root = ET.fromstring(self.driver.page_source)
-        urls = []
-        for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
-            urls.append(child.text)
-        for url in urls:
-            self.driver.get(url)
+        for sitemap_url in sitemap_urls:
+        
+            self.driver.get(sitemap_url)
             root = ET.fromstring(self.driver.page_source)
-            company_urls = []
+            urls = []
             for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
-                child_text = child.text
-                if "profile" in child_text:
-                    company_urls.append(child_text)
-            if platform == "linux" or platform == "linux2":
-                urls_to_scrape = Queue()
-            else:
-                urls_to_scrape = []
-            found_url = False
-            for company_url in company_urls:
-                self.db.cur.execute("SELECT date_updated from company where url = %s", (company_url, ))
-                data = self.db.cur.fetchall()
-                if len(data) > 0:
-                    if USE_MARIA_DB:
-                        date_updated = data[0][0]
-                    else:
-                        date_updated = data[0]["date_updated"]
-                    if (date_updated - datetime.datetime.now()).days < 7:
-                        continue
-
-                found_url = True
+                urls.append(child.text)
+            for url in urls:
+                self.driver.get(url)
+                root = ET.fromstring(self.driver.page_source)
+                company_urls = []
+                for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                    child_text = child.text
+                    if "profile" in child_text:
+                        company_urls.append(child_text)
                 if platform == "linux" or platform == "linux2":
-                    urls_to_scrape.put(company_url)
+                    urls_to_scrape = Queue()
                 else:
-                    urls_to_scrape.append(company_url)
-            if not found_url:
-                continue
+                    urls_to_scrape = []
+                found_url = False
+                for company_url in company_urls:
+                    self.db.cur.execute("SELECT date_updated from company where url = %s", (company_url, ))
+                    data = self.db.cur.fetchall()
+                    if len(data) > 0:
+                        if USE_MARIA_DB:
+                            date_updated = data[0][0]
+                        else:
+                            date_updated = data[0]["date_updated"]
+                        if (date_updated - datetime.datetime.now()).days < 7:
+                            continue
 
-            if platform == "linux" or platform == "linux2":
-                processes = []
-                for i in range(no_of_threads):
-                    processes.append(Process(target=self.scrape_urls_from_queue, args=(urls_to_scrape, )))
-                    processes[i].start()
+                    found_url = True
+                    if platform == "linux" or platform == "linux2":
+                        urls_to_scrape.put(company_url)
+                    else:
+                        urls_to_scrape.append(company_url)
+                if not found_url:
+                    continue
 
-                for i in range(no_of_threads):
-                    processes[i].join()
-            else:
-                for company_url in urls_to_scrape:
-                    self.scrape_url(company_url)
+                if platform == "linux" or platform == "linux2":
+                    processes = []
+                    for i in range(no_of_threads):
+                        processes.append(Process(target=self.scrape_urls_from_queue, args=(urls_to_scrape, scrape_reviews_and_complaints, )))
+                        processes[i].start()
+
+                    for i in range(no_of_threads):
+                        processes[i].join()
+                else:
+                    for company_url in urls_to_scrape:
+                        self.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints)
 
 
-    def scrape_urls_from_queue(self, q):
+    def scrape_urls_from_queue(self, q, scrape_reviews_and_complaints=True):
 
         try:
             scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
             
             while q.qsize():
                 company_url = q.get()
-                scraper.scrape_url(company_url)
+                scraper.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints)
             
         except:
             pass
@@ -577,15 +595,20 @@ class BBBScraper():
             pass
 
 
+def str2bool(v):
+    return str(v).lower() in ("yes", "true", "t", "1")
+
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
-    parser.add_argument("--bulk_scrape", nargs='?', type=bool, default=False, help="Boolean variable to bulk scrape companies. Default False. If set to True, save_to_db will also be set to True")
+    parser.add_argument("--bulk_scrape", nargs='?', type=str, default="False", help="Boolean variable to bulk scrape companies. Default False. If set to True, save_to_db will also be set to True")
     parser.add_argument("--urls", nargs='*', help="url(s) for scraping. Separate by spaces")
-    parser.add_argument("--save_to_db", nargs='?', type=bool, default=False, help="Boolean variable to save to db. Default False")
+    parser.add_argument("--save_to_db", nargs='?', type=str, default="False", help="Boolean variable to save to db. Default False")
     parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
     parser.add_argument("--log_file", nargs='?', type=str, default=None, help="Path for log file. If not given, output will be printed on stdout.")
+    parser.add_argument("--scrape_reviews_and_complaints", nargs='?', type=str, default="False", help="Boolean variable to get company reviews and complaints as well. Default True")
     parser.add_argument("--grabber-bbb-mustansir", nargs='?', type=bool, default=False, help="Only mark to kill all")
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -600,20 +623,19 @@ if __name__ == '__main__':
         logging.basicConfig(filename=args.log_file, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     else:
         logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-    
     scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
-    if args.bulk_scrape:
-        scraper.bulk_scrape(no_of_threads=args.no_of_threads)
+    if str2bool(args.bulk_scrape):
+        scraper.bulk_scrape(no_of_threads=args.no_of_threads, scrape_reviews_and_complaints=str2bool(args.scrape_reviews_and_complaints))
     else:
         for url in args.urls:
-            company = scraper.scrape_company_details(company_url=url, save_to_db=args.save_to_db)
+            company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
             try:
                 print(company)
             except Exception as e:
                 print(e)
             print("\n")
-            company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=args.save_to_db)
+            company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Reviews for %s scraped successfully.\n" % company.name)
             for i, review in enumerate(company.reviews, start=1):
                 print("Review# " + str(i))
@@ -622,7 +644,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(e)
                 print("\n")
-            company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=args.save_to_db)
+            company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Complaints for %s scraped successfully.\n" % company.name)
             for i, complaint in enumerate(company.complaints, start=1):
                 print("Complaint# " + str(i))
