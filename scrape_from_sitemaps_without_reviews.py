@@ -48,7 +48,7 @@ if __name__ == "__main__":
                     logging.info("Company " + company_url + " exits. Skipping")
                     continue
                 found_url = True
-                if platform == "linux" or platform == "linux2":
+                if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                     urls_to_scrape.put(company_url)
                 else:
                     urls_to_scrape.append(company_url)
