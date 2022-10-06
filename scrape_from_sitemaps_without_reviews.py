@@ -36,7 +36,7 @@ if __name__ == "__main__":
                 child_text = child.text
                 if "profile" in child_text:
                     company_urls.append(child_text)
-            if platform == "linux" or platform == "linux2":
+            if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 urls_to_scrape = Queue()
             else:
                 urls_to_scrape = []
