@@ -165,7 +165,14 @@ class BBBScraper():
         company = Company()
         company.url = company_url
         company.half_scraped = half_scraped
-        self.driver.get(company_url)
+        while True:
+            self.driver.get(company_url)
+            if "403" in self.driver.title:
+                logging.info("403 Forbidden error. Sleeping for 60 seconds....")
+                time.sleep(60)
+            else:
+                break
+
         try:
             company.name = self.driver.find_element_by_class_name("MuiTypography-root.MuiTypography-h2").text.strip()
         except:

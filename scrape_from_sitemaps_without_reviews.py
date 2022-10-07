@@ -29,19 +29,13 @@ if __name__ == "__main__":
             urls.append(child.text)
         for url in urls:
             logging.info("Scraping from sitemap " + url + "...")
-            for _ in range(5):
-                scraper.driver.get(url)
-                root = ET.fromstring(scraper.driver.page_source)
-                company_urls = []
-                for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
-                    child_text = child.text
-                    if "profile" in child_text:
-                        company_urls.append(child_text)
-                if len(company_urls) == 0:
-                    scraper.kill_chrome()
-                    scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
-                else:
-                    break
+            scraper.driver.get(url)
+            root = ET.fromstring(scraper.driver.page_source)
+            company_urls = []
+            for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                child_text = child.text
+                if "profile" in child_text:
+                    company_urls.append(child_text)
             if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 urls_to_scrape = Queue()
             else:
