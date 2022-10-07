@@ -238,7 +238,13 @@ class BBBScraper():
                 company.products_and_services = self.driver.find_element_by_class_name("dtm-products-services").text
             except:
                 pass
-            self.driver.get(company_url.split("?")[0] + "/details")
+            while True:
+                self.driver.get(company_url.split("?")[0] + "/details")
+                if "403" in self.driver.title:
+                    logging.info("403 Forbidden error. Sleeping for 60 seconds....")
+                    time.sleep(60)
+                else:
+                    break
             detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
             try:
                 buttons = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").find_elements_by_tag_name("button")
