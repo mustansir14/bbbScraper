@@ -36,7 +36,7 @@ if __name__ == "__main__":
                 child_text = child.text
                 if "profile" in child_text:
                     company_urls.append(child_text)
-            if platform == "linux" or platform == "linux2":
+            if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 urls_to_scrape = Queue()
             else:
                 urls_to_scrape = []
@@ -45,10 +45,10 @@ if __name__ == "__main__":
                 scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
                 data = scraper.db.cur.fetchall()
                 if len(data) > 0:
-                    logging.info("Company " + company_url + " exits. Skipping")
+                    logging.info("Company " + company_url + " exists. Skipping")
                     continue
                 found_url = True
-                if platform == "linux" or platform == "linux2":
+                if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                     urls_to_scrape.put(company_url)
                 else:
                     urls_to_scrape.append(company_url)
