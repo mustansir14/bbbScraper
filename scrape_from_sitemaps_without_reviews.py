@@ -28,8 +28,6 @@ if __name__ == "__main__":
         for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
             urls.append(child.text)
         for url in urls:
-            if url != "https://www.bbb.org/sitemap-accredited-business-profiles-3.xml":
-                continue
             logging.info("Scraping from sitemap " + url + "...")
             scraper.driver.get(url)
             root = ET.fromstring(scraper.driver.page_source)
