@@ -29,7 +29,7 @@ if __name__ == "__main__":
             urls.append(child.text)
         for url in urls:
             logging.info("Scraping from sitemap " + url + "...")
-            for i in range(5):
+            for _ in range(5):
                 scraper.driver.get(url)
                 root = ET.fromstring(scraper.driver.page_source)
                 company_urls = []
@@ -51,7 +51,7 @@ if __name__ == "__main__":
                 scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
                 data = scraper.db.cur.fetchall()
                 if len(data) > 0:
-                    logging.info("Company " + company_url + " exits. Skipping")
+                    logging.info("Company " + company_url + " exists. Skipping")
                     continue
                 found_url = True
                 if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
