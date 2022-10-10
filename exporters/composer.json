@@ -7,7 +7,9 @@
             "email": "69110904+systemaworking@users.noreply.github.com"
         }
     ],
-    "require": {},
+    "require": {
+        "fakerphp/faker": "^1.20"
+    },
     "autoload": {
         "psr-4": { "DataExport\\": "DataExport" },
         "files": []

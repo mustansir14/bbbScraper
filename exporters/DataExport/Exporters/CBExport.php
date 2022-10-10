@@ -14,7 +14,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
     public function __construct( Db $db )
     {
         $this->db = $db;
-        $this->inputChecker =  new InputChecker();
+        $this->inputChecker =  new InputChecker( $db );
     }
 
     public function getErrors(): array
@@ -233,6 +233,28 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return $this->removeRecordByImportID( "compl_complaints", $importID );
     }
 
+    public function spamComplaint( string $importID, string $reason )
+    {
+        $complaintID = $this->isComplaintExists( $importID );
+        if ( $complaintID ) {
+            $this->db->update( "compl_complaints", [
+                'is_spam' => 2,
+                'spam_reason' => $reason,
+            ], "ID = '{$complaintID}'" );
+        }
+    }
+
+    public function unspamComplaint( string $importID )
+    {
+        $complaintID = $this->isComplaintExists( $importID );
+        if ( $complaintID ) {
+            $this->db->update( "compl_complaints", [
+                'is_spam' => 0,
+                'spam_reason' => null,
+            ], "ID = '{$complaintID}'" );
+        }
+    }
+
     public function addComplaint( string $importID, array $fields )
     {
         $checker = $this->inputChecker;
@@ -245,7 +267,10 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             return false;
         }
 
-        $checker->empty( $fields["company_id"], "Field: 'company_id' is empty" );
+        if ( !$checker->empty( $fields["company_id"], "Field: 'company_id' is empty" ) )
+        {
+            $checker->dbRowNotExists( "compl_companies", $fields["company_id"], "Company not exists" );
+        }
         $checker->empty( $fields["subject"], "Field: 'subject' is empty" );
         $checker->empty( $fields["text"], "Field: 'text' is empty" );
         $checker->empty( $fields["date"], "Field: 'date' is empty" );
@@ -329,13 +354,78 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             "email" => "noreply.".md5( microtime() )."@cbexport.php",
             "email_confirm" => 1,
             "password" => md5( __CLASS__ ),
-            "added" => [ "NOW()" ],
+            "added" => $fields["user_date"] ?? [ "NOW()" ],
         ] );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
 
         $id = $this->db->insertID();
 
         $this->addImport( "panel_users", $id, $importID, $fields["import_data"] );
+
+        return $id;
+    }
+
+    ######################################################################################
+
+    public function getCommentImportID( $commentId ): string
+    {
+        return "scraper-bbb--complaint-id:".$commentId;
+    }
+
+    public function isCommentExists( string $importID )
+    {
+        return $this->isRecordExists( "compl_posts", $importID, "", null );
+    }
+
+    public function removeCommentByImportID( string $importID )
+    {
+        return $this->removeRecordByImportID( "compl_posts", $importID );
+    }
+
+    public function addComment( string $importID, array $fields )
+    {
+        $checker = $this->inputChecker;
+
+        $checker->empty( $importID, "Param: importID is empty" );
+        $checker->empty( $fields, "Param: fields is empty" );
+
+        if ( $checker->has() )
+        {
+            return false;
+        }
+
+        if ( !$checker->empty( $fields["complaint_id"], "Field: 'complaint_id' is empty" ) )
+        {
+            $checker->dbRowNotExists( "compl_complaints", $fields["complaint_id"], "Complaint not exists" );
+        }
+
+        $checker->empty( $fields["text"], "Field: 'text' is empty" );
+        $checker->empty( $fields["date"], "Field: 'date' is empty" );
+        $checker->empty( $fields["user_name"], "Field: 'user_name' is empty" );
+        $checker->empty( $fields["import_data"], "Field: 'import_data' is empty" );
+
+        if ( $checker->has() )
+        {
+            return false;
+        }
+
+        $userID = $this->addUser( $this->getUserImportID( $fields["user_name"] ), $fields );
+        if ( !$userID ) return false;
+
+        $id = $this->isCommentExists( $importID );
+        if ( $id > 0 ) return $id;
+
+        $rs = $this->db->insert( "compl_posts", [
+            "compl_id" => $fields["complaint_id"],
+            "post_text" => $fields["text"],
+            "post_time" => $fields["date"],
+            "uid" => $userID,
+        ] );
+        $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+
+        $id = $this->db->insertID();
+
+        $this->addImport( "compl_posts", $id, $importID, $fields["import_data"] );
 
         return $id;
     }

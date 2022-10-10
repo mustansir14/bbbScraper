@@ -1,13 +1,17 @@
 <?php
 namespace DataExport\Helpers;
 
+use DataExport\Helpers\Db;
+
 class InputChecker
 {
     private array $errors;
+    private Db $db;
 
-    public function __construct()
+    public function __construct(Db $db )
     {
         $this->reset();
+        $this->db = $db;
     }
 
     public function reset(): void
@@ -35,6 +39,28 @@ class InputChecker
     public function empty( $value, string $error ): bool
     {
         if ( empty( $value ) ) {
+            $this->append( $error );
+            return true;
+        }
+
+        return false;
+    }
+
+    public function dbRowNotExists( string $table, string $id, string $error ): bool
+    {
+        $count = $this->db->countRows( $table, [ "id" => $id ] );
+        if ( $count == 0 ) {
+            $this->append( $error );
+            return true;
+        }
+
+        return false;
+    }
+
+    public function dbRowExists( string $table, string $id, string $error ): bool
+    {
+        $count = $this->db->countRows( $table, [ "id" => $id ] );
+        if ( $count > 0 ) {
             $this->append( $error );
             return true;
         }
