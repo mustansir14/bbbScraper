@@ -205,15 +205,44 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         $rs = $this->db->insert( "bnames", [
             "bname_name" => $fields["name"],
+            "bname_profile_status" => 1,
         ] );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
 
         $id = $this->db->insertID();
 
-        $this->addImport( "compl_companies", $id, $importID, $fields["import_data"] );
+        $this->addImport( "bnames", $id, $importID, $fields["import_data"] );
 
         return $id;
 
+    }
+
+    public function linkCompanyToBusiness( int $companyId, int $businessId ): bool
+    {
+        $checker = $this->inputChecker;
+
+        $checker->empty( $companyId, "Param: companyId is empty" );
+        $checker->empty( $businessId, "Param: businessId is empty" );
+
+        if ( $checker->has() )
+        {
+            return false;
+        }
+
+        $checker->dbRowNotExists( "bnames", $businessId, "Business not exists" );
+        $checker->dbRowNotExists( "compl_companies", $companyId, "Company not exists" );
+
+        if ( $checker->has() )
+        {
+            return false;
+        }
+
+        $rs = $this->db->update( "compl_companies", [
+            "bname_id" => $businessId,
+        ], [ "id" => $companyId ] );
+        $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+
+        return true;
     }
 
     public function isBusinessExists( string $importID, string $name )
@@ -349,13 +378,26 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $userID = $this->isUserExists( $importID, $fields["user_name"] );
         if ( $userID > 0 ) return $userID;
 
-        $rs = $this->db->insert( "panel_users", [
+        $insertFields = [
             "displayname" => $fields["user_name"],
-            "email" => "noreply.".md5( microtime() )."@cbexport.php",
+            "email" => "bbb.mustansir.".md5( microtime() )."@cbexport.php",
             "email_confirm" => 1,
             "password" => md5( __CLASS__ ),
             "added" => $fields["user_date"] ?? [ "NOW()" ],
-        ] );
+        ];
+
+        if ( isset( $fields["user_support"] ) )
+        {
+            $checker->dbRowNotExists( "bnames", $fields["user_support"], "Can not find BN for support user" );
+            if ( $checker->has() )
+            {
+                return false;
+            }
+
+            $insertFields["bnameID"] = $fields["user_support"];
+        }
+
+        $rs = $this->db->insert( "panel_users", $insertFields );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
 
         $id = $this->db->insertID();
@@ -401,6 +443,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         $checker->empty( $fields["text"], "Field: 'text' is empty" );
         $checker->empty( $fields["date"], "Field: 'date' is empty" );
+        $checker->empty( $fields["is_update"], "Field: 'is_update' is empty" );
         $checker->empty( $fields["user_name"], "Field: 'user_name' is empty" );
         $checker->empty( $fields["import_data"], "Field: 'import_data' is empty" );
 
@@ -419,6 +462,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             "compl_id" => $fields["complaint_id"],
             "post_text" => $fields["text"],
             "post_time" => $fields["date"],
+            "is_updated" => $fields["is_update"] ? 1 : 0,
             "uid" => $userID,
         ] );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
@@ -430,4 +474,23 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return $id;
     }
 
+    ############################################################################################
+
+    public function updateComplaint( int $complaintID )
+    {
+        $rs = $this->db->query( "CALL updateComplaint({$complaintID})" );
+        $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+    }
+
+    public function updateCompany( int $companyID )
+    {
+        $rs = $this->db->query( "CALL updateCompany({$companyID})" );
+        $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+    }
+
+    public function updateBusiness( int $businessID )
+    {
+        $rs = $this->db->query( "CALL updateBname({$businessID})" );
+        $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+    }
 }

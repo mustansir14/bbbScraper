@@ -29,11 +29,12 @@ foreach( $companies as $companyId )
 
     $destCompanyID = 0;
     $destBusinessID = 0;
+    $recreateCompanyAllRecords = true;
+    $addOnly = 0;
+    $makeSpamComplaints = false;
+    $importInfoScraper = "BBB Mustansir";
 
     #####################################################################
-
-    $recreateCompanyAllRecords = false;
-    $makeSpamComplaints = false;
 
     #$exporter->removeCompanyByImportID( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ) );
 
@@ -44,36 +45,49 @@ foreach( $companies as $companyId )
             "company_id" => $sourceCompanyRow["company_id"],
             "company_name" => $companyName,
             "company_url"  => $sourceCompanyRow["url"],
-            "scraper" => "BBB Mustansir",
+            "scraper" => $importInfoScraper,
             "version" => 1,
         ]
     ] );
     if ( !$destCompanyID ) die( $exporter->getErrorsAsString() );
 
-    var_dump( $sourceCompanyRow["company_name"], $destCompanyID );
+    $userName = "{$companyName} Support";
+
+    if ( $recreateCompanyAllRecords )
+    {
+        if ( !$exporter->removeUserByImportID( $exporter->getUserImportID( $userName ) ) )
+        {
+            die( $exporter->getErrorsAsString() );
+        }
+    }
 
     #####################################################################
 
-    # Need many information for business
-
-    /*
-     *
-     * $exporter->removeBusinessByImportID( $exporter->getBusinessImportID( $sourceCompanyRow["company_id"] ) );
-    if ( !$exporter->hasBusiness( $sourceCompanyRow["company_id"] ) )
+    $destBusinessID = $exporter->hasBusiness( $destCompanyID );
+    if ( !$destBusinessID )
     {
-        $destBusinessID = $exporter->addBusiness( $exporter->getBusinessImportID( $sourceCompanyRow["company_id"] ), [
+        #$exporter->removeBusinessByImportID( $exporter->getBusinessImportID( $sourceCompanyRow["company_id"] ) );
+
+        $businessImportID = $exporter->getBusinessImportID( $sourceCompanyRow["company_id"] );
+
+        $destBusinessID = $exporter->addBusiness( $businessImportID, [
             "name" => $sourceCompanyRow["company_name"],
             "import_data" => [
                 "company_id" => $sourceCompanyRow["company_id"],
                 "company_name" => $sourceCompanyRow["company_name"],
                 "company_url"  => $sourceCompanyRow["url"],
-                "scraper" => "BBB Mustansir",
+                "scraper" => $importInfoScraper,
                 "version" => 1,
             ]
         ]);
 
         if ( !$destBusinessID ) die( $exporter->getErrorsAsString() );
-    }*/
+
+        if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )
+        {
+            die( $exporter->getErrorsAsString() );
+        }
+    }
 
     #####################################################################
 
@@ -102,74 +116,107 @@ foreach( $companies as $companyId )
             if ( $counter < $skip ) continue;
 
             $fromID = $complaint["complaint_id"];
-
-            echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 40 )."...\n";
-
-            $subject = explode( ".", $complaint["complaint_text"] );
-            $subject = mb_strlen( $subject[0], "utf-8" ) > 15
-                ? mb_substr( $subject[0], 0, 90, "utf-8" )
-                : mb_substr( $complaint["complaint_text"], 0, 90, "utf-8" );
-            $subject = preg_replace( "#[a-z0-9']{1,}$#si", "", $subject );
-
+            $isInsert = $addOnly < 1 || $addOnly === $counter;
 
             if ( $recreateCompanyAllRecords )
             {
-                $exporter->removeComplaintByImportID( $exporter->getComplaintImportID( $complaint["complaint_id"] ) );
+                if ( !$exporter->removeComplaintByImportID( $exporter->getComplaintImportID( $complaint["complaint_id"])) )
+                {
+                    die( $exporter->getErrorsAsString() );
+                }
             }
 
-            $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint["complaint_id"] ), [
-                "company_id" => $destCompanyID,
-                "subject" => $subject,
-                "text" => TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ),
-                "date" => $complaint["complaint_date"],
-                "user_name" => $faker->name(),
-                "import_data" => [
-                    "company_id" => $sourceCompanyRow["company_id"],
-                    "company_url"  => $sourceCompanyRow["url"],
-                    "complaint_id" => $complaint["complaint_id"],
-                    "scraper" => "BBB Mustansir",
-                    "version" => 1,
-                ]
-            ] );
-
-            if ( !$complaintID ) die( $exporter->getErrorsAsString() );
-
-            if ( $makeSpamComplaints )
+            if ( $isInsert )
             {
-                $exporter->spamComplaint( $exporter->getComplaintImportID( $complaint["complaint_id"] ), basename( __FILE__ ).": make private" );
-            } else {
-                $exporter->unspamComplaint( $exporter->getComplaintImportID( $complaint["complaint_id"] ) );
+                echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
+                    substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n".
+                    "Update: ".
+                    substr( TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ), 0, 60 )."...\n";
+
+                $subject = explode( ".", $complaint["complaint_text"] );
+                $subject = mb_strlen( $subject[0], "utf-8" ) > 15
+                    ? mb_substr( $subject[0], 0, 90, "utf-8" )
+                    : mb_substr( $complaint["complaint_text"], 0, 90, "utf-8" );
+                $subject = preg_replace( "#[a-z0-9']{1,}$#si", "", $subject );
+
+                echo "Insert complaint\n";
+
+                $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
+                    "company_id"  => $destCompanyID,
+                    "subject"     => $subject,
+                    "text"        => TextFormatter::fixText( $complaint[ "complaint_text" ], 'complaintsboard.com' ),
+                    "date"        => $complaint[ "complaint_date" ],
+                    "user_name"   => $faker->name(),
+                    "import_data" => [
+                        "company_id"   => $sourceCompanyRow[ "company_id" ],
+                        "complaint_id" => $complaint[ "complaint_id" ],
+                        "company_url"  => $sourceCompanyRow[ "url" ],
+                        "type"         => "complaint",
+                        "scraper"      => $importInfoScraper,
+                        "version"      => 1,
+                    ],
+                ] );
+                if ( !$complaintID )
+                {
+                    die( $exporter->getErrorsAsString() );
+                }
+
+                if ( $makeSpamComplaints )
+                {
+                    $exporter->spamComplaint( $exporter->getComplaintImportID( $complaint["complaint_id"] ), basename( __FILE__ ).": make private" );
+                } else {
+                    $exporter->unspamComplaint( $exporter->getComplaintImportID( $complaint["complaint_id"] ) );
+                }
             }
 
             if ( $complaint["company_response_text"] )
             {
-                echo $complaint["company_response_text"]."\n";
+                $userName = "{$companyName} Support";
 
                 if ( $recreateCompanyAllRecords )
                 {
-                    $exporter->removeUserByImportID( $exporter->getUserImportID( "{$companyName} Support" ) );
-                    $exporter->removeCommentByImportID( $exporter->getCommentImportID( $complaint["complaint_id"] ) );
+                    if ( !$exporter->removeCommentByImportID( $exporter->getCommentImportID( $complaint["complaint_id"] ) ) )
+                    {
+                        die( $exporter->getErrorsAsString() );
+                    }
                 }
 
-                $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint["complaint_id"] ), [
-                    "complaint_id" => $complaintID,
-                    "text" => TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ),
-                    "date" => $complaint["company_response_date"],
-                    "user_name" => "{$companyName} Support",
-                    "user_date" => date( "Y-m-d", strtotime( $complaint["company_response_date"] ) - 1 * 365 * 24 * 3600 ),
-                    "import_data" => [
-                        "company_id" => $sourceCompanyRow["company_id"],
-                        "company_url"  => $sourceCompanyRow["url"],
-                        "complaint_id" => $complaint["complaint_id"],
-                        "scraper" => "BBB Mustansir",
-                        "version" => 1,
-                    ]
-                ] );
+                if ( $isInsert )
+                {
+                    echo "Insert update to {$complaintID}\n";
+                    echo $complaint["company_response_text"]."\n";
 
-                if ( !$commentID ) die( $exporter->getErrorsAsString() );
+                    $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint["complaint_id"] ), [
+                        "complaint_id" => $complaintID,
+                        "text" => TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ),
+                        "is_update" => true,
+                        "date" => $complaint["company_response_date"],
+                        "user_name" => $userName,
+                        "user_date" => date( "Y-m-d", strtotime( $complaint["company_response_date"] ) - 1 * 365 * 24 * 3600 ),
+                        "user_support" => $destBusinessID,
+                        "import_data" => [
+                            "company_id" => $sourceCompanyRow["company_id"],
+                            "complaint_id" => $complaint["complaint_id"],
+                            "company_url"  => $sourceCompanyRow["url"],
+                            "type" => "complaint-response",
+                            "scraper" => $importInfoScraper,
+                            "version" => 1,
+                        ]
+                    ] );
+
+                    if ( !$commentID ) die( $exporter->getErrorsAsString() );
+                }
+            }
+
+            if ( $isInsert )
+            {
+                $exporter->updateComplaint( $complaintID );
             }
         }
     }
+
+    $exporter->updateCompany( $destCompanyID );
+    $exporter->updateBusiness( $destBusinessID );
 
     break;
 }

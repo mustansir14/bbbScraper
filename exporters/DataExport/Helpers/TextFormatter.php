@@ -51,6 +51,15 @@ class TextFormatter
         return $companyName;
     }
 
+    public static function fixAdvText( $text, $domain )
+    {
+        // /* (1000, 5, 2020/11/09) */
+        $text = preg_replace( '#/\*\s*?\([0-9/, ]{1,}\)\s*?\*/#si', "", $text );
+        $text = trim( $text );
+
+        return $text;
+    }
+
     # taked from IW project tests/api_bbb.php
     public static function fixText( $text, $domain )
     {
@@ -58,11 +67,10 @@ class TextFormatter
         $text = strip_tags( $text );
         $text = html_entity_decode( $text );
         $text = preg_replace( "~\x{00a0}~siu", " ", $text ); # c2 a0 --> space
-        $text = str_ireplace('BBB', 'Revdex.com', $text);
+        $text = str_ireplace('BBB', 'Complaintsboard.com', $text);
         $text = preg_replace('#Better[\s\xA0]Business[\s\xA0]Bureau#si', $domain, $text);
-        // /* (1000, 5, 2020/11/09) */
-        $text = preg_replace( '#/\*\s*?\([0-9/, ]{1,}\)\s*?\*/#si', "", $text );
-        $text = trim( $text );
+
+        $text = static::fixAdvText( $text, $domain );
 
         $text = preg_replace( "#(Mr|Mrs|Ms|Miss)\.[ ]*?\*{1,}('s)?#si", "$1.", $text );
         $text = preg_replace( "#(Mr|Mrs|Ms|Miss)\.[ ]+?([a-z])\*{1,}#si", "$1. $2", $text );
