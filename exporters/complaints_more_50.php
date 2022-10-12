@@ -7,19 +7,9 @@ use DataExport\Helpers\TextFormatter;
 
 $config = require __DIR__."/config.php";
 
-$srcDb = new Db();
-$srcDb->connectOrDie( $config["source_db"]["host"], $config["source_db"]["user"], $config["source_db"]["pass"], $config["source_db"]["name"] );
-
-$destDb = new Db();
-$destDb->connectOrDie(  $config["dest_db"]["host"], $config["dest_db"]["user"], $config["dest_db"]["pass"], $config["dest_db"]["name"] );
-
-$companies = $srcDb->queryColumn("select company_id, count(*) cnt from complaint group by company_id having cnt > 50", "company_id" );
-if ( !$companies ) die( $srcDb->getExtendedError() );
-
-$exporter = new CBExport( $destDb );
-
 ##################################################################################
 
+$profileName = "local";
 $removeAll = true; # set true if need remove all records from db
 $createAll = true; # set true if need add new recoreds
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
@@ -28,6 +18,22 @@ $makeSpamComplaints = true;
 $importInfoScraper = "BBB Mustansir";
 
 ##################################################################################
+
+$profile = $config["dest"][ $profileName ];
+if ( !is_array( $profile ) ) die( "Error: no profile data" );
+
+$srcDb = new Db();
+$srcDb->connectOrDie( $config["source_db"]["host"], $config["source_db"]["user"], $config["source_db"]["pass"], $config["source_db"]["name"] );
+
+$destDb = new Db();
+$destDb->connectOrDie(  $profile["db"]["host"], $profile["db"]["user"], $profile["db"]["pass"], $profile["db"]["name"] );
+
+##################################################################################
+
+$companies = $srcDb->queryColumn("select company_id, count(*) cnt from complaint group by company_id having cnt > 50", "company_id" );
+if ( !$companies ) die( $srcDb->getExtendedError() );
+
+$exporter = new CBExport( $destDb );
 
 foreach( $companies as $companyNbr => $companyId )
 {
@@ -283,7 +289,7 @@ foreach( $companies as $companyNbr => $companyId )
         $exporter->callUpdateCompany( $destCompanyID );
         $exporter->callUpdateBusiness( $destBusinessID );
 
-        echo $config["dest_host"]."/asd-b".$destBusinessID."\n";
+        echo $profile["host"]."/asd-b".$destBusinessID."\n";
     } else {
         echo "Removed all from company: ".$sourceCompanyRow["company_id"]."\n";
     }
