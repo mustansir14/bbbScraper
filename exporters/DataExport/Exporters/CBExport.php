@@ -341,6 +341,17 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return true;
     }
 
+    public function isBusinessActive( string $importID ): bool
+    {
+        $businessID = $this->isBusinessExists( $importID, null );
+        if ( !$businessID ) return false;
+
+        $status = $this->db->selectColumn( "bname_profile_status", "bnames", [ "ID" => $businessID ] );
+        $this->throwExceptionIf( $status === false, $this->db->getExtendedError() );
+
+        return (bool)$status;
+    }
+
     public function isBusinessExists( string $importID, ?string $name )
     {
         return $this->isRecordExists( "bnames", $importID, $name, ( $name === null ? null : "bname_name" ) );
