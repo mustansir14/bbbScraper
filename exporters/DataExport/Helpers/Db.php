@@ -284,7 +284,7 @@ class Db
         return (bool)$this->query( $sql );
     }
 
-    public function update( $tables, $fields, $where = false )
+    public function update( $tables, $fields, $where )
     {
         $sql = $this->buildSQLQuery([
             "type" 	 => "update",
