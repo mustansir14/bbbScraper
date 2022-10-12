@@ -99,8 +99,9 @@ final class CommentTest extends TestCase
                 "date"        => date( "Y-m-d" ),
                 "user_name"   => __FUNCTION__,
                 "import_data" => __FUNCTION__,
+                "is_update"   => false,
             ] );
-            $this->assertIsInt( $id, "Result not int" );
+            $this->assertIsInt( $id, "Result not int: ".$export->getErrorsAsString() );
             $this->assertTrue( $id > 0, "Comment id zero" );
         }
 

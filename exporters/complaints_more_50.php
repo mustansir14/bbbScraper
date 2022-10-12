@@ -18,8 +18,24 @@ if ( !$companies ) die( $srcDb->getExtendedError() );
 
 $exporter = new CBExport( $destDb );
 
-foreach( $companies as $companyId )
+##################################################################################
+
+$removeAll = true; # set true if need remove all records from db
+$createAll = true; # set true if need add new recoreds
+$addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
+$maxCompanies = 2;
+$makeSpamComplaints = true;
+$importInfoScraper = "BBB Mustansir";
+
+##################################################################################
+
+foreach( $companies as $companyNbr => $companyId )
 {
+    if( $maxCompanies > 0 && $companyNbr >= $maxCompanies )
+    {
+        break;
+    }
+
     $sourceCompanyRow = $srcDb->selectRow( "*", "company", [ "company_id" => $companyId ] );
     if ( !$sourceCompanyRow ) die( $srcDb->getExtendedError() );
 
@@ -29,32 +45,54 @@ foreach( $companies as $companyId )
 
     $destCompanyID = 0;
     $destBusinessID = 0;
-    $recreateCompanyAllRecords = true;
-    $addOnly = 0;
-    $makeSpamComplaints = false;
-    $importInfoScraper = "BBB Mustansir";
+    $companyName = TextFormatter::removeAbbreviationsFromCompanyName( $sourceCompanyRow[ "company_name" ] );
 
     #####################################################################
 
-    #$exporter->removeCompanyByImportID( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ) );
+    if ( $removeAll )
+    {
+        #echo "Remove business: ".$sourceCompanyRow["company_id"]."\n";
 
-    $companyName = TextFormatter::removeAbbreviationsFromCompanyName( $sourceCompanyRow["company_name"] );
-    $destCompanyID = $exporter->addCompany( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ), [
-        "name" => $sourceCompanyRow["company_name"],
-        "import_data" => [
-            "company_id" => $sourceCompanyRow["company_id"],
-            "company_name" => $companyName,
-            "company_url"  => $sourceCompanyRow["url"],
-            "scraper" => $importInfoScraper,
-            "version" => 1,
-        ]
-    ] );
-    if ( !$destCompanyID ) die( $exporter->getErrorsAsString() );
+        if ( !$exporter->removeBusinessByImportID( $exporter->getBusinessImportID( $sourceCompanyRow[ "company_id" ] ) ) )
+        {
+            die( $exporter->getErrorsAsString() );
+        }
+
+        #echo "Remove company: ".$sourceCompanyRow["company_id"]."\n";
+
+        if ( !$exporter->removeCompanyByImportID( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ) ) )
+        {
+            die( $exporter->getErrorsAsString() );
+        }
+    }
+
+    if ( $createAll )
+    {
+        #echo "Create company: ".$sourceCompanyRow["company_id"]."\n";
+
+        $destCompanyID = $exporter->addCompany( $exporter->getCompanyImportID( $sourceCompanyRow[ "company_id" ] ), [
+            "name"        => $sourceCompanyRow[ "company_name" ],
+            "import_data" => [
+                "company_id"   => $sourceCompanyRow[ "company_id" ],
+                "company_name" => $companyName,
+                "company_url"  => $sourceCompanyRow[ "url" ],
+                "scraper"      => $importInfoScraper,
+                "version"      => 1,
+            ],
+        ] );
+
+        if ( !$destCompanyID )
+        {
+            die( $exporter->getErrorsAsString() );
+        }
+    }
 
     $userName = "{$companyName} Support";
 
-    if ( $recreateCompanyAllRecords )
+    if ( $removeAll )
     {
+        #echo "Remove user: {$userName}\n";
+
         if ( !$exporter->removeUserByImportID( $exporter->getUserImportID( $userName ) ) )
         {
             die( $exporter->getErrorsAsString() );
@@ -63,29 +101,49 @@ foreach( $companies as $companyId )
 
     #####################################################################
 
-    $destBusinessID = $exporter->hasBusiness( $destCompanyID );
-    if ( !$destBusinessID )
+    $businessImportID = $exporter->getBusinessImportID( $sourceCompanyRow[ "company_id" ] );
+
+    if ( $createAll )
     {
-        #$exporter->removeBusinessByImportID( $exporter->getBusinessImportID( $sourceCompanyRow["company_id"] ) );
-
-        $businessImportID = $exporter->getBusinessImportID( $sourceCompanyRow["company_id"] );
-
-        $destBusinessID = $exporter->addBusiness( $businessImportID, [
-            "name" => $sourceCompanyRow["company_name"],
-            "import_data" => [
-                "company_id" => $sourceCompanyRow["company_id"],
-                "company_name" => $sourceCompanyRow["company_name"],
-                "company_url"  => $sourceCompanyRow["url"],
-                "scraper" => $importInfoScraper,
-                "version" => 1,
-            ]
-        ]);
-
-        if ( !$destBusinessID ) die( $exporter->getErrorsAsString() );
-
-        if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )
+        $destBusinessID = $exporter->hasBusiness( $destCompanyID );
+        if ( !$destBusinessID )
         {
-            die( $exporter->getErrorsAsString() );
+            $destBusinessID = $exporter->addBusiness( $businessImportID, [
+                "name"        => $sourceCompanyRow[ "company_name" ],
+                "phone"       => $sourceCompanyRow["phone"],
+                "website"     => array_map( "trim", explode( "\n", $sourceCompanyRow[ "website" ] ) ),
+                "import_data" => [
+                    "company_id"   => $sourceCompanyRow[ "company_id" ],
+                    "company_name" => $sourceCompanyRow[ "company_name" ],
+                    "company_url"  => $sourceCompanyRow[ "url" ],
+                    "scraper"      => $importInfoScraper,
+                    "version"      => 1,
+                ],
+            ] );
+
+            if ( !$destBusinessID )
+            {
+                die( $exporter->getErrorsAsString() );
+            }
+
+            if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )
+            {
+                die( $exporter->getErrorsAsString() );
+            }
+        }
+    }
+
+    # check if business created by scraper or is BN already exists
+    $businessRow = $exporter->getBusiness( $businessImportID );
+    if ( $businessRow )
+    {
+        if ( $makeSpamComplaints )
+        {
+            $exporter->disableBusiness( $businessImportID );
+        }
+        else
+        {
+            $exporter->enableBusiness( $businessImportID );
         }
     }
 
@@ -116,10 +174,12 @@ foreach( $companies as $companyId )
             if ( $counter < $skip ) continue;
 
             $fromID = $complaint["complaint_id"];
-            $isInsert = $addOnly < 1 || $addOnly === $counter;
+            $isInsert = $createAll && ( $addOnly < 1 || $addOnly === $counter );
 
-            if ( $recreateCompanyAllRecords )
+            if ( $removeAll )
             {
+                #echo "Remove complaint: ".$complaint["complaint_id"]."\n";
+
                 if ( !$exporter->removeComplaintByImportID( $exporter->getComplaintImportID( $complaint["complaint_id"])) )
                 {
                     die( $exporter->getErrorsAsString() );
@@ -128,10 +188,10 @@ foreach( $companies as $companyId )
 
             if ( $isInsert )
             {
-                echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
+                /*echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
                     substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n".
                     "Update: ".
-                    substr( TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ), 0, 60 )."...\n";
+                    substr( TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ), 0, 60 )."...\n";*/
 
                 $subject = explode( ".", $complaint["complaint_text"] );
                 $subject = mb_strlen( $subject[0], "utf-8" ) > 15
@@ -139,7 +199,7 @@ foreach( $companies as $companyId )
                     : mb_substr( $complaint["complaint_text"], 0, 90, "utf-8" );
                 $subject = preg_replace( "#[a-z0-9']{1,}$#si", "", $subject );
 
-                echo "Insert complaint\n";
+                #echo "Insert complaint\n";
 
                 $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
                     "company_id"  => $destCompanyID,
@@ -173,8 +233,10 @@ foreach( $companies as $companyId )
             {
                 $userName = "{$companyName} Support";
 
-                if ( $recreateCompanyAllRecords )
+                if ( $removeAll )
                 {
+                    #echo "Remove comment: ".$complaint["complaint_id"]."\n";
+
                     if ( !$exporter->removeCommentByImportID( $exporter->getCommentImportID( $complaint["complaint_id"] ) ) )
                     {
                         die( $exporter->getErrorsAsString() );
@@ -183,8 +245,8 @@ foreach( $companies as $companyId )
 
                 if ( $isInsert )
                 {
-                    echo "Insert update to {$complaintID}\n";
-                    echo $complaint["company_response_text"]."\n";
+                    #echo "Insert update to {$complaintID}\n";
+                    #echo $complaint["company_response_text"]."\n";
 
                     $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint["complaint_id"] ), [
                         "complaint_id" => $complaintID,
@@ -193,6 +255,7 @@ foreach( $companies as $companyId )
                         "date" => $complaint["company_response_date"],
                         "user_name" => $userName,
                         "user_date" => date( "Y-m-d", strtotime( $complaint["company_response_date"] ) - 1 * 365 * 24 * 3600 ),
+                        "user_email" => $faker->email(),
                         "user_support" => $destBusinessID,
                         "import_data" => [
                             "company_id" => $sourceCompanyRow["company_id"],
@@ -210,13 +273,18 @@ foreach( $companies as $companyId )
 
             if ( $isInsert )
             {
-                $exporter->updateComplaint( $complaintID );
+                $exporter->callUpdateComplaint( $complaintID );
             }
         }
     }
 
-    $exporter->updateCompany( $destCompanyID );
-    $exporter->updateBusiness( $destBusinessID );
+    if ( $destBusinessID )
+    {
+        $exporter->callUpdateCompany( $destCompanyID );
+        $exporter->callUpdateBusiness( $destBusinessID );
 
-    break;
+        echo $config["dest_host"]."/asd-b".$destBusinessID."\n";
+    } else {
+        echo "Removed all from company: ".$sourceCompanyRow["company_id"]."\n";
+    }
 }

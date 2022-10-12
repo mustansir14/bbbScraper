@@ -46,6 +46,17 @@ class InputChecker
         return false;
     }
 
+    public function notBool( $value, string $error ): bool
+    {
+        if ( !is_bool( $value ) )
+        {
+            $this->append( $error );
+            return true;
+        }
+
+        return false;
+    }
+
     public function dbRowNotExists( string $table, string $id, string $error ): bool
     {
         $count = $this->db->countRows( $table, [ "id" => $id ] );

@@ -59,7 +59,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return false;
     }
 
-    private function isRecordExists( string $table, string $importID, string $name, ?string $nameField = null )
+    private function isRecordExists( string $table, string $importID, ?string $name, ?string $nameField = null )
     {
         $checker = $this->inputChecker;
 
@@ -83,7 +83,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             return (int)$row[ "id" ];
         }
 
-        if ( $nameField )
+        if ( $nameField && $name )
         {
             $row = $this->db->selectRow( "ID", $table, [ $nameField => trim( $name ) ] );
             $this->throwExceptionIf( $row === false, $this->db->getExtendedError() );
@@ -117,6 +117,42 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
     public function removeCompanyByImportID( string $importID ): bool
     {
+        $checker = $this->inputChecker;
+
+        # Fix: Can't update table 'compl_companies' in stored function/trigger because it is already used by statement which invoked this stored function/trigger
+
+        $companyID = $this->db->selectColumn( "id", "compl_companies_imports", [ "import_id" => $importID ] );
+        if ( !$companyID )
+        {
+            return true;
+        }
+
+        # delete all comments
+        $complaints = $this->db->selectArray( "ID", "compl_complaints", [ "compl_company" => $companyID ] );
+        if ( $complaints === false )
+        {
+            $checker->append( $this->db->getExtendedError() );
+            return false;
+        }
+
+        foreach( $complaints as $complaint )
+        {
+            $rs = $this->db->delete( "compl_posts", [ "compl_id" => $complaint["ID"] ] );
+            if ( !$rs )
+            {
+                $checker->append( $this->db->getExtendedError() );
+                return false;
+            }
+        }
+
+        # delete all complaints
+        $rs = $this->db->delete( "compl_complaints", [ "compl_company" => $companyID ] );
+        if ( !$rs )
+        {
+            $checker->append( $this->db->getExtendedError() );
+            return false;
+        }
+
         return $this->removeRecordByImportID( "compl_companies", $importID );
     }
 
@@ -175,9 +211,57 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return "scraper-bbb--company-id:{$companyId}";
     }
 
+    public function updateBusiness( string $importID, array $fields ): bool
+    {
+        $businessID = $this->isBusinessExists( $importID, null );
+        if ( !$businessID ) return false;
+
+        $rs = $this->db->update( "bnames", $fields );
+        $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+
+        return true;
+    }
+
+    public function disableBusiness( string $importID ): bool
+    {
+        return $this->updateBusiness( $importID, [
+            "bname_profile_status" => 0,
+        ]);
+    }
+
+    public function enableBusiness( string $importID ): bool
+    {
+        return $this->updateBusiness( $importID, [
+            "bname_profile_status" => 1,
+        ]);
+    }
+
+    public function getBusiness( string $importID ): ?array
+    {
+        $businessID = $this->isBusinessExists( $importID, null );
+        if ( !$businessID ) return null;
+
+        $row = $this->db->selectRow( "*", "bnames", [ "ID" => $businessID ] );
+        $this->throwExceptionIf( $row === false, $this->db->getExtendedError() );
+
+        return $row;
+    }
+
     public function removeBusinessByImportID( string $importID )
     {
         return $this->removeRecordByImportID( "bnames", $importID );
+    }
+
+    private function encodeAsDubleArray( $values )
+    {
+        $values = is_array( $values ) ? $values : [ $values ];
+        $values = array_map( function ( $value ) {
+            return [ $value ];
+        }, $values );
+
+        # need set format [["239-549-2628"],["+1 (239) 542-4395",""]]
+
+        return json_encode( $values );
     }
 
     public function addBusiness( string $importID, array $fields )
@@ -203,10 +287,22 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $businessID = $this->isBusinessExists( $importID, $fields["name"] );
         if ( $businessID > 0 ) return $businessID;
 
-        $rs = $this->db->insert( "bnames", [
+        $insertFields = [
             "bname_name" => $fields["name"],
             "bname_profile_status" => 1,
-        ] );
+        ];
+
+        if ( isset( $fields["phone"] ) )
+        {
+            $insertFields["bname_phone"] = $this->encodeAsDubleArray( $fields["phone"] );
+        }
+
+        if ( isset( $fields["website"] ) )
+        {
+            $insertFields["bname_website"] = $this->encodeAsDubleArray( $fields["website"] );
+        }
+
+        $rs = $this->db->insert( "bnames", $insertFields );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
 
         $id = $this->db->insertID();
@@ -245,9 +341,9 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return true;
     }
 
-    public function isBusinessExists( string $importID, string $name )
+    public function isBusinessExists( string $importID, ?string $name )
     {
-        return $this->isRecordExists( "bnames", $importID, $name, "bname_name" );
+        return $this->isRecordExists( "bnames", $importID, $name, ( $name === null ? null : "bname_name" ) );
     }
 
     #####################################################################################################
@@ -380,7 +476,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         $insertFields = [
             "displayname" => $fields["user_name"],
-            "email" => "bbb.mustansir.".md5( microtime() )."@cbexport.php",
+            "email" => $fields["user_email"] ?? "bbb.mustansir.".md5( microtime() )."@cbexport.php",
             "email_confirm" => 1,
             "password" => md5( __CLASS__ ),
             "added" => $fields["user_date"] ?? [ "NOW()" ],
@@ -443,7 +539,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         $checker->empty( $fields["text"], "Field: 'text' is empty" );
         $checker->empty( $fields["date"], "Field: 'date' is empty" );
-        $checker->empty( $fields["is_update"], "Field: 'is_update' is empty" );
+        $checker->notBool( $fields["is_update"], "Field: 'is_update' is empty" );
         $checker->empty( $fields["user_name"], "Field: 'user_name' is empty" );
         $checker->empty( $fields["import_data"], "Field: 'import_data' is empty" );
 
@@ -476,19 +572,19 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
     ############################################################################################
 
-    public function updateComplaint( int $complaintID )
+    public function callUpdateComplaint( int $complaintID )
     {
         $rs = $this->db->query( "CALL updateComplaint({$complaintID})" );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
     }
 
-    public function updateCompany( int $companyID )
+    public function callUpdateCompany( int $companyID )
     {
         $rs = $this->db->query( "CALL updateCompany({$companyID})" );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
     }
 
-    public function updateBusiness( int $businessID )
+    public function callUpdateBusiness( int $businessID )
     {
         $rs = $this->db->query( "CALL updateBname({$businessID})" );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
