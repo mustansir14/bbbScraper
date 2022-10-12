@@ -216,7 +216,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $businessID = $this->isBusinessExists( $importID, null );
         if ( !$businessID ) return false;
 
-        $rs = $this->db->update( "bnames", $fields );
+        $rs = $this->db->update( "bnames", $fields, [ "ID" => $businessID ] );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
 
         return true;
