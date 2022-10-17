@@ -1,3 +1,4 @@
+from multiprocessing.heap import BufferWrapper
 from scrape import BBBScraper
 from config import *
 import xml.etree.ElementTree as ET
@@ -5,6 +6,9 @@ from sys import platform
 from multiprocessing import Queue, Process
 import argparse
 import logging
+from mariadb import InterfaceError
+import time
+from includes.DB import DB
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
 
@@ -42,7 +46,14 @@ if __name__ == "__main__":
                 urls_to_scrape = []
             found_url = False
             for company_url in company_urls:
-                scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
+                for _ in range(3):
+                    try:
+                        scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
+                        break
+                    except InterfaceError:
+                        logging.error("MySQL Server gone away... Trying after 30 seconds")
+                        time.sleep(30)
+                        scraper.db = DB()
                 data = scraper.db.cur.fetchall()
                 if len(data) > 0:
                     logging.info("Company " + company_url + " exists. Skipping")
