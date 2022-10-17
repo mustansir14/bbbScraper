@@ -624,7 +624,6 @@ if __name__ == '__main__':
     parser.add_argument("--save_to_db", nargs='?', type=str, default="False", help="Boolean variable to save to db. Default False")
     parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
     parser.add_argument("--log_file", nargs='?', type=str, default=None, help="Path for log file. If not given, output will be printed on stdout.")
-    parser.add_argument("--scrape_reviews_and_complaints", nargs='?', type=str, default="False", help="Boolean variable to get company reviews and complaints as well. Default True")
     parser.add_argument("--grabber-bbb-mustansir", nargs='?', type=bool, default=False, help="Only mark to kill all")
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -641,7 +640,7 @@ if __name__ == '__main__':
         logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
     if str2bool(args.bulk_scrape):
-        scraper.bulk_scrape(no_of_threads=args.no_of_threads, scrape_reviews_and_complaints=str2bool(args.scrape_reviews_and_complaints))
+        scraper.bulk_scrape(no_of_threads=args.no_of_threads)
     else:
         for url in args.urls:
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
