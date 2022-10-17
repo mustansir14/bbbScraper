@@ -38,7 +38,7 @@ if __name__ == "__main__":
             company_urls = []
             for child in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
                 child_text = child.text
-                if "profile" in child_text:
+                if child_text and "profile" in child_text:
                     company_urls.append(child_text)
             if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 urls_to_scrape = Queue()
