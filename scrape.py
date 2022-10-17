@@ -292,7 +292,7 @@ class BBBScraper():
             if "Fax Numbers" in fields_dict:
                 company.fax_numbers = fields_dict["Fax Numbers"].replace("Primary Fax", "").replace("Other Fax", "").replace("Read More", "").replace("Read Less", "").strip()
             if "Serving Area" in fields_dict:
-                company.serving_area = fields_dict["Serving Area"].replace("Read More", "").replace("Read Less", "").strip()
+                company.serving_area = fields_dict["Serving Area"].replace("Read More", "").replace("Read Less", "").strip()[:65535]
             if "Phone Numbers" in fields_dict:
                 if company.phone is None:
                     company.phone = ""
