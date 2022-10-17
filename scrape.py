@@ -200,6 +200,8 @@ class BBBScraper():
             company.phone = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-phone"))
             company.address = self.driver.find_element_by_tag_name("address").text
             company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"))
+            if company.website and company.website.lower().strip() == "visit website":
+                company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"), get_href=True)
             lines = company.address.split("\n")
             company.street_address = lines[0]
             if len(lines) > 1:
@@ -224,7 +226,7 @@ class BBBScraper():
             except:
                 company.rating = None
             try:
-                review_box = self.driver.find_element_by_class_name("MuiCardContent-root.e1bq2n4p0.css-qo261a")
+                review_box = self.driver.find_elements_by_class_name("MuiCardContent-root.stack.e1bq2n4p0.css-qo261a")[1]
                 company.number_of_stars = round(float(review_box.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-size-70.css-8gocr").text.split("/")[0]), 2)
                 company.number_of_reviews = int(review_box.text.split("Average of ")[1].split(" Customer")[0].replace(",", ""))
             except:
@@ -245,15 +247,14 @@ class BBBScraper():
                     time.sleep(60)
                 else:
                     break
-            detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
             try:
                 buttons = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").find_elements_by_tag_name("button")
                 for button in buttons:
                     if "Read More" in button.text:
                         self.driver.execute_script("arguments[0].click();", button)
-                        time.sleep(0.5)
             except:
                 pass
+            detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
             fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses"]
             fields_dict = {}
             current_field = None
@@ -360,9 +361,16 @@ class BBBScraper():
 
         reviews = []
         while True:
+            found = False
             try:
-                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.MuiButton-containedPrimary.MuiButton-sizeMedium.MuiButton-containedSizeMedium.MuiButton-fullWidth.ezpahdb0.css-1uz6nmt")
-                self.driver.execute_script("arguments[0].click();", load_more)  
+                buttons = self.driver.find_elements_by_class_name("bds-button")
+                for button in buttons:
+                    if button.text.strip().lower() == "load more":
+                        self.driver.execute_script("arguments[0].click();", button)
+                        found = True
+                        break
+                if not found:
+                    break
                 time.sleep(2)
             except:
                 break
@@ -393,7 +401,7 @@ class BBBScraper():
                 continue
             review_texts = review_tag.find_elements_by_class_name("MuiTypography-root.text-black.MuiTypography-body2")
             if not review_texts:
-                review_texts = review_tag.find_elements_by_class_name("sc-3wcfn7-5")
+                review_texts = review_tag.find_elements_by_class_name("css-1epoynv.ei2kcdu0")
             try:
                 review.review_text = review_texts[0].text
             except:
@@ -413,6 +421,8 @@ class BBBScraper():
                 pass
             if review.status == "error":
                 send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+            if not review.status:
+                review.status = "success"
             reviews.append(review)
             if scrape_specific_review:
                 break
@@ -457,64 +467,68 @@ class BBBScraper():
         else:
             logging.info("Scraping Complaints for " + company_url)
         complaint_url = company_url + "/complaints"
-        self.driver.get(complaint_url)
+        
         
         if scrape_specific_complaint:
             self.db.cur.execute("SELECT username, complaint_date from complaint where complaint_id = %s", (scrape_specific_complaint))
             complaint_results = self.db.cur.fetchall()
 
         complaints = []
+
+        page = 1
         while True:
+            logging.info("Scraping Page " + str(page))
+            self.driver.get(complaint_url + "?page=" + str(page))
+            
             try:
-                load_more = self.driver.find_element_by_class_name("MuiButtonBase-root.MuiButton-root.MuiButton-contained.MuiButton-containedPrimary.MuiButton-sizeMedium.MuiButton-containedSizeMedium.MuiButton-fullWidth.ezpahdb0.css-1uz6nmt")
-                self.driver.execute_script("arguments[0].click();", load_more)  
-                time.sleep(2)
+                complaint_tags = self.driver.find_element_by_class_name("stack.css-zyn7di.e62xhj40").find_elements_by_tag_name("li")
             except:
                 break
-        try:
-            complaint_tags = self.driver.find_element_by_class_name("stack.css-zyn7di.e62xhj40").find_elements_by_tag_name("li")
-        except:
-            logging.info("No Complaints for company: " + company_url)
-            return []
-        for complaint_tag in complaint_tags:
-            complaint = Complaint()
-            complaint.company_id = company_id
-            try:
-                complaint.complaint_type = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2").text.replace("Complaint Type:", "").replace("Anonymous complaint:", "").strip()
-            except:
-                continue
-            try:
-                date = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-gray-70.css-8gocr").text.strip()
+            for complaint_tag in complaint_tags:
+                complaint = Complaint()
+                complaint.company_id = company_id
                 try:
-                    complaint.complaint_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
+                    complaint.complaint_type = complaint_tag.find_element_by_class_name("css-17a6kq4.e1n5qf2o2").text.replace("Complaint Type:", "").replace("Anonymous complaint:", "").strip()
                 except:
-                    complaint.complaint_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
-            except:
-                complaint.complaint_date = None
-                complaint.log += "Error while scraping/parsing date\n"
-                complaint.status = "error"
-            try:
-                complaint.complaint_text = complaint_tag.find_elements_by_class_name("MuiTypography-root.MuiTypography-body2.css-8gocr")[-1].text
-            except:
-                complaint.complaint_text = None
-                complaint.log += "Error while scraping complaint text\n"
-                complaint.status = "error"
-            if scrape_specific_complaint and (complaint.complaint_type != complaint_results[0]["complaint_type"] or str(complaint.complaint_date) != str(complaint_results[0]["complaint_date"]) or complaint.complaint_text != complaint_results[0]["complaint_text"]):
-                continue
-            try:
-                complaint.company_response_text = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-black.eeijlg00.css-jzmzv").text.replace("Business Response", "").strip()
-                date = complaint_tag.find_element_by_class_name("MuiTypography-root.MuiTypography-body1.text-gray-70.css-a4lmh5").text.strip()
+                    continue
                 try:
-                    complaint.company_response_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
+                    date = complaint_tag.find_element(By.CLASS_NAME, "stack").find_element(By.TAG_NAME, "p").text.strip()
+                    try:
+                        complaint.complaint_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
+                    except:
+                        complaint.complaint_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
                 except:
-                    complaint.company_response_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
-            except:
-                pass
-            if complaint.status == "error":
-                send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
-            complaints.append(complaint)
-            if scrape_specific_complaint:
-                break
+                    complaint.complaint_date = None
+                    complaint.log += "Error while scraping/parsing date\n"
+                    complaint.status = "error"
+                stack_space = complaint_tag.find_element_by_class_name("stack-space-24")
+                try:
+                    complaint.complaint_text = stack_space.find_element_by_tag_name("div").text.strip()
+                except:
+                    complaint.complaint_text = None
+                    complaint.log += "Error while scraping complaint text\n"
+                    complaint.status = "error"
+                if scrape_specific_complaint and (complaint.complaint_type != complaint_results[0]["complaint_type"] or str(complaint.complaint_date) != str(complaint_results[0]["complaint_date"]) or complaint.complaint_text != complaint_results[0]["complaint_text"]):
+                    continue
+                try:
+                    company_response_divs = stack_space.find_element_by_class_name("css-17q6oin.e1n5qf2o0").find_elements_by_tag_name("div")
+                    complaint.company_response_text = company_response_divs[1].text.strip()
+                    date = company_response_divs[0].find_element_by_tag_name("p").text.strip()
+                    try:
+                        complaint.company_response_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
+                    except:
+                        complaint.company_response_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
+                except:
+                    pass
+                if complaint.status == "error":
+                    send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+                if not complaint.status:
+                    complaint.status = "success"
+                complaints.append(complaint)
+                if scrape_specific_complaint:
+                    break
+            
+            page += 1
 
         if save_to_db and complaints:
             self.db.insert_or_update_complaints(complaints)
@@ -595,10 +609,12 @@ class BBBScraper():
         except:
             pass
                     
-    def _get_first_with_text(self, elements):
+    def _get_first_with_text(self, elements, get_href=False):
         for element in elements:
             elem_text = element.text.strip()
             if elem_text != "":
+                if get_href:
+                    return element.get_attribute("href")
                 return elem_text
         return None
 
@@ -651,7 +667,7 @@ if __name__ == '__main__':
                 print(e)
             print("\n")
             company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
-            logging.info("Reviews for %s scraped successfully.\n" % company.name)
+            logging.info("%s Reviews for %s scraped successfully.\n" % (len(company.reviews), company.name))
             for i, review in enumerate(company.reviews, start=1):
                 print("Review# " + str(i))
                 try:
@@ -660,7 +676,7 @@ if __name__ == '__main__':
                     print(e)
                 print("\n")
             company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
-            logging.info("Complaints for %s scraped successfully.\n" % company.name)
+            logging.info("%s Complaints for %s scraped successfully.\n" % (len(company.complaints), company.name))
             for i, complaint in enumerate(company.complaints, start=1):
                 print("Complaint# " + str(i))
                 try:

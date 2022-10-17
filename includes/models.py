@@ -65,7 +65,7 @@ class Company:
         if self.website:
                 return_string += '\nWebsite: ' + self.website
         if self.hq:
-                return_string += '\HQ: ' + str(self.hq)
+                return_string += '\nHQ: ' + str(self.hq)
         if self.is_accredited:
                 return_string += '\nIs Accredited: ' + str(self.is_accredited)
         if self.rating:
