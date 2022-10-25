@@ -3,6 +3,16 @@ namespace DataExport\Helpers;
 
 class TextFormatter
 {
+    public static function rip( string $text )
+    {
+        $r = preg_replace('/([^\sa-z0-9_\-|\/]+)/i', '',
+            strtolower(trim(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text))));
+        $r = preg_replace('/([^a-z0-9]+)/i', '-', $r);
+        $r = preg_replace('/-+/', '-', $r);
+        $r = preg_replace('/^-/', '', $r);
+        return preg_replace('/-$/', '', $r);
+    }
+
     # taked from IW project
     public static function removeAbbreviationsFromCompanyName( $companyName )
     {

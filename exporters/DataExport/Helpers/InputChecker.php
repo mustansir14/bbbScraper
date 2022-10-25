@@ -46,6 +46,16 @@ class InputChecker
         return false;
     }
 
+    public function notID( $value, string $error ): bool
+    {
+        if ( !is_numeric( $value ) || (int)$value < 1 ) {
+            $this->append( $error );
+            return true;
+        }
+
+        return false;
+    }
+
     public function notBool( $value, string $error ): bool
     {
         if ( !is_bool( $value ) )

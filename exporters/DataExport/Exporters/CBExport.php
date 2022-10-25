@@ -5,9 +5,14 @@ use DataExport\Exporters\ExportInterface;
 use DataExport\Exporters\ErrorsAsStringInterface;
 use DataExport\Helpers\InputChecker;
 use DataExport\Helpers\Db;
+use DataExport\Exporters\CBExport\CountryTrait;
+use DataExport\Exporters\CBExport\StateTrait;
+use DataExport\Exporters\CBExport\CityTrait;
 
 class CBExport implements ExportInterface, ErrorsAsStringInterface
 {
+    use CountryTrait, StateTrait, CityTrait;
+
     private Db $db;
     private InputChecker $inputChecker;
 
@@ -291,6 +296,51 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             "bname_name" => $fields["name"],
             "bname_profile_status" => 1,
         ];
+
+        if ( isset( $fields["address"] ) )
+        {
+            if ( !$checker->empty( $fields["country"], "Field: 'country' is empty" ) )
+            {
+                $countryID = $this->isCountryExists( $fields['country'] );
+                if ( !$countryID )
+                {
+                    $checker->append( 'Can not find country' );
+                }
+
+                $fields["country"] = $countryID;
+            }
+
+            if ( !$checker->empty( $fields["state"], "Field: 'state' is empty" ) )
+            {
+                $stateID = $this->isStateExists( $fields['state'] );
+                if ( !$stateID )
+                {
+                    $checker->append( 'Can not find state' );
+                }
+
+                $fields["state"] = $stateID;
+            }
+
+            $checker->empty( $fields["city"], "Field: 'city' is empty" );
+            $checker->empty( $fields["address"], "Field: 'address' is empty" );
+            $checker->empty( $fields["zip"], "Field: 'zip' is empty" );
+
+            if ( $checker->has() )
+            {
+                return false;
+            }
+
+            $insertFields["bname_country"] = $fields["country"];
+            $insertFields["bname_state"] = $fields["state"];
+            $insertFields["bname_city"] = $fields["city"];
+            $insertFields["bname_address"] = $fields["address"];
+            $insertFields["bname_zip"] = $fields["zip"];
+        }
+
+        if ( isset( $fields["ltd"] ) )
+        {
+            $insertFields["bname_ltd"] = $fields["ltd"];
+        }
 
         if ( isset( $fields["phone"] ) )
         {

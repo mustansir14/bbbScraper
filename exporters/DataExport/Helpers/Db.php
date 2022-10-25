@@ -273,7 +273,7 @@ class Db
         return $row ? reset( $row ) : null;
     }
 
-    public function delete( $tables, $where = false )
+    public function delete( $tables, $where )
     {
         $sql = $this->buildSQLQuery([
             "type" 	 => "delete",
