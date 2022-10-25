@@ -165,6 +165,7 @@ class BBBScraper():
         company = Company()
         company.url = company_url
         company.half_scraped = half_scraped
+        company.country = company_url.replace("https://www.bbb.org/", "")[:2]
         while True:
             self.driver.get(company_url)
             if "403" in self.driver.title:

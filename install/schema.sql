@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS `company` (
   `address_locality` varchar(256) DEFAULT NULL,
   `address_region` varchar(256) DEFAULT NULL,
   `postal_code` varchar(256) DEFAULT NULL,
-  `website` varchar(500) DEFAULT NULL,
+  `country` varchar(2) DEFAULT NULL,
+  `website` text DEFAULT NULL,
   `hq` tinyint(1) DEFAULT NULL,
   `is_accredited` tinyint(1) DEFAULT NULL,
   `rating` varchar(2) DEFAULT NULL,
@@ -36,10 +37,10 @@ CREATE TABLE IF NOT EXISTS `company` (
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
   `log` varchar(255) DEFAULT NULL,
+  `half_scraped` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-ALTER TABLE `company` ADD INDEX(`company_name`); 
 ALTER TABLE `company` ADD INDEX(`url`); 
 
 CREATE TABLE IF NOT EXISTS `review` (

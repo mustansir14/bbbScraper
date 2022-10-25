@@ -17,6 +17,7 @@ class Company:
         self.address_locality = None
         self.address_region = None
         self.postal_code = None
+        self.country = None
         self.website = None
         self.hq = None
         self.is_accredited = None
