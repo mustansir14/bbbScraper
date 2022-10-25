@@ -11,7 +11,7 @@ $config = require __DIR__."/config.php";
 
 $profileName = "local";
 $removeAll = true; # set true if need remove all records from db
-$createAll = true; # set true if need add new recoreds
+$createAll = true; # set true if need add new records
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = 2;
 $makeSpamComplaints = true;
@@ -33,6 +33,11 @@ $destDb->connectOrDie(  $profile["db"]["host"], $profile["db"]["user"], $profile
 $companies = $srcDb->queryColumn("select company_id, count(*) cnt from complaint group by company_id having cnt > 50", "company_id" );
 if ( !$companies ) die( $srcDb->getExtendedError() );
 
+# ONLY FOR TESTING, IN RELEASE MUST BE REMOVED
+$companies = [
+    42297,
+];
+
 $exporter = new CBExport( $destDb );
 
 foreach( $companies as $companyNbr => $companyId )
@@ -42,7 +47,7 @@ foreach( $companies as $companyNbr => $companyId )
         break;
     }
 
-    $sourceCompanyRow = $srcDb->selectRow( "*", "company", [ "company_id" => $companyId ] );
+    $sourceCompanyRow = $srcDb->selectRow( "*", "company", [ "company_id" => $companyId, 'half_scraped' => 0 ] );
     if ( !$sourceCompanyRow ) die( $srcDb->getExtendedError() );
 
     #print_r( $sourceCompanyRow );
@@ -51,7 +56,8 @@ foreach( $companies as $companyNbr => $companyId )
 
     $destCompanyID = 0;
     $destBusinessID = 0;
-    $companyName = TextFormatter::removeAbbreviationsFromCompanyName( $sourceCompanyRow[ "company_name" ] );
+    $companyNameOriginal = $sourceCompanyRow[ "company_name" ];
+    $companyNameWithoutAbbr = TextFormatter::removeAbbreviationsFromCompanyName( $sourceCompanyRow[ "company_name" ] );
 
     #####################################################################
 
@@ -80,7 +86,7 @@ foreach( $companies as $companyNbr => $companyId )
             "name"        => $sourceCompanyRow[ "company_name" ],
             "import_data" => [
                 "company_id"   => $sourceCompanyRow[ "company_id" ],
-                "company_name" => $companyName,
+                "company_name" => $companyNameWithoutAbbr,
                 "company_url"  => $sourceCompanyRow[ "url" ],
                 "scraper"      => $importInfoScraper,
                 "version"      => 1,
@@ -93,7 +99,7 @@ foreach( $companies as $companyNbr => $companyId )
         }
     }
 
-    $userName = "{$companyName} Support";
+    $userName = "{$companyNameWithoutAbbr} Support";
 
     if ( $removeAll )
     {
@@ -114,8 +120,22 @@ foreach( $companies as $companyNbr => $companyId )
         $destBusinessID = $exporter->hasBusiness( $destCompanyID );
         if ( !$destBusinessID )
         {
+            if ( !preg_match( '#bbb\.org/(us|ca)/#si', $sourceCompanyRow["url"], $match ) )
+            {
+                echo "Url: ".$sourceCompanyRow["url"]."\n";
+                die( "Error:unknown country in url!" );
+            }
+
+            $countryShortName = $match[1];
+
             $destBusinessID = $exporter->addBusiness( $businessImportID, [
-                "name"        => $sourceCompanyRow[ "company_name" ],
+                "name"        => $companyNameWithoutAbbr,
+                "ltd"         => $companyNameOriginal,
+                "country"     => $countryShortName,
+                "state"       => $sourceCompanyRow["address_region"],
+                "city"        => $sourceCompanyRow["address_locality"],
+                "address"     => $sourceCompanyRow["street_address"],
+                "zip"         => $sourceCompanyRow["postal_code"],
                 "phone"       => $sourceCompanyRow["phone"],
                 "website"     => array_map( "trim", explode( "\n", $sourceCompanyRow[ "website" ] ) ),
                 "import_data" => [
@@ -200,12 +220,17 @@ foreach( $companies as $companyNbr => $companyId )
                     substr( TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ), 0, 60 )."...\n";*/
 
                 $subject = explode( ".", $complaint["complaint_text"] );
+
                 $subject = mb_strlen( $subject[0], "utf-8" ) > 15
                     ? mb_substr( $subject[0], 0, 90, "utf-8" )
                     : mb_substr( $complaint["complaint_text"], 0, 90, "utf-8" );
-                $subject = preg_replace( "#[a-z0-9']{1,}$#si", "", $subject );
 
+                $subject = stripos( $subject, ' ' ) !== false
+                    ? preg_replace( "#[a-z0-9']{1,}$#si", "", $subject )
+                    : $subject;
                 #echo "Insert complaint\n";
+
+                print_r( $complaint );
 
                 $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
                     "company_id"  => $destCompanyID,
@@ -237,7 +262,7 @@ foreach( $companies as $companyNbr => $companyId )
 
             if ( $complaint["company_response_text"] )
             {
-                $userName = "{$companyName} Support";
+                $userName = "{$companyNameWithoutAbbr} Support";
 
                 if ( $removeAll )
                 {
