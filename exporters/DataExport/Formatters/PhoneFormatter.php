@@ -25,6 +25,6 @@ class PhoneFormatter
         $part2 = substr( $digits, 3,3 );
         $part3 = substr( $digits, 6 );
 
-        return "(".$part1.") ".$part2."-".$part3;
+        return "+1 (".$part1.") ".$part2."-".$part3;
     }
 }
