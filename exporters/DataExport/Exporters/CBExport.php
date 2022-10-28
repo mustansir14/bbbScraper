@@ -8,10 +8,12 @@ use DataExport\Helpers\Db;
 use DataExport\Exporters\CBExport\CountryTrait;
 use DataExport\Exporters\CBExport\StateTrait;
 use DataExport\Exporters\CBExport\CityTrait;
+use DataExport\Exporters\CBExport\CategoryTrait;
+use DataExport\Exporters\CBExport\BusinessFAQTrait;
 
 class CBExport implements ExportInterface, ErrorsAsStringInterface
 {
-    use CountryTrait, StateTrait, CityTrait;
+    use CountryTrait, StateTrait, CityTrait, CategoryTrait, BusinessFAQTrait;
 
     private Db $db;
     private InputChecker $inputChecker;
@@ -310,9 +312,9 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
                 $fields["country"] = $countryID;
             }
 
-            if ( !$checker->empty( $fields["state"], "Field: 'state' is empty" ) )
+            if ( !$checker->empty( $fields["state"], "Field: 'state' is empty" ) && $countryID )
             {
-                $stateID = $this->isStateExists( $fields['state'] );
+                $stateID = $this->isStateExists( $countryID, $fields['state'] );
                 if ( !$stateID )
                 {
                     $checker->append( 'Can not find state' );
@@ -347,9 +349,31 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $insertFields["bname_phone"] = $this->encodeAsDubleArray( $fields["phone"] );
         }
 
+        if ( isset( $fields["fax"] ) )
+        {
+            $insertFields["bname_fax"] = $this->encodeAsDubleArray( $fields["fax"] );
+        }
+
         if ( isset( $fields["website"] ) )
         {
             $insertFields["bname_website"] = $this->encodeAsDubleArray( $fields["website"] );
+        }
+
+        if ( isset( $fields["category"] ) )
+        {
+            $categoryID = $this->isCategoryExists( $fields["category"] );
+            if ( $categoryID )
+            {
+                $insertFields["bname_category_id"] = $categoryID;
+            } else {
+                $checker->append( "Category not exists" );
+                return false;
+            }
+        }
+
+        if ( isset( $fields["hours"] ) )
+        {
+            $insertFields["bname_hours"] = $fields["hours"];
         }
 
         $rs = $this->db->insert( "bnames", $insertFields );

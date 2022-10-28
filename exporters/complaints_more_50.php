@@ -3,7 +3,10 @@ require __DIR__."/vendor/autoload.php";
 
 use DataExport\Helpers\Db;
 use DataExport\Exporters\CBExport;
-use DataExport\Helpers\TextFormatter;
+use DataExport\Formatters\TextFormatter;
+use DataExport\Formatters\PhoneFormatter;
+use DataExport\Formatters\WebFormatter;
+use DataExport\Formatters\HoursFormatter;
 
 $config = require __DIR__."/config.php";
 
@@ -35,22 +38,25 @@ if ( !$companies ) die( $srcDb->getExtendedError() );
 
 # ONLY FOR TESTING, IN RELEASE MUST BE REMOVED
 $companies = [
-    42297,
+    28590,
+    #230118,
+    #231663, # check serving area
 ];
 
 $exporter = new CBExport( $destDb );
+
+echo "Starting export...\n";
 
 foreach( $companies as $companyNbr => $companyId )
 {
     if( $maxCompanies > 0 && $companyNbr >= $maxCompanies )
     {
+        echo "Max companies, break\n";
         break;
     }
 
     $sourceCompanyRow = $srcDb->selectRow( "*", "company", [ "company_id" => $companyId, 'half_scraped' => 0 ] );
-    if ( !$sourceCompanyRow ) die( $srcDb->getExtendedError() );
-
-    #print_r( $sourceCompanyRow );
+    if ( !$sourceCompanyRow ) die( "Error: ".$srcDb->getExtendedError() );
 
     #####################################################################
 
@@ -61,9 +67,123 @@ foreach( $companies as $companyNbr => $companyId )
 
     #####################################################################
 
+    $faqList = [];
+
+    if( $sourceCompanyRow["business_started"] )
+    {
+        $date = strtotime( $sourceCompanyRow["business_started"] );
+        if ( $date > mktime( 1, 1, 1, 1, 1, 1500 ) )
+        {
+            $date = date( "m-d-Y", $date );
+            $question = "When {$companyNameWithoutAbbr} was founded?";
+            $answer =  "{$companyNameWithoutAbbr} was founded on {$date}";
+
+            $faqList[] = [
+                "question" => $question,
+                "answer"   => $answer,
+            ];
+        }
+    }
+
+    if ( $sourceCompanyRow["type_of_entity"] )
+    {
+        $answer = "{$companyNameWithoutAbbr} is a {$sourceCompanyRow['type_of_entity']}.";
+        $helpers = [
+            "Corporation" => "What is a Corporation?\nA corporation is a legal entity created by individuals, stockholders, or shareholders, with the purpose of operating for profit. Corporations are allowed to enter into contracts, sue and be sued, own assets, remit federal and state taxes, and borrow money from financial institutions.",
+            "Limited Liability Company (LLC)" => "What is a Limited Liability Company (LLC)?\nA limited liability company is the US-specific form of a private limited company. It is a business structure that can combine the pass-through taxation of a partnership or sole proprietorship with the limited liability of a corporation.",
+            "Cooperative Association" => "What is a Cooperative Association?\nA co-operative or co-op is a business that is owned and controlled by its members in order to provide goods or services to those members. Each member pays a membership fee or purchases a membership share and has one vote regardless of the amount of money they have invested in the co-op.",
+            "General Partnership" => "What is a General Partnership?\nA general partnership is a business established by two or more owners. It is the default business structure for multiple owners the same way that a sole proprietorship is the default for solo entrepreneurs.",
+            "Limited Liability Partnership (LLP)" => "What is a Limited Liability Partnership (LLP)?\nA limited liability partnership is a partnership in which some or all partners have limited liabilities. It therefore can exhibit elements of partnerships and corporations. In an LLP, each partner is not responsible or liable for another partner's misconduct or negligence.",
+            "Limited Partnership" => "What is a Limited Partnership?\nA limited partnership is a form of partnership similar to a general partnership except that while a general partnership must have at least two general partners, a limited partnership must have at least one GP and at least one limited partner.",
+            "Non-Profit Organization" => "What is a Non-Profit Organization?\nA non-profit organization is a legal entity organized and operated for a collective, public or social benefit, in contrast with an entity that operates as a business aiming to generate a profit for its owners.",
+            "Partnership" => "What is a Partnership?\nA partnership is an arrangement where parties, known as business partners, agree to cooperate to advance their mutual interests. The partners in a partnership may be individuals, businesses, interest-based organizations, schools, governments or combinations.",
+            "Private Limited Company (LTD)" => "What is a Private Limited Company (LTD)?\nA private limited company is any type of business entity in \"private\" ownership used in many jurisdictions, in contrast to a publicly listed company, with some differences from country to country.",
+            "Private Company Limited by Shares" => "What is a Private Company Limited by Shares?\nA private company limited by shares is a class of private limited company incorporated under the laws of England and Wales, Northern Ireland, Scotland, certain Commonwealth countries, and the Republic of Ireland. 
+",
+            "Professional Corporation" => "What is a Professional Corporation?\nProfessional corporations or professional service corporation are those corporate entities for which many corporation statutes make special provision, regulating the use of the corporate form by licensed professionals such as attorneys, architects, engineers, public accountants and physicians.",
+            "S Corporation" => "What is an S Corporation (S Corp)?\nAn S corp or S corporation is a business structure that is permitted under the tax code to pass its taxable income, credits, deductions, and losses directly to its shareholders. That gives it certain advantages over the more common C corp, The S corp is available only to small businesses with 100 or fewer shareholders, and is an alternative to the limited liability company (LLC).",
+            "Sole Proprietorship" => "What is a Sole Proprietorship?\nA sole proprietorship, also known as a sole tradership, individual entrepreneurship or proprietorship, is a type of enterprise owned and run by one person and in which there is no legal distinction between the owner and the business entity. A sole trader does not necessarily work alone and may employ other people.",
+        ];
+
+        $advance = "";
+
+        foreach( $helpers as $title => $text )
+        {
+            if ( strcasecmp( $title, $sourceCompanyRow["type_of_entity"] ) == 0 )
+            {
+                $advance = "\n\n".$text;
+                break;
+            }
+        }
+
+        if ( !$advance ) die( "Unknown type: ".$sourceCompanyRow["type_of_entity"] );
+
+        $answer .= $advance;
+
+        $faqList[] = [
+            "question" => "What type of business entity is {$companyNameWithoutAbbr}?",
+            "answer"   => nl2br( $answer ),
+        ];
+    }
+
+    if ( $sourceCompanyRow['number_of_employees'] )
+    {
+        $faqList[] = [
+            "question" => "How many employees does {$companyNameWithoutAbbr} have?",
+            "answer"   => "As per our latest record, {$companyNameWithoutAbbr} has {$sourceCompanyRow['number_of_employees']} employees",
+        ];
+    }
+
+    $management = $sourceCompanyRow['business_management'] ?? "";
+    $management = trim( $management, " \t\r\n,.-*" );
+
+    if ( $management && 0)
+    {
+        $faqList[] = [
+            "question" => "Who's in charge of {$companyNameWithoutAbbr} business management?",
+            "answer"   => "As per our latest record, {$companyNameWithoutAbbr} has {$sourceCompanyRow['number_of_employees']} employees",
+        ];
+    }
+
+    $area = $sourceCompanyRow['serving_area'] ?? "";
+    $area = trim( $area );
+    if ( $area )
+    {
+        $faqList[] = [
+            "question" => "What is current serving area of {$companyNameWithoutAbbr}?",
+            "answer"   => $area,
+        ];
+    }
+
+    $productAndServices = $sourceCompanyRow["products_and_services"] ?? "";
+    $productAndServices = trim( $productAndServices );
+
+    if( $productAndServices )
+    {
+        $faqList[] = [
+            "question" => "What products & services does {$companyNameWithoutAbbr} offer?",
+            "answer"   => $productAndServices,
+        ];
+    }
+
+    #####################################################################
+
     if ( $removeAll )
     {
-        #echo "Remove business: ".$sourceCompanyRow["company_id"]."\n";
+        echo "Remove business, faq, company: ".$sourceCompanyRow["company_id"]."\n";
+
+        $savedBusinessID = $exporter->isBusinessExists( $exporter->getBusinessImportID( $sourceCompanyRow[ "company_id" ] ), null );
+
+        if ( $savedBusinessID )
+        {
+            foreach( $faqList as $faqID => $faqRow )
+            {
+                if ( !$exporter->removeBusinessFAQByImportID( $exporter->getBusinessFAQImportID( $savedBusinessID, $faqRow["question"] ) ) )
+                {
+                    die( $exporter->getErrorsAsString() );
+                }
+            }
+        }
 
         if ( !$exporter->removeBusinessByImportID( $exporter->getBusinessImportID( $sourceCompanyRow[ "company_id" ] ) ) )
         {
@@ -76,11 +196,13 @@ foreach( $companies as $companyNbr => $companyId )
         {
             die( $exporter->getErrorsAsString() );
         }
+
+
     }
 
     if ( $createAll )
     {
-        #echo "Create company: ".$sourceCompanyRow["company_id"]."\n";
+        echo "Create company: ".$sourceCompanyRow["company_id"]."\n";
 
         $destCompanyID = $exporter->addCompany( $exporter->getCompanyImportID( $sourceCompanyRow[ "company_id" ] ), [
             "name"        => $sourceCompanyRow[ "company_name" ],
@@ -103,7 +225,7 @@ foreach( $companies as $companyNbr => $companyId )
 
     if ( $removeAll )
     {
-        #echo "Remove user: {$userName}\n";
+        echo "Remove user: {$userName}\n";
 
         if ( !$exporter->removeUserByImportID( $exporter->getUserImportID( $userName ) ) )
         {
@@ -128,6 +250,11 @@ foreach( $companies as $companyNbr => $companyId )
 
             $countryShortName = $match[1];
 
+            $hours = $sourceCompanyRow["working_hours"]
+                ? HoursFormatter::fromString( $sourceCompanyRow["working_hours"] )
+                : null;
+            $hours = $hours ? HoursFormatter::convertToCBInternalFormat( $hours ) : null;
+
             $destBusinessID = $exporter->addBusiness( $businessImportID, [
                 "name"        => $companyNameWithoutAbbr,
                 "ltd"         => $companyNameOriginal,
@@ -136,8 +263,11 @@ foreach( $companies as $companyNbr => $companyId )
                 "city"        => $sourceCompanyRow["address_locality"],
                 "address"     => $sourceCompanyRow["street_address"],
                 "zip"         => $sourceCompanyRow["postal_code"],
-                "phone"       => $sourceCompanyRow["phone"],
-                "website"     => array_map( "trim", explode( "\n", $sourceCompanyRow[ "website" ] ) ),
+                "hours"       => $hours,
+                "phone"       => PhoneFormatter::fromString( $sourceCompanyRow["phone"] ),
+                "fax"         => PhoneFormatter::fromString( $sourceCompanyRow["fax_numbers"] ),
+                "website"     => WebFormatter::fromString( $sourceCompanyRow[ "website" ] ),
+                "category"    => "Other",
                 "import_data" => [
                     "company_id"   => $sourceCompanyRow[ "company_id" ],
                     "company_name" => $sourceCompanyRow[ "company_name" ],
@@ -155,6 +285,11 @@ foreach( $companies as $companyNbr => $companyId )
             if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )
             {
                 die( $exporter->getErrorsAsString() );
+            }
+
+            foreach( $faqList as $faqID => $faqRow )
+            {
+                addBusinessFAQ( $destBusinessID, $exporter, $faqRow["question"], $faqRow["answer"], $sourceCompanyRow );
             }
         }
     }
@@ -317,5 +452,32 @@ foreach( $companies as $companyNbr => $companyId )
         echo $profile["host"]."/asd-b".$destBusinessID."\n";
     } else {
         echo "Removed all from company: ".$sourceCompanyRow["company_id"]."\n";
+    }
+}
+
+echo "Script ends.\n";
+
+function addBusinessFAQ( int $businessID, $exporter, string $question, string $answer, array $sourceCompanyRow ): void
+{
+    global $importInfoScraper;
+
+    $faqImportID = $exporter->getBusinessFAQImportID( $businessID, $question );
+
+    $id = $exporter->addBusinessFAQ( $faqImportID, [
+        "business_id" => $businessID,
+        "question"    => $question,
+        "answer"      => $answer,
+        "import_data" => [
+            "company_id"   => $sourceCompanyRow[ "company_id" ],
+            "company_url"  => $sourceCompanyRow[ "url" ],
+            "business_started" => $sourceCompanyRow["business_started"],
+            "scraper"      => $importInfoScraper,
+            "version"      => 1,
+        ]
+    ] );
+
+    if ( !$id )
+    {
+        die( $exporter->getErrorsAsString() );
     }
 }

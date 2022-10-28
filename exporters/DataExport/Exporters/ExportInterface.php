@@ -8,9 +8,10 @@ use DataExport\Exporters\ExportUserInterface;
 use DataExport\Exporters\ExportCommentInterface;
 use DataExport\Exporters\ExportCountryInterface;
 use DataExport\Exporters\ExportStateInterface;
+use DataExport\Exporters\ExportBusinessFAQInterface;
 
 interface ExportInterface extends ExportBusinessInterface, ExportCompanyInterface, ExportComplaintInterface,
-    ExportCommentInterface, ExportUserInterface, ExportCountryInterface
+    ExportCommentInterface, ExportUserInterface, ExportCountryInterface, ExportCategoryInterface, ExportBusinessFAQInterface
 {
     public function getErrors(): array;
 }

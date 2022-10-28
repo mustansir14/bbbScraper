@@ -1,7 +1,7 @@
 <?php
 namespace DataExport\Exporters\CBExport;
 
-use DataExport\Helpers\TextFormatter;
+use DataExport\Formatters\TextFormatter;
 use Faker\Provider\Text;
 
 trait CityTrait

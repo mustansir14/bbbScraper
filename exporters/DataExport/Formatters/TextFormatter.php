@@ -1,5 +1,5 @@
 <?php
-namespace DataExport\Helpers;
+namespace DataExport\Formatters;
 
 class TextFormatter
 {
