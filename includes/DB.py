@@ -54,32 +54,32 @@ class DB:
                         company_id = fetched_results[0][0]
                     else:
                         company_id = fetched_results[0]["company_id"]
-                    sql = """UPDATE company set version = 2, company_name = %s, url = %s, logo = %s, categories = %s, phone = %s, address = %s, 
+                    sql = """UPDATE company set version = 2, company_name = %s, alternate_business_name = %s, url = %s, logo = %s, categories = %s, phone = %s, address = %s, 
                     street_address = %s, address_locality = %s, address_region = %s, postal_code = %s,
-                    website = %s, hq = %s, is_accredited = %s, rating = %s, working_hours = %s, number_of_stars = %s, number_of_reviews = %s, 
+                    website = %s, hq = %s, is_accredited = %s, bbb_file_opened = %s, years_in_business = %s, accredited_since = %s, rating = %s, original_working_hours = %s, working_hours = %s, number_of_stars = %s, number_of_reviews = %s, number_of_complaints = %s, 
                     overview = %s, products_and_services = %s, business_started = %s, business_incorporated = %s, type_of_entity = %s,
-                    number_of_employees = %s, business_management = %s, contact_information = %s, customer_contact = %s, 
-                    fax_numbers = %s, serving_area = %s, date_updated = %s, status = %s, log = %s, half_scraped = %s, country = %s where company_id = %s;"""
-                    args = (company.name, company.url, company.logo, company.categories, company.phone, company.address,
+                    number_of_employees = %s, original_business_management = %s, business_management = %s, original_contact_information = %s, contact_information = %s, original_customer_contact = %s, customer_contact = %s, 
+                    fax_numbers = %s, additional_phones = %s, additional_websites = %s, additional_faxes = %s, serving_area = %s, payment_methods = %s, referral_assistance = %s, refund_and_exchange_policy = %s, business_categories = %s, facebook = %s, instagram = %s, twitter = %s, pinterest = %s, linkedin = %s, date_updated = %s, status = %s, log = %s, half_scraped = %s, country = %s where company_id = %s;"""
+                    args = (company.name, company.alternate_business_name, company.url, company.logo, company.categories, company.phone, company.address,
                     company.street_address, company.address_locality, company.address_region, company.postal_code, 
-                    company.website, company.hq, company.is_accredited, company.rating, company.working_hours, company.number_of_stars, 
-                    company.number_of_reviews, company.overview, company.products_and_services, company.business_started, 
-                    company.business_incorporated, company.type_of_entity, company.number_of_employees, company.business_management, 
-                    company.contact_information, company.customer_contact, company.fax_numbers, company.serving_area, 
+                    company.website, company.hq, company.is_accredited, company.bbb_file_opened, company.years_in_business, company.accredited_since, company.rating, company.original_working_hours, company.working_hours, company.number_of_stars, 
+                    company.number_of_reviews, company.number_of_complaints, company.overview, company.products_and_services, company.business_started, 
+                    company.business_incorporated, company.type_of_entity, company.number_of_employees, company.original_business_management, company.business_management, company.original_contact_information,
+                    company.contact_information, company.original_customer_contact, company.customer_contact, company.fax_numbers, company.additional_phones, company.additional_websites, company.additional_faxes, company.serving_area, company.payment_methods, company.referral_assistance, company.refund_and_exchange_policy, company.business_categories, company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin,
                     datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), company.status, company.log, company.half_scraped, company.country, company_id)
                     success_statement = "Company " + company.name + " details updated successfully!"
                 else:
-                    sql = """INSERT INTO company (version, company_name, url, logo, categories, phone, address, company.street_address, 
-                    company.address_locality, company.address_region, company.postal_code, website, hq, is_accredited, 
-                    rating, working_hours, number_of_stars, number_of_reviews, overview, products_and_services, business_started, 
-                    business_incorporated, type_of_entity, number_of_employees, business_management, contact_information, 
-                    customer_contact, fax_numbers, serving_area, date_created, date_updated, status, log, half_scraped, country) VALUES (2, """ + "%s, " * 33 + "%s);"
-                    args = (company.name, company.url, company.logo, company.categories, company.phone, company.address,
+                    sql = """INSERT INTO company (version, company_name, alternate_business_name, url, logo, categories, phone, address, company.street_address, 
+                    company.address_locality, company.address_region, company.postal_code, website, hq, is_accredited, bbb_file_opened, years_in_business, accredited_since,
+                    rating, original_working_hours, working_hours, number_of_stars, number_of_reviews, number_of_complaints, overview, products_and_services, business_started, 
+                    business_incorporated, type_of_entity, number_of_employees, original_business_management, business_management, original_contact_information, contact_information, original_customer_contact,
+                    customer_contact, fax_numbers, additional_phones, additional_websites, additional_faxes, serving_area, payment_methods, referral_assistance, refund_and_exchange_policy, business_categories, facebook, instagram, twitter, pinterest, linkedin, date_created, date_updated, status, log, half_scraped, country) VALUES (2, """ + "%s, " * 54 + "%s);"
+                    args = (company.name, company.alternate_business_name, company.url, company.logo, company.categories, company.phone, company.address,
                     company.street_address, company.address_locality, company.address_region, company.postal_code, 
-                    company.website, company.hq, company.is_accredited, company.rating, company.working_hours, company.number_of_stars, 
-                    company.number_of_reviews, company.overview, company.products_and_services, company.business_started, 
-                    company.business_incorporated, company.type_of_entity, company.number_of_employees, company.business_management, 
-                    company.contact_information, company.customer_contact, company.fax_numbers, company.serving_area, 
+                    company.website, company.hq, company.is_accredited, company.bbb_file_opened, company.years_in_business, company.accredited_since, company.rating, company.original_working_hours, company.working_hours, company.number_of_stars, 
+                    company.number_of_reviews, company.number_of_complaints, company.overview, company.products_and_services, company.business_started, 
+                    company.business_incorporated, company.type_of_entity, company.number_of_employees, company.original_business_management, company.business_management, company.original_contact_information,
+                    company.contact_information, company.original_customer_contact, company.customer_contact, company.fax_numbers, company.additional_phones, company.additional_websites, company.additional_faxes, company.serving_area, company.payment_methods, company.referral_assistance, company.refund_and_exchange_policy, company.business_categories, company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin, 
                     datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
                     company.status, company.log, company.half_scraped, company.country)
                     success_statement = "Company " + company.name + " details added to DB successfully!"
@@ -204,6 +204,15 @@ class DB:
                         success = False
                 if not success:
                     raise Exception(error)
+
+
+    def trim_object(self, obj):
+
+        for att in dir(obj):
+            value = getattr(obj, att)
+            if type(value) == str:
+                setattr(obj, att, value.strip())
+        return obj
 
     
 

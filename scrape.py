@@ -4,6 +4,7 @@
 # +923333487952
 ##########################################
 
+from dataclasses import field
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -26,7 +27,9 @@ from pyvirtualdisplay import Display
 from sys import platform
 from multiprocessing import Process, Queue
 from includes.telegram_reporter import send_message
-
+from slugify import slugify
+import json
+import re
 
 class BBBScraper():
 
@@ -166,6 +169,9 @@ class BBBScraper():
         company.url = company_url
         company.half_scraped = half_scraped
         company.country = company_url.replace("https://www.bbb.org/", "")[:2]
+        if company.country not in ['us', 'ca']:
+            send_message("Company %s does not have valid country in url!!" % company.url)
+            company.country = None
         while True:
             self.driver.get(company_url)
             if "403" in self.driver.title:
@@ -185,7 +191,7 @@ class BBBScraper():
         try:
             logo = self.driver.find_element_by_class_name("dtm-logo").find_element_by_tag_name("img").get_attribute("src")
             if logo != "https://www.bbb.org/TerminusContent/dist/img/non-ab-icon__300w.png":
-                company.logo = "file/logo/" + company.name.replace(".", "").replace(",", "_").replace(" ", "_").replace("/", "_") + ".png"
+                company.logo = "file/logo/" + slugify(company.name) + ".png"
                 self.driver.execute_script(f'''window.open("{logo}","_blank");''')
                 self.driver.switch_to.window(self.driver.window_handles[1])
                 self.driver.save_screenshot(company.logo)
@@ -234,6 +240,10 @@ class BBBScraper():
                 company.number_of_stars = None
                 company.number_of_reviews = 0
             try:
+                company.number_of_complaints = int(self.driver.find_element(By.CSS_SELECTOR, "#content > div.css-zv8g12.e7lprtl0 > div > div:nth-child(3) > div > div:nth-child(3) > div > div:nth-child(2) > div > div.stack.css-0.e1dc2hmq0 > p:nth-child(1) > strong").text.replace(",", ""))
+            except:
+                company.number_of_complaints = 0
+            try:
                 company.overview = self.driver.find_element_by_id("overview").find_element_by_class_name("MuiTypography-paragraph").text
             except:
                 pass
@@ -256,7 +266,7 @@ class BBBScraper():
             except:
                 pass
             detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
-            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses"]
+            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", ]
             fields_dict = {}
             current_field = None
             for i, line in enumerate(detail_lines):
@@ -272,8 +282,20 @@ class BBBScraper():
                         company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
                     except:
                         company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
+                elif "BBB File Opened:" in line:
+                    try:
+                        company.bbb_file_opened = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
+                    except:
+                        company.bbb_file_opened = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
+                elif "Accredited Since:" in line:
+                    try:
+                        company.accredited_since = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
+                    except:
+                        company.accredited_since = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
                 elif "Type of Entity:" in line:
                     company.type_of_entity = detail_lines[i+1].strip()
+                elif "Years in Business:" in line:
+                    company.years_in_business = detail_lines[i+1].strip()
                 elif "Number of Employees:" in line:
                     company.number_of_employees = detail_lines[i+1].strip()
                 elif line in fields_headers:
@@ -284,30 +306,109 @@ class BBBScraper():
                     fields_dict[current_field] += line + "\n"
             
             if "Hours of Operation" in fields_dict:
-                company.working_hours = fields_dict["Hours of Operation"].strip()
+                working_hours_dict = {}
+                days_mapping = {"M:": "monday",
+                "T:": "tuesday", 
+                "W:": "wednesday", 
+                "Th:": "thursday", 
+                "F:": "friday", 
+                "Sa:": "saturday", 
+                "Su:": "sunday",
+                }
+                fields_dict["Hours of Operation"] = fields_dict["Hours of Operation"].replace(":\n", ": ")
+                for line in fields_dict["Hours of Operation"].strip().split("\n"):
+                    first_word = line.split()[0]
+                    if first_word not in days_mapping:
+                        continue
+                    time_data = "".join(line.split()[1:]).lower()
+                    if time_data == "open24hours":
+                        time_data = "open24"
+                    elif "-" in time_data:
+                        times = time_data.split("-")
+                        if len(times) == 2:
+                            for time_index in range(2):
+                                if "pm" in times[time_index]:
+                                    colon_split = times[time_index].split(":")
+                                    if len(colon_split) >= 2:
+                                        times[time_index] = str(int(colon_split[0])+12) + ":" + colon_split[1].replace("pm", "")
+                                    else:
+                                        times[time_index] = str(int(colon_split[0])+12)
+                                times[time_index] = times[time_index].replace("am", "")
+                        time_data = "-".join(times)
+                    working_hours_dict[days_mapping[first_word]] = time_data.replace(".", "")
+                company.working_hours = json.dumps(working_hours_dict)
+                company.original_working_hours = fields_dict['Hours of Operation']
             if "Business Management" in fields_dict:
-                company.business_management = fields_dict["Business Management"].strip()
+                company.original_business_management = fields_dict["Business Management"].strip()
+                company.business_management = []
+                for line in company.original_business_management.split("\n"):
+                    if "," in line:
+                        line_split = line.split(",")
+                        company.business_management.append({"type": line_split[1].strip(), "person": line_split[0].strip()})
+                company.business_management = json.dumps(company.business_management)
             if "Contact Information" in fields_dict:
-                company.contact_information = fields_dict["Contact Information"].strip()
+                company.original_contact_information = fields_dict["Contact Information"].strip()
+                company.contact_information = []
+                current_type = None
+                for line in company.original_contact_information.split("\n"):
+                    if "," not in line:
+                        current_type = line
+                    elif current_type:
+                        person = {"name": line.split(",")[0].strip(), "designation": line.split(",")[1].strip()}
+                        if company.contact_information and company.contact_information[-1]["type"] == current_type:
+                            company.contact_information[-1]["persons"].append(person)
+                        else:
+                            company.contact_information.append({"type": current_type, "persons": [person]})
+                company.contact_information = json.dumps(company.contact_information)
             if "Customer Contact" in fields_dict:
-                company.customer_contact = fields_dict["Customer Contact"].strip()
+                company.original_customer_contact = fields_dict["Customer Contact"].strip()
+                company.customer_contact = []
+                for line in company.original_customer_contact.split("\n"):
+                    if "," in line:
+                        line_split = line.split(",")
+                        company.customer_contact.append({"type": line_split[1].strip(), "person": line_split[0].strip()})
+                company.customer_contact = json.dumps(company.customer_contact)
             if "Fax Numbers" in fields_dict:
-                company.fax_numbers = fields_dict["Fax Numbers"].replace("Primary Fax", "").replace("Other Fax", "").replace("Read More", "").replace("Read Less", "").strip()
+                fax_lines = fields_dict["Fax Numbers"].replace("Primary Fax", "").replace("Other Fax", "").replace("Read More", "").replace("Read Less", "").strip()
+                fax_lines = [line for line in fax_lines.split("\n") if line[-3:].isnumeric()]
+                company.fax_numbers = fax_lines[0]
+                if len(fax_lines) > 1:
+                    company.additional_faxes = "\n".join(fax_lines[1:])
+                
             if "Serving Area" in fields_dict:
-                company.serving_area = fields_dict["Serving Area"].replace("Read More", "").replace("Read Less", "").strip()[:65535]
+                pattern = r'<.*?>'
+                company.serving_area = re.sub(pattern, '', fields_dict["Serving Area"].replace("Read More", "").replace("Read Less", "").strip()[:65535])
             if "Phone Numbers" in fields_dict:
-                if company.phone is None:
-                    company.phone = ""
-                else:
-                    company.phone += "\n"
-                company.phone += fields_dict["Phone Numbers"].replace("Read More", "").replace("Read Less", "").replace("Primary Phone", "").replace("Other Phone", "").strip()
+                company.additional_phones = fields_dict["Phone Numbers"].replace("Read More", "").replace("Read Less", "").replace("Primary Phone", "").replace("Other Phone", "").strip()
+                company.additional_phones = "\n".join([line for line in company.additional_phones.split("\n") if line[-3:].isnumeric()])
             if "Website Addresses" in fields_dict:
-                if company.website is None:
-                    company.website = ""
-                else:
-                    company.website += "\n"
-                company.website += fields_dict["Website Addresses"].replace("Read More", "").replace("Read Less", "").strip()
-
+                company.additional_websites = ""
+                for url in fields_dict["Website Addresses"].replace("Read More", "").replace("Read Less", "").strip().split("\n"):
+                    if ("http" in url or "www" in url or ".com" in url) and " " not in url.strip():
+                        company.additional_websites += url + "\n"
+            if "Alternate Business Name" in fields_dict:
+                company.alternate_business_name = fields_dict["Alternate Business Name"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
+            social_media_links = self.driver.find_elements_by_class_name("with-icon.css-1csllio.e13hff4y0")
+            for link in social_media_links:
+                link_text = link.text.lower().strip()
+                if link_text == "facebook":
+                    company.facebook = link.get_attribute("href")
+                elif link_text == "instagram":
+                    company.instagram = link.get_attribute("href")
+                elif link_text == "twitter":
+                    company.twitter = link.get_attribute("href")
+                elif link_text == "pinterest":
+                    company.pinterest = link.get_attribute("href")
+                elif link_text == "linkedin":
+                    company.linkedin = link.get_attribute("href")
+            if "Payment Methods" in fields_dict:
+                company.payment_methods = fields_dict["Payment Methods"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
+            if "Referral Assistance" in fields_dict:
+                company.referral_assistance = fields_dict["Referral Assistance"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
+            if "Refund and Exchange Policy" in fields_dict:
+                company.refund_and_exchange_policy = fields_dict["Refund and Exchange Policy"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
+            if "Business Categories" in fields_dict:
+                company.business_categories = fields_dict["Business Categories"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
         except Exception as e:
             logging.error(str(e))
             send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
