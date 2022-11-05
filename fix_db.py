@@ -28,6 +28,8 @@ while True:
             }
             record['working_hours'] = record['working_hours'].replace(":\n", ": ")
             for line in record['working_hours'].strip().split("\n"):
+                if line.strip() == "":
+                    continue
                 first_word = line.split()[0]
                 if first_word not in days_mapping:
                     continue
