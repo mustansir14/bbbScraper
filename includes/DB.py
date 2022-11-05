@@ -59,27 +59,27 @@ class DB:
                     website = %s, hq = %s, is_accredited = %s, bbb_file_opened = %s, years_in_business = %s, accredited_since = %s, rating = %s, original_working_hours = %s, working_hours = %s, number_of_stars = %s, number_of_reviews = %s, number_of_complaints = %s, 
                     overview = %s, products_and_services = %s, business_started = %s, business_incorporated = %s, type_of_entity = %s,
                     number_of_employees = %s, original_business_management = %s, business_management = %s, original_contact_information = %s, contact_information = %s, original_customer_contact = %s, customer_contact = %s, 
-                    fax_numbers = %s, additional_phones = %s, additional_websites = %s, additional_faxes = %s, serving_area = %s, payment_methods = %s, referral_assistance = %s, refund_and_exchange_policy = %s, business_categories = %s, facebook = %s, instagram = %s, twitter = %s, pinterest = %s, linkedin = %s, date_updated = %s, status = %s, log = %s, half_scraped = %s, country = %s where company_id = %s;"""
+                    fax_numbers = %s, additional_phones = %s, additional_websites = %s, additional_faxes = %s, serving_area = %s, payment_methods = %s, referral_assistance = %s, refund_and_exchange_policy = %s, business_categories = %s, facebook = %s, instagram = %s, twitter = %s, pinterest = %s, linkedin = %s, date_updated = %s, status = %s, log = %s, half_scraped = %s, country = %s, source_code = %s, source_code_details = %s where company_id = %s;"""
                     args = (company.name, company.alternate_business_name, company.url, company.logo, company.categories, company.phone, company.address,
                     company.street_address, company.address_locality, company.address_region, company.postal_code, 
                     company.website, company.hq, company.is_accredited, company.bbb_file_opened, company.years_in_business, company.accredited_since, company.rating, company.original_working_hours, company.working_hours, company.number_of_stars, 
                     company.number_of_reviews, company.number_of_complaints, company.overview, company.products_and_services, company.business_started, 
                     company.business_incorporated, company.type_of_entity, company.number_of_employees, company.original_business_management, company.business_management, company.original_contact_information,
                     company.contact_information, company.original_customer_contact, company.customer_contact, company.fax_numbers, company.additional_phones, company.additional_websites, company.additional_faxes, company.serving_area, company.payment_methods, company.referral_assistance, company.refund_and_exchange_policy, company.business_categories, company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin,
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), company.status, company.log, company.half_scraped, company.country, company_id)
+                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), company.status, company.log, company.half_scraped, company.country, company.source_code, company.source_code_details, company_id)
                     success_statement = "Company " + company.name + " details updated successfully!"
                 else:
                     sql = """INSERT INTO company (version, company_name, alternate_business_name, url, logo, categories, phone, address, company.street_address, 
                     company.address_locality, company.address_region, company.postal_code, website, hq, is_accredited, bbb_file_opened, years_in_business, accredited_since,
                     rating, original_working_hours, working_hours, number_of_stars, number_of_reviews, number_of_complaints, overview, products_and_services, business_started, 
                     business_incorporated, type_of_entity, number_of_employees, original_business_management, business_management, original_contact_information, contact_information, original_customer_contact,
-                    customer_contact, fax_numbers, additional_phones, additional_websites, additional_faxes, serving_area, payment_methods, referral_assistance, refund_and_exchange_policy, business_categories, facebook, instagram, twitter, pinterest, linkedin, date_created, date_updated, status, log, half_scraped, country) VALUES (2, """ + "%s, " * 54 + "%s);"
+                    customer_contact, fax_numbers, additional_phones, additional_websites, additional_faxes, serving_area, payment_methods, referral_assistance, refund_and_exchange_policy, business_categories, facebook, instagram, twitter, pinterest, linkedin, source_code, source_code_details, date_created, date_updated, status, log, half_scraped, country) VALUES (2, """ + "%s, " * 56 + "%s);"
                     args = (company.name, company.alternate_business_name, company.url, company.logo, company.categories, company.phone, company.address,
                     company.street_address, company.address_locality, company.address_region, company.postal_code, 
                     company.website, company.hq, company.is_accredited, company.bbb_file_opened, company.years_in_business, company.accredited_since, company.rating, company.original_working_hours, company.working_hours, company.number_of_stars, 
                     company.number_of_reviews, company.number_of_complaints, company.overview, company.products_and_services, company.business_started, 
                     company.business_incorporated, company.type_of_entity, company.number_of_employees, company.original_business_management, company.business_management, company.original_contact_information,
-                    company.contact_information, company.original_customer_contact, company.customer_contact, company.fax_numbers, company.additional_phones, company.additional_websites, company.additional_faxes, company.serving_area, company.payment_methods, company.referral_assistance, company.refund_and_exchange_policy, company.business_categories, company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin, 
+                    company.contact_information, company.original_customer_contact, company.customer_contact, company.fax_numbers, company.additional_phones, company.additional_websites, company.additional_faxes, company.serving_area, company.payment_methods, company.referral_assistance, company.refund_and_exchange_policy, company.business_categories, company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin, company.source_code, company.source_code_details,
                     datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
                     company.status, company.log, company.half_scraped, company.country)
                     success_statement = "Company " + company.name + " details added to DB successfully!"
@@ -121,14 +121,14 @@ class DB:
                             review_id = fetched_results[0][0]
                         else:
                             review_id = fetched_results[0]["review_id"]
-                        sql = """UPDATE review SET review_text = %s, review_rating = %s, company_response_text = %s, company_response_date = %s,
+                        sql = """UPDATE review SET review_text = %s, review_rating = %s, company_response_text = %s, company_response_date = %s, source_code = %s,
                         date_updated = %s , status = %s, log = %s where review_id = %s;"""
-                        args = (review.review_text, review.review_rating, review.company_response_text, review.company_response_date,
+                        args = (review.review_text, review.review_rating, review.company_response_text, review.company_response_date, review.source_code,
                         datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), review.status, review.log, review_id)
                     else:    
-                        sql = "INSERT INTO review VALUES (DEFAULT, " + "%s, " * 10 + "%s);"
+                        sql = "INSERT INTO review VALUES (DEFAULT, " + "%s, " * 11 + "%s);"
                         args = (review.company_id, review.review_date, review.username,review.review_text, review.review_rating, review.company_response_text, 
-                        review.company_response_date, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
+                        review.company_response_date, review.source_code, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
                         review.status, review.log)
                     self.cur.execute(sql, args)
                 
@@ -170,14 +170,14 @@ class DB:
                             complaint_id = fetched_results[0][0]
                         else:
                             complaint_id = fetched_results[0]["complaint_id"]
-                        sql = """UPDATE complaint SET complaint_type = %s, complaint_text = %s, company_response_text = %s, company_response_date = %s,
+                        sql = """UPDATE complaint SET complaint_type = %s, complaint_text = %s, company_response_text = %s, company_response_date = %s, source_code = %s,
                         date_updated = %s , status = %s, log = %s where complaint_id = %s;"""
-                        args = (complaint.complaint_type, complaint.complaint_text, complaint.company_response_text, complaint.company_response_date,
+                        args = (complaint.complaint_type, complaint.complaint_text, complaint.company_response_text, complaint.company_response_date, complaint.source_code,
                         datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), complaint.status, complaint.log, complaint_id)
                     else:    
-                        sql = "INSERT INTO complaint VALUES (DEFAULT, " + "%s, " * 9 + "%s);"
+                        sql = "INSERT INTO complaint VALUES (DEFAULT, " + "%s, " * 10 + "%s);"
                         args = (complaint.company_id, complaint.complaint_type, complaint.complaint_date, complaint.complaint_text, complaint.company_response_text, 
-                        complaint.company_response_date, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
+                        complaint.company_response_date, complaint.source_code, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
                         complaint.status, complaint.log)
                     self.cur.execute(sql, args)
                 

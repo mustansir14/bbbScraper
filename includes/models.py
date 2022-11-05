@@ -57,6 +57,8 @@ class Company:
         self.twitter = None
         self.pinterest = None
         self.linkedin = None
+        self.source_code = None
+        self.source_code_details = None
         self.reviews = []
         self.complaints = []
         self.log = ""
@@ -133,6 +135,7 @@ class Review:
         self.review_rating = None
         self.company_response_text = None
         self.company_response_date = None
+        self.source_code = None
         self.log = ""
         self.status = None
 
@@ -162,6 +165,7 @@ class Complaint:
         self.complaint_text = None
         self.company_response_text = None
         self.company_response_date = None
+        self.source_code = None
         self.log = ""
         self.status = None
 

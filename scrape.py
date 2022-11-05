@@ -200,6 +200,8 @@ class BBBScraper():
         except Exception as e:
             company.logo = ""
         try:
+            if GET_SOURCE_CODE:
+                company.source_code = self.driver.page_source
             try:
                 company.categories = " > ".join([x.text for x in self.driver.find_element_by_class_name("dtm-breadcrumbs").find_elements_by_tag_name("li")[:4]])
             except:
@@ -265,8 +267,10 @@ class BBBScraper():
                         self.driver.execute_script("arguments[0].click();", button)
             except:
                 pass
+            if GET_SOURCE_CODE:
+                company.source_code_details = self.driver.page_source
             detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
-            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", ]
+            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
             fields_dict = {}
             current_field = None
             for i, line in enumerate(detail_lines):
@@ -487,6 +491,8 @@ class BBBScraper():
             if scrape_specific_review and username != review_results[0]["username"]:
                 continue
             review = Review()
+            if GET_SOURCE_CODE:
+                review.source_code = review_tag.get_attribute('innerHTML')
             review.company_id = company_id
             review.username = username
             try:
@@ -588,6 +594,8 @@ class BBBScraper():
                 break
             for complaint_tag in complaint_tags:
                 complaint = Complaint()
+                if GET_SOURCE_CODE:
+                    complaint.source_code = complaint_tag.get_attribute('innerHTML')
                 complaint.company_id = company_id
                 try:
                     complaint.complaint_type = complaint_tag.find_element_by_class_name("css-17a6kq4.e1n5qf2o2").text.replace("Complaint Type:", "").replace("Anonymous complaint:", "").strip()

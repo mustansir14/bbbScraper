@@ -8,6 +8,9 @@ DB_NAME = "bbb"
 TELEGRAM_BOT_TOKEN = None
 TELEGRAM_CHAT_IDS = []
 
+# to get html source code and save in db
+GET_SOURCE_CODE = True
+
 PROXY_TYPE = "http" # socks5 or http
 PROXY = None
 PROXY_PORT = None
