@@ -77,7 +77,10 @@ while True:
         if record['fax_numbers'] and not record['additional_faxes']:
             fax_lines = record['fax_numbers'].replace("Primary Fax", "").replace("Other Fax", "").replace("Read More", "").replace("Read Less", "").replace("Phone Number: ", "").strip()
             fax_lines = [line for line in fax_lines.split("\n") if line[-3:].isnumeric()]
-            record['fax_numbers'] = fax_lines[0]
+            if fax_lines:
+                record['fax_numbers'] = fax_lines[0]
+            else:
+                record['fax_numbers'] = None
             if len(fax_lines) > 1:
                 record['additional_faxes'] = "\n".join(fax_lines[1:])
         
