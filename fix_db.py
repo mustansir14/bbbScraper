@@ -44,9 +44,9 @@ while True:
                             if "pm" in times[time_index]:
                                 colon_split = times[time_index].split(":")
                                 if len(colon_split) >= 2:
-                                    times[time_index] = str(int(colon_split[0])+12) + ":" + colon_split[1].replace("pm", "")
+                                    times[time_index] = str(int(colon_split[0].replace("am", "").replace("pm", ""))+12) + ":" + colon_split[1].replace("pm", "")
                                 else:
-                                    times[time_index] = str(int(colon_split[0])+12)
+                                    times[time_index] = str(int(colon_split[0].replace("am", "").replace("pm", ""))+12)
                             times[time_index] = times[time_index].replace("am", "")
                     time_data = "-".join(times)
                 working_hours_dict[days_mapping[first_word]] = time_data.replace(".", "")
