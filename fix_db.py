@@ -9,6 +9,7 @@ cur = db.getDbCursor()
 count = 0 
 while True:
     cur.execute(f"SELECT * from company limit {count*5000}, 5000;")
+    print(count*5000)
     records = cur.fetchall()
     if len(records) == 0:
         break
