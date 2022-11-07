@@ -17,6 +17,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
     parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
+    parser.add_argument("--rescrape", nargs='?', type=int, default=0)
 
     args = parser.parse_args()
     no_of_threads = args.no_of_threads
@@ -46,18 +47,19 @@ if __name__ == "__main__":
                 urls_to_scrape = []
             found_url = False
             for company_url in company_urls:
-                for _ in range(3):
-                    try:
-                        scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
-                        break
-                    except InterfaceError:
-                        logging.error("MySQL Server gone away... Trying after 30 seconds")
-                        time.sleep(30)
-                        scraper.db = DB()
-                data = scraper.db.cur.fetchall()
-                if len(data) > 0:
-                    logging.info("Company " + company_url + " exists. Skipping")
-                    continue
+                if not int(args.rescrape):
+                    for _ in range(3):
+                        try:
+                            scraper.db.cur.execute("SELECT company_id from company where url = %s", (company_url, ))
+                            break
+                        except InterfaceError:
+                            logging.error("MySQL Server gone away... Trying after 30 seconds")
+                            time.sleep(30)
+                            scraper.db = DB()
+                    data = scraper.db.cur.fetchall()
+                    if len(data) > 0:
+                        logging.info("Company " + company_url + " exists. Skipping")
+                        continue
                 found_url = True
                 if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                     urls_to_scrape.put(company_url)
