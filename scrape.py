@@ -672,16 +672,6 @@ class BBBScraper():
                     urls_to_scrape = []
                 found_url = False
                 for company_url in company_urls:
-                    self.db.cur.execute("SELECT date_updated from company where url = %s", (company_url, ))
-                    data = self.db.cur.fetchall()
-                    if len(data) > 0:
-                        if USE_MARIA_DB:
-                            date_updated = data[0][0]
-                        else:
-                            date_updated = data[0]["date_updated"]
-                        if (date_updated - datetime.datetime.now()).days < 7:
-                            continue
-
                     found_url = True
                     if platform == "linux" or platform == "linux2":
                         urls_to_scrape.put(company_url)
