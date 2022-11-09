@@ -163,7 +163,7 @@ class DB:
                 for complaint in complaints:
                     if complaint.status == None:
                         complaint.status = "success"
-                    self.cur.execute("SELECT complaint_id from complaint where company_id = %s and complaint_date = %s and complaint_type = %s;", (complaint.company_id, complaint.complaint_date, complaint.complaint_type))
+                    self.cur.execute("SELECT complaint_id from complaint where company_id = %s and complaint_date = %s and complaint_type = %s and complaint_text = %s;", (complaint.company_id, complaint.complaint_date, complaint.complaint_type, complaint.complaint_text))
                     fetched_results = self.cur.fetchall()
                     if len(fetched_results) >= 1:
                         if USE_MARIA_DB:
