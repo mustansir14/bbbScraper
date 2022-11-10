@@ -2,6 +2,7 @@
 require __DIR__."/vendor/autoload.php";
 
 use DataExport\Helpers\Db;
+use DataExport\Helpers\ApiHelper;
 use DataExport\Exporters\CBExport;
 use DataExport\Formatters\TextFormatter;
 use DataExport\Formatters\PhoneFormatter;
@@ -20,6 +21,12 @@ $addOnly = 0; # if createAll and addOnly == country then create record or zero t
 $maxCompanies = 2;
 $makeSpamComplaints = true;
 $importInfoScraper = "BBB Mustansir";
+
+##################################################################################
+
+$r = ApiHelper::getLogo( "PedFast_Technologies.png" );
+var_dump($r);
+exit;
 
 ##################################################################################
 
@@ -281,6 +288,11 @@ foreach( $companies as $companyNbr => $companyId )
             if ( !$destBusinessID )
             {
                 die( $exporter->getErrorsAsString() );
+            }
+
+            if ( $sourceCompanyRow["logo"] )
+            {
+
             }
 
             if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )

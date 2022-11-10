@@ -196,7 +196,7 @@ def flush_file():
     if not re.match( r'^[a-zA-Z0-9_\&\#\$\.]{1,}$', request.args["name"] ):
         return json.dumps({"error" : "name invalid"})
         
-    path = "file/logo/" + request.args["name"]
+    path = os.path.dirname(os.path.realpath(__file__)) + "/file/logo/" + request.args["name"]
     
     if not exists(path):
         return json.dumps({"error" : "file not exists"})
