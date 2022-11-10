@@ -7,7 +7,7 @@
 from flask import Flask, json, request, send_file
 from multiprocessing import Process
 import time, re
-import requests
+import requests, os
 from scrape import BBBScraper
 from sys import platform
 from os.path import exists
