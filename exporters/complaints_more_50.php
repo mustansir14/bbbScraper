@@ -312,8 +312,9 @@ foreach( $companies as $companyNbr => $companyId )
     #####################################################################
 
     $limit = 5000;
+    $offset = 0;
     $fromID = -1;
-    $skip = 50;
+    $skip = 0;
     $counter = 0;
     $faker = Faker\Factory::create();
 
@@ -322,13 +323,17 @@ foreach( $companies as $companyNbr => $companyId )
         $complaints = $srcDb->selectArray(
             "*",
             "complaint",
-            "company_id = {$sourceCompanyRow["company_id"]}".( $fromID > 0 ? " and complaint_id < {$fromID}" : "" ),
+            "company_id = {$sourceCompanyRow["company_id"]}",
             false,
-            "complaint_id desc",
-            $limit
+            "complaint_date",
+            sprintf( "%d,%d", $offset, $limit )
         );
         if ( $complaints === false ) die( $srcDb->getExtendedError() );
         if ( !$complaints ) break;
+
+        $offset += count( $complaints );
+
+        echo $srcDb->getSQL()."\n";
 
         foreach( $complaints as $complaint )
         {
@@ -350,10 +355,8 @@ foreach( $companies as $companyNbr => $companyId )
 
             if ( $isInsert )
             {
-                /*echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
-                    substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n".
-                    "Update: ".
-                    substr( TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ), 0, 60 )."...\n";*/
+                echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
+                    substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n";
 
                 $subject = explode( ".", $complaint["complaint_text"] );
 
@@ -366,7 +369,7 @@ foreach( $companies as $companyNbr => $companyId )
                     : $subject;
                 #echo "Insert complaint\n";
 
-                print_r( $complaint );
+                #print_r( $complaint );
 
                 $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
                     "company_id"  => $destCompanyID,
