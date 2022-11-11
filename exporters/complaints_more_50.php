@@ -15,12 +15,16 @@ $config = require __DIR__."/config.php";
 
 $profileName = "local";
 #$profileName = "cb";
-$removeAll = true; # set true if need remove all records from db
+$removeBN = false; # set true if need remove all records from dba
+$removeFAQ = true;
+$removeComplaints = true;
+$removeComments = true;
 $createAll = true; # set true if need add new records
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = 2;
 $makeSpamComplaints = true;
 $importInfoScraper = "BBB Mustansir";
+$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 
 ##################################################################################
 
@@ -39,8 +43,7 @@ $companies = $srcDb->queryColumn("select company_id, count(*) cnt from complaint
 if ( !$companies ) die( $srcDb->getExtendedError() );
 
 # ONLY FOR TESTING, IN RELEASE MUST BE REMOVED
-if ( 1 ) {
-    $companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
+if ( $companyUrl ) {
     $companyID = $srcDb->queryColumn("select company_id from company where url = '".$srcDb->escape( $companyUrl )."'", "company_id" );
     if ( !$companyID ) die( $srcDb->getExtendedError() );
 
@@ -178,9 +181,9 @@ foreach( $companies as $companyNbr => $companyId )
 
     #####################################################################
 
-    if ( $removeAll )
+    if ( $removeFAQ )
     {
-        echo "Remove business, faq, company: ".$sourceCompanyRow["company_id"]."\n";
+        echo "Remove business FAQ: ".$sourceCompanyRow["company_id"]."\n";
 
         $savedBusinessID = $exporter->isBusinessExists( $exporter->getBusinessImportID( $sourceCompanyRow[ "company_id" ] ), null );
 
@@ -194,6 +197,16 @@ foreach( $companies as $companyNbr => $companyId )
                 }
             }
         }
+    }
+
+    if ( $removeBN )
+    {
+        echo "Remove business & company: ".$sourceCompanyRow["company_id"]."\n";
+
+        if ( !$exporter->removeCompanyByImportID( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ) ) )
+        {
+            die( $exporter->getErrorsAsString() );
+        }
 
         if ( !$exporter->removeBusinessByImportID( $exporter->getBusinessImportID( $sourceCompanyRow[ "company_id" ] ) ) )
         {
@@ -201,13 +214,6 @@ foreach( $companies as $companyNbr => $companyId )
         }
 
         #echo "Remove company: ".$sourceCompanyRow["company_id"]."\n";
-
-        if ( !$exporter->removeCompanyByImportID( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ) ) )
-        {
-            die( $exporter->getErrorsAsString() );
-        }
-
-
     }
 
     if ( $createAll )
@@ -233,7 +239,7 @@ foreach( $companies as $companyNbr => $companyId )
 
     $userName = "{$companyNameWithoutAbbr} Support";
 
-    if ( $removeAll )
+    if ( $removeComments )
     {
         echo "Remove user: {$userName}\n";
 
@@ -309,11 +315,11 @@ foreach( $companies as $companyNbr => $companyId )
             {
                 die( $exporter->getErrorsAsString() );
             }
+        }
 
-            foreach( $faqList as $faqID => $faqRow )
-            {
-                addBusinessFAQ( $destBusinessID, $exporter, $faqRow["question"], $faqRow["answer"], $sourceCompanyRow );
-            }
+        foreach( $faqList as $faqID => $faqRow )
+        {
+            addBusinessFAQ( $destBusinessID, $exporter, $faqRow["question"], $faqRow["answer"], $sourceCompanyRow );
         }
     }
 
@@ -365,7 +371,7 @@ foreach( $companies as $companyNbr => $companyId )
             $fromID = $complaint["complaint_id"];
             $isInsert = $createAll && ( $addOnly < 1 || $addOnly === $counter );
 
-            if ( $removeAll )
+            if ( $removeComplaints )
             {
                 #echo "Remove complaint: ".$complaint["complaint_id"]."\n";
 
@@ -427,7 +433,7 @@ foreach( $companies as $companyNbr => $companyId )
             {
                 $userName = "{$companyNameWithoutAbbr} Support";
 
-                if ( $removeAll )
+                if ( $removeComments )
                 {
                     #echo "Remove comment: ".$complaint["complaint_id"]."\n";
 
