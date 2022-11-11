@@ -45,6 +45,7 @@ class DB:
         return rows
 
     def insert_or_update_company(self, company : Company):
+        company = self.trim_object(company)
         while True:
             try:
                 self.cur.execute("SELECT company_id from company where url = %s;", (company.url,))
@@ -112,6 +113,7 @@ class DB:
         while True:
             try:
                 for review in reviews:
+                    review = self.trim_object(review)
                     if review.status == None:
                         review.status = "success"
                     self.cur.execute("SELECT review_id from review where company_id = %s and review_date = %s and username = %s;", (review.company_id, review.review_date, review.username))
@@ -161,6 +163,7 @@ class DB:
         while True:
             try:
                 for complaint in complaints:
+                    complaint = self.trim_object(complaint)
                     if complaint.status == None:
                         complaint.status = "success"
                     self.cur.execute("SELECT complaint_id from complaint where company_id = %s and complaint_date = %s and complaint_type = %s and complaint_text = %s;", (complaint.company_id, complaint.complaint_date, complaint.complaint_type, complaint.complaint_text))
@@ -211,6 +214,9 @@ class DB:
         for att in dir(obj):
             value = getattr(obj, att)
             if type(value) == str:
+                value.strip()
+                if value == '' or value == '{}':
+                    value = None
                 setattr(obj, att, value.strip())
         return obj
 
