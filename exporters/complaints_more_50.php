@@ -24,12 +24,6 @@ $importInfoScraper = "BBB Mustansir";
 
 ##################################################################################
 
-$r = ApiHelper::getLogo( "PedFast_Technologies.png" );
-var_dump($r);
-exit;
-
-##################################################################################
-
 $profile = $config["dest"][ $profileName ];
 if ( !is_array( $profile ) ) die( "Error: no profile data" );
 
@@ -45,11 +39,19 @@ $companies = $srcDb->queryColumn("select company_id, count(*) cnt from complaint
 if ( !$companies ) die( $srcDb->getExtendedError() );
 
 # ONLY FOR TESTING, IN RELEASE MUST BE REMOVED
-$companies = [
-    28590,
-    #230118,
-    #231663, # check serving area
-];
+if ( 1 ) {
+    $companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
+    $companyID = $srcDb->queryColumn("select company_id from company where url = '".$srcDb->escape( $companyUrl )."'", "company_id" );
+    if ( !$companyID ) die( $srcDb->getExtendedError() );
+
+    $companies = [ $companyID ];
+} else {
+    $companies = [
+        28590,
+        #230118,
+        #231663, # check serving area
+    ];
+}
 
 $exporter = new CBExport( $destDb );
 
@@ -292,7 +294,15 @@ foreach( $companies as $companyNbr => $companyId )
 
             if ( $sourceCompanyRow["logo"] )
             {
-
+                $image = ApiHelper::getLogo( basename( $sourceCompanyRow["logo"] ) );
+                if ( $image ) {
+                    if ( !$exporter->setBusinessLogo( $destBusinessID, $image ) )
+                    {
+                        die( $exporter->getErrorsAsString() );
+                    }
+                } else {
+                    echo "Logo error: ".ApiHelper::getError()."\n";
+                }
             }
 
             if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )
@@ -390,6 +400,7 @@ foreach( $companies as $companyNbr => $companyId )
                     "date"        => $complaint[ "complaint_date" ],
                     "user_name"   => $faker->name(),
                     "user_date"   => date( "Y-m-d", strtotime( $complaint["complaint_date"] ) - 60 ),
+                    "isOpen"      => 1,
                     "import_data" => [
                         "company_id"   => $sourceCompanyRow[ "company_id" ],
                         "complaint_id" => $complaint[ "complaint_id" ],

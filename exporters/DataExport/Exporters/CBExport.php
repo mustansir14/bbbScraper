@@ -271,6 +271,31 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return json_encode( $values );
     }
 
+    public function setBusinessLogo( string $importID, string $imageContent ): bool
+    {
+        $checker = $this->inputChecker;
+
+        $checker->empty( $importID, "Param: importID is empty" );
+        $checker->empty( $imageContent, "Param: imageContent is empty" );
+
+        if ( $checker->has() )
+        {
+            return false;
+        }
+
+        $businessID = $this->isBusinessExists( $importID, null );
+        if ( !$businessID )
+        {
+            $checker->append( 'Can not find business id' );
+
+            return false;
+        }
+
+
+
+        return true;
+    }
+
     public function addBusiness( string $importID, array $fields )
     {
         $checker = $this->inputChecker;
@@ -344,17 +369,17 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $insertFields["bname_ltd"] = $fields["ltd"];
         }
 
-        if ( isset( $fields["phone"] ) )
+        if ( isset( $fields["phone"] ) && $fields["phone"] )
         {
             $insertFields["bname_phone"] = $this->encodeAsDubleArray( $fields["phone"] );
         }
 
-        if ( isset( $fields["fax"] ) )
+        if ( isset( $fields["fax"] ) && $fields["fax"] )
         {
             $insertFields["bname_fax"] = $this->encodeAsDubleArray( $fields["fax"] );
         }
 
-        if ( isset( $fields["website"] ) )
+        if ( isset( $fields["website"] ) && $fields["website"] )
         {
             $insertFields["bname_website"] = $this->encodeAsDubleArray( $fields["website"] );
         }
@@ -492,19 +517,27 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             return false;
         }
 
-        $userID = $this->addUser( $this->getUserImportID( $fields["user_name"] ), $fields );
-        if ( !$userID ) return false;
-
         $complaintID = $this->isComplaintExists( $importID );
         if ( $complaintID > 0 ) return $complaintID;
 
-        $rs = $this->db->insert( "compl_complaints", [
+        $insertFields = [
             "compl_company" => $fields["company_id"],
             "compl_subject" => $fields["subject"],
             "compl_text" => $fields["text"],
             "compl_time" => $fields["date"],
-            "uid" => $userID,
-        ] );
+        ];
+
+        if ( isset( $fields["isOpen"] ) && $fields["isOpen"] )
+        {
+            $insertFields["compl_lock"] = 1;
+        }
+
+        $userID = $this->addUser( $this->getUserImportID( $fields["user_name"] ), $fields );
+        if ( !$userID ) return false;
+
+        $insertFields["uid"] = $userID;
+
+        $rs = $this->db->insert( "compl_complaints", $insertFields );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
 
         $id = $this->db->insertID();

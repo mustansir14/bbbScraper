@@ -10,6 +10,7 @@ interface ExportBusinessInterface
     public function updateBusiness( string $importID, array $fields );
     public function getBusiness( string $importID ): ?array;
     public function addBusiness( string $importID, array $fields );
+    public function setBusinessLogo( string $importID, string $imageContent ): bool;
     public function disableBusiness( string $importID ): bool;
     public function enableBusiness( string $importID ): bool;
 }
