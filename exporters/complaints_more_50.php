@@ -2,6 +2,7 @@
 require __DIR__."/vendor/autoload.php";
 
 use DataExport\Helpers\Db;
+use DataExport\Helpers\ApiHelper;
 use DataExport\Exporters\CBExport;
 use DataExport\Formatters\TextFormatter;
 use DataExport\Formatters\PhoneFormatter;
@@ -20,6 +21,12 @@ $addOnly = 0; # if createAll and addOnly == country then create record or zero t
 $maxCompanies = 2;
 $makeSpamComplaints = true;
 $importInfoScraper = "BBB Mustansir";
+
+##################################################################################
+
+$r = ApiHelper::getLogo( "PedFast_Technologies.png" );
+var_dump($r);
+exit;
 
 ##################################################################################
 
@@ -283,6 +290,11 @@ foreach( $companies as $companyNbr => $companyId )
                 die( $exporter->getErrorsAsString() );
             }
 
+            if ( $sourceCompanyRow["logo"] )
+            {
+
+            }
+
             if ( !$exporter->linkCompanyToBusiness( $destCompanyID, $destBusinessID ) )
             {
                 die( $exporter->getErrorsAsString() );
@@ -312,8 +324,9 @@ foreach( $companies as $companyNbr => $companyId )
     #####################################################################
 
     $limit = 5000;
+    $offset = 0;
     $fromID = -1;
-    $skip = 50;
+    $skip = 0;
     $counter = 0;
     $faker = Faker\Factory::create();
 
@@ -322,13 +335,17 @@ foreach( $companies as $companyNbr => $companyId )
         $complaints = $srcDb->selectArray(
             "*",
             "complaint",
-            "company_id = {$sourceCompanyRow["company_id"]}".( $fromID > 0 ? " and complaint_id < {$fromID}" : "" ),
+            "company_id = {$sourceCompanyRow["company_id"]}",
             false,
-            "complaint_id desc",
-            $limit
+            "complaint_date",
+            sprintf( "%d,%d", $offset, $limit )
         );
         if ( $complaints === false ) die( $srcDb->getExtendedError() );
         if ( !$complaints ) break;
+
+        $offset += count( $complaints );
+
+        echo $srcDb->getSQL()."\n";
 
         foreach( $complaints as $complaint )
         {
@@ -350,10 +367,8 @@ foreach( $companies as $companyNbr => $companyId )
 
             if ( $isInsert )
             {
-                /*echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
-                    substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n".
-                    "Update: ".
-                    substr( TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' ), 0, 60 )."...\n";*/
+                echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
+                    substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n";
 
                 $subject = explode( ".", $complaint["complaint_text"] );
 
@@ -366,7 +381,7 @@ foreach( $companies as $companyNbr => $companyId )
                     : $subject;
                 #echo "Insert complaint\n";
 
-                print_r( $complaint );
+                #print_r( $complaint );
 
                 $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
                     "company_id"  => $destCompanyID,

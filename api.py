@@ -4,12 +4,13 @@
 # +923333487952
 ##########################################
 
-from flask import Flask, json, request
+from flask import Flask, json, request, send_file
 from multiprocessing import Process
-import time
-import requests
+import time, re
+import requests, os
 from scrape import BBBScraper
 from sys import platform
+from os.path import exists
 from includes.DB import DB
 from config import *
 import logging
@@ -180,6 +181,27 @@ def flush_company_data():
         errors.append( "Internal error" )
         
     return response( errors, rows )
+    
+@api.route('/api/v1/file', methods=['GET'])
+def flush_file():
+    if "type" not in request.args or len( request.args["type"] ) == 0:
+        return json.dumps({"error" : "missing type argument"})
+        
+    if not request.args["type"] in ['logo']:
+        return json.dumps({"error" : "type invalid"})
+        
+    if "name" not in request.args or len( request.args["name"] ) == 0:
+        return json.dumps({"error" : "missing name argument"})
+        
+    if not re.match( r'^[a-zA-Z0-9_\&\#\$\.]{1,}$', request.args["name"] ):
+        return json.dumps({"error" : "name invalid"})
+        
+    path = os.path.dirname(os.path.realpath(__file__)) + "/file/logo/" + request.args["name"]
+    
+    if not exists(path):
+        return json.dumps({"error" : "file not exists"})
+        
+    return send_file(path, as_attachment=True)
 
 if __name__ == "__main__":
     api.run(host='0.0.0.0',port=5000)
