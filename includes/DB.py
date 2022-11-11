@@ -214,10 +214,10 @@ class DB:
         for att in dir(obj):
             value = getattr(obj, att)
             if type(value) == str:
-                value.strip()
+                value = value.strip()
                 if value == '' or value == '{}':
                     value = None
-                setattr(obj, att, value.strip())
+                setattr(obj, att, value)
         return obj
 
     
