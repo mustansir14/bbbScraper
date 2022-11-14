@@ -564,6 +564,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             "compl_subject" => $fields["subject"],
             "compl_text" => $fields["text"],
             "compl_time" => $fields["date"],
+            "compl_country" => 3,
         ];
 
         if ( isset( $fields["isOpen"] ) && $fields["isOpen"] )

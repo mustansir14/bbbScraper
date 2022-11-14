@@ -14,9 +14,9 @@ $config = require __DIR__."/config.php";
 ##################################################################################
 
 $profileName = "local";
-#$profileName = "cb";
+$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
-$removeBN = isset( $_SERVER['ComSpec'] ); # set true if need remove all records from dba
+$removeBN = $profileName === "local"; # set true if need remove all records from dba
 $removeFAQ = true;
 $removeComplaints = true;
 $removeComments = true;
@@ -238,6 +238,8 @@ foreach( $companies as $companyNbr => $companyId )
         {
             die( $exporter->getErrorsAsString() );
         }
+
+        echo "Company id: {$destCompanyID}\n";
     }
 
     $userName = "{$companyNameWithoutAbbr} Support";
@@ -389,25 +391,34 @@ foreach( $companies as $companyNbr => $companyId )
                 echo $counter.") ({$complaint['complaint_id']}) ".$complaint["complaint_date"].": ".
                     substr( TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' ), 0, 60 )."...\n";
 
-                $subject = explode( ".", $complaint["complaint_text"] );
+                $lines = explode( ".", $complaint["complaint_text"] );
 
-                $subject = mb_strlen( $subject[0], "utf-8" ) > 15
-                    ? mb_substr( $subject[0], 0, 90, "utf-8" )
-                    : mb_substr( $complaint["complaint_text"], 0, 90, "utf-8" );
+                $subject = "";
+                foreach( $lines as $line )
+                {
+                    $subject .= $line.". ";
 
+                    if ( mb_strlen( $subject, "utf-8" ) >= 40 ) break;
+                }
+
+                $subject = trim( $subject );
+                $subject = mb_substr( $subject, 0, 145, "utf-8" );
                 $subject = stripos( $subject, ' ' ) !== false
                     ? preg_replace( "#[a-z0-9']{1,}$#si", "", $subject )
                     : $subject;
+                $subject = trim( $subject, ".," );
                 #echo "Insert complaint\n";
 
                 #print_r( $complaint );
+
+                $fakeUserName = substr( $faker->firstName(), 0, 1 ).". ".$faker->lastName();
 
                 $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
                     "company_id"  => $destCompanyID,
                     "subject"     => $subject,
                     "text"        => TextFormatter::fixText( $complaint[ "complaint_text" ], 'complaintsboard.com' ),
                     "date"        => $complaint[ "complaint_date" ],
-                    "user_name"   => $faker->name(),
+                    "user_name"   => $fakeUserName,
                     "user_date"   => date( "Y-m-d", strtotime( $complaint["complaint_date"] ) - 60 ),
                     "isOpen"      => 1,
                     "import_data" => [
