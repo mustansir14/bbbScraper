@@ -301,8 +301,8 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
                 'base_uri' => $this->apiHost,
                 'verify'  => false,
                 'timeout' => 20,
-                'debug' => true,
-                'proxy' => 'http://localhost:8888',
+                #'debug' => true,
+                #'proxy' => 'http://localhost:8888',
             ] );
 
             $response = $client->post( "/api/business/logo?id={$businessID}&token=jdf89jo343kgjs8gfds895jk3g", [
