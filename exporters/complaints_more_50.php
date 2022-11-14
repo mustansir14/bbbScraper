@@ -2,7 +2,7 @@
 require __DIR__."/vendor/autoload.php";
 
 use DataExport\Helpers\Db;
-use DataExport\Helpers\ApiHelper;
+use DataExport\Helpers\BBBAPIHelper;
 use DataExport\Exporters\CBExport;
 use DataExport\Formatters\TextFormatter;
 use DataExport\Formatters\PhoneFormatter;
@@ -15,7 +15,8 @@ $config = require __DIR__."/config.php";
 
 $profileName = "local";
 #$profileName = "cb";
-$removeBN = false; # set true if need remove all records from dba
+$profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
+$removeBN = isset( $_SERVER['ComSpec'] ); # set true if need remove all records from dba
 $removeFAQ = true;
 $removeComplaints = true;
 $removeComments = true;
@@ -27,6 +28,8 @@ $importInfoScraper = "BBB Mustansir";
 $companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 
 ##################################################################################
+
+$bbbApi = new BBBAPIHelper();
 
 $profile = $config["dest"][ $profileName ];
 if ( !is_array( $profile ) ) die( "Error: no profile data" );
@@ -56,7 +59,7 @@ if ( $companyUrl ) {
     ];
 }
 
-$exporter = new CBExport( $destDb );
+$exporter = new CBExport( $destDb, $profileAPI );
 
 echo "Starting export...\n";
 
@@ -300,14 +303,14 @@ foreach( $companies as $companyNbr => $companyId )
 
             if ( $sourceCompanyRow["logo"] )
             {
-                $image = ApiHelper::getLogo( basename( $sourceCompanyRow["logo"] ) );
+                $image = $bbbApi->getLogo( basename( $sourceCompanyRow["logo"] ) );
                 if ( $image ) {
-                    if ( !$exporter->setBusinessLogo( $destBusinessID, $image ) )
+                    if ( !$exporter->setBusinessLogo( $businessImportID, $image ) )
                     {
-                        die( $exporter->getErrorsAsString() );
+                        die( "setBusinessLogo Error: ".$exporter->getErrorsAsString() );
                     }
                 } else {
-                    echo "Logo error: ".ApiHelper::getError()."\n";
+                    echo "Logo error: ".$bbbApi->getError()."\n";
                 }
             }
 

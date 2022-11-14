@@ -10,6 +10,8 @@ use DataExport\Exporters\CBExport\StateTrait;
 use DataExport\Exporters\CBExport\CityTrait;
 use DataExport\Exporters\CBExport\CategoryTrait;
 use DataExport\Exporters\CBExport\BusinessFAQTrait;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Utils;
 
 class CBExport implements ExportInterface, ErrorsAsStringInterface
 {
@@ -17,11 +19,13 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
     private Db $db;
     private InputChecker $inputChecker;
+    private string $apiHost;
 
-    public function __construct( Db $db )
+    public function __construct( Db $db, ?string $apiHost )
     {
         $this->db = $db;
         $this->inputChecker =  new InputChecker( $db );
+        $this->apiHost = $apiHost;
     }
 
     public function getErrors(): array
@@ -291,9 +295,44 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             return false;
         }
 
+        try
+        {
+            $client = new Client( [
+                'base_uri' => $this->apiHost,
+                'verify'  => false,
+                'timeout' => 20,
+                'debug' => true,
+                'proxy' => 'http://localhost:8888',
+            ] );
 
+            $response = $client->post( "/api/business/logo?id={$businessID}&token=jdf89jo343kgjs8gfds895jk3g", [
+                'multipart' => [
+                    [
+                        'name'     => 'image',
+                        'contents' => $imageContent,
+                        'filename' => 'image.png',
+                    ]
+                ]
+            ]);
 
-        return true;
+            if ( $response->getStatusCode() != 200 ) return $this->setError( "Http code not 200" );
+
+            $json = json_decode($response->getBody()->getContents());
+            if ( !$json ) {
+                $checker->append( $response->getBody()->getContents()."\nJson decode fail");
+                return false;
+            }
+            if ( !$json->success ) {
+                $checker->append( implode( "\n", $json->errors ) );
+                return false;
+            }
+
+            return true;
+        }catch (\Exception $e ) {
+            $checker->append( $e->getMessage() );
+        }
+
+        return false;
     }
 
     public function addBusiness( string $importID, array $fields )
