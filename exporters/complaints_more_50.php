@@ -14,7 +14,7 @@ $config = require __DIR__."/config.php";
 ##################################################################################
 
 $profileName = "local";
-$profileName = "cb";
+#$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $removeBN = $profileName === "local"; # set true if need remove all records from dba
 $removeFAQ = true;
@@ -25,7 +25,9 @@ $addOnly = 0; # if createAll and addOnly == country then create record or zero t
 $maxCompanies = 2;
 $makeSpamComplaints = true;
 $importInfoScraper = "BBB Mustansir";
-$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
+# Sergey posted this URL do not change
+#$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
+$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/jewelry-stores/myka-1126-1000020257";
 
 ##################################################################################
 
@@ -43,12 +45,12 @@ $destDb->connectOrDie(  $profile["db"]["host"], $profile["db"]["user"], $profile
 ##################################################################################
 
 $companies = $srcDb->queryColumn("select company_id, count(*) cnt from complaint group by company_id having cnt > 50", "company_id" );
-if ( !$companies ) die( $srcDb->getExtendedError() );
+if ( !$companies ) die( "Query companies error: ".$srcDb->getExtendedError() );
 
 # ONLY FOR TESTING, IN RELEASE MUST BE REMOVED
 if ( $companyUrl ) {
     $companyID = $srcDb->queryColumn("select company_id from company where url = '".$srcDb->escape( $companyUrl )."'", "company_id" );
-    if ( !$companyID ) die( $srcDb->getExtendedError() );
+    if ( !$companyID ) die( "No company url: ".$srcDb->getExtendedError() );
 
     $companies = [ $companyID ];
 } else {
