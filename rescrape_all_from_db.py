@@ -4,7 +4,7 @@ from sys import platform
 from multiprocessing import Queue, Process
 import argparse
 import logging
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+
 
 
 
@@ -12,10 +12,14 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
     parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
+    parser.add_argument('--logfile', nargs='?', type=str, default=None, help='Path of the file where logs should be written')
 
     args = parser.parse_args()
     no_of_threads = args.no_of_threads
-
+    if args.logfile:
+        logging.basicConfig(filename=args.logfile, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+    else:
+        logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
     scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
     count = 0
