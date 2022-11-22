@@ -5,8 +5,10 @@ use function MongoDB\Driver\Monitoring\addSubscriber;
 
 class WebFormatter
 {
-    public static function fromString( string $text ): ?array
+    public static function fromString( ?string $text ): ?array
     {
+        if ( !$text ) return null;
+
         $phones = explode( "\n", $text );
         $phones = array_map( "trim", $phones );
         $phones = array_map( [ __CLASS__ , "format" ], $phones );

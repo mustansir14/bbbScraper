@@ -154,14 +154,14 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
                 $checker->append( $this->db->getExtendedError() );
                 return false;
             }
-        }
 
-        # delete all complaints
-        $rs = $this->db->delete( "compl_complaints", [ "compl_company" => $companyID ] );
-        if ( !$rs )
-        {
-            $checker->append( $this->db->getExtendedError() );
-            return false;
+            // BugFix: delete by one because too long delete many in one request
+            $rs = $this->db->delete( "compl_complaints", [ "id" => $complaint["ID"] ] );
+            if ( !$rs )
+            {
+                $checker->append( $this->db->getExtendedError() );
+                return false;
+            }
         }
 
         return $this->removeRecordByImportID( "compl_companies", $importID );
@@ -211,6 +211,9 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
     {
         $businessID = $this->db->selectColumn( "bname_id", "compl_companies", [ "ID" => $companyID ] );
         $this->throwExceptionIf( $businessID === false, $this->db->getExtendedError() );
+
+        $bnameRow = $this->db->selectRow( 'id', 'bnames', 'id = "'.$businessID.'"');
+        if ( !$bnameRow ) return 0;
 
         return $businessID > 0 ? $businessID : 0;
     }
@@ -468,6 +471,12 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         if ( $checker->has() )
         {
+            return false;
+        }
+
+        $companyRow = $this->db->selectRow( "id, bname_id", "compl_companies", [ "id" => $companyId ] );
+        if ( !$companyRow ) {
+            $checker->append( "Company with id: {$companyId} not exists" );
             return false;
         }
 

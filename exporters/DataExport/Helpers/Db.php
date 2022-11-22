@@ -182,14 +182,24 @@ class Db
         return $rs;
     }
 
-    public function queryColumn( $sql, $columnName )
+    public function queryColumnArray( $sql, $columnName )
     {
         $rows = $this->queryArray( $sql );
         if ( !$rows ) return $rows;
 
-        return array_map( function ( $row ) use ( $columnName ) {
+        $return = array_map( function ( $row ) use ( $columnName ) {
             return $row[ $columnName ];
             }, $rows );
+
+        return $return;
+    }
+
+    public function queryColumnRow( $sql, $columnName )
+    {
+        $row = $this->queryRow( $sql );
+        if ( !$row ) return $row;
+
+        return $row[ $columnName ] ?? null;
     }
 
     public function queryArray( $sql )
