@@ -3,6 +3,7 @@ require __DIR__."/vendor/autoload.php";
 
 use DataExport\Helpers\Db;
 use DataExport\Helpers\BBBAPIHelper;
+use DataExport\Helpers\ScreenshotApiHelper;
 use DataExport\Exporters\CBExport;
 use DataExport\Formatters\TextFormatter;
 use DataExport\Formatters\PhoneFormatter;
@@ -14,14 +15,14 @@ $config = require __DIR__."/config.php";
 ##################################################################################
 
 $profileName = "local";
-$profileName = "cb";
+#$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $removeBN = $profileName === "local" || 1; # set true if need remove all records from dba
 $removeFAQ = true;
 $removeComplaints = true;
 $removeComments = true;
 $createAll = true; # set true if need add new records
-$addComplaints = true;
+$addComplaints = false;
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
 $makeSpamComplaints = true;
@@ -29,7 +30,9 @@ $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    "https://www.bbb.org/us/ca/san-francisco/profile/mobile-apps/cash-app-1116-919908",
+    "https://www.bbb.org/us/in/indianapolis/profile/catalog-shopping/full-beauty-brands-0382-1809",
+    "https://www.bbb.org/us/or/portland/profile/mobile-phone-service/consumer-cellular-1296-74003110",
+    "https://www.bbb.org/us/il/niles/profile/collectibles/the-bradford-exchange-ltd-0654-136",
     /*"https://www.bbb.org/us/wa/seattle/profile/ecommerce/amazoncom-1296-7039385",
     "https://www.bbb.org/us/in/indianapolis/profile/catalog-shopping/full-beauty-brands-0382-1809",
     "https://www.bbb.org/us/ca/calabasas/profile/online-retailer/yeezy-supply-1216-717168",
@@ -332,6 +335,22 @@ foreach( $companies as $companyNbr => $companyId )
                     }
                 } else {
                     echo "Logo error: ".$bbbApi->getError()."\n";
+                }
+            } elseif ( $sourceCompanyRow["website"] && filter_var($sourceCompanyRow["website"], FILTER_VALIDATE_URL) )
+            {
+                echo "Making screenshot...\n";
+
+                $screenshot = new ScreenshotApiHelper();
+                $reply = $screenshot->getScreenshot($sourceCompanyRow["website"]);
+                if ( !$reply ) {
+                    var_dump($reply);
+                    echo "Error: making screenshot error: ".$screenshot->getError()."\n";
+                    exit;
+                }
+
+                if ( !$exporter->setBusinessLogo( $businessImportID, $reply->image_content ) )
+                {
+                    die( "setBusinessLogo Error: ".$exporter->getErrorsAsString() );
                 }
             }
         } else {
