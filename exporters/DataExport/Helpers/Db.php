@@ -15,6 +15,8 @@ class Db
 
     public function connect( string $host, string $user, string $pass, string $db )
     {
+        if ( $this->db ) $this->db->close();
+
         $this->db = new \Mysqli( $host, $user, $pass, $db );
         if ($this->db->connect_errno) {
             $this->error = $this->db->connect_error;
@@ -22,8 +24,17 @@ class Db
         }
 
         $this->db->set_charset('utf8mb4');
+        $this->host = $host;
+        $this->user = $user;
+        $this->pass = $pass;
+        $this->name = $db;
 
         return true;
+    }
+
+    public function reconnect()
+    {
+        $this->connectOrDie( $this->host, $this->user, $this->pass, $this->name );
     }
 
     public function connectOrDie( string $host, string $user, string $pass, string $db )
@@ -175,6 +186,13 @@ class Db
         $rs = $this->db->query( $sql );
         if ( !$rs )
         {
+            if ( stripos( $this->db->error, "MySQL server has gone away" ) !== false ) {
+                $this->reconnect();
+
+                $rs = $this->db->query( $sql );
+                if ( $rs ) return $rs;
+            }
+
             $this->error = $this->db->error;
             return false;
         }

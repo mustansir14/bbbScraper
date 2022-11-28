@@ -22,7 +22,7 @@ $removeFAQ = true;
 $removeComplaints = true;
 $removeComments = true;
 $createAll = true; # set true if need add new records
-$addComplaints = false;
+$addComplaints = true;
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
 $makeSpamComplaints = true;
@@ -325,32 +325,42 @@ foreach( $companies as $companyNbr => $companyId )
 
             echo "New business id: {$destBusinessID}\n";
 
-            if ( $sourceCompanyRow["logo"] )
+            // BN already can exists in db without exportation, do not modify this
+            if ( $exporter->isBusinessExported( $businessImportID, $companyNameWithoutAbbr ) )
             {
-                $image = $bbbApi->getLogo( basename( $sourceCompanyRow["logo"] ) );
-                if ( $image ) {
-                    if ( !$exporter->setBusinessLogo( $businessImportID, $image ) )
+                echo "Logo: ".$sourceCompanyRow[ "logo" ]."\n";
+                echo "Web: ".$sourceCompanyRow[ "website" ]."\n";
+
+                if ( $sourceCompanyRow[ "logo" ] )
+                {
+                    $image = $bbbApi->getLogo( basename( $sourceCompanyRow[ "logo" ] ) );
+                    if ( $image )
+                    {
+                        if ( !$exporter->setBusinessLogo( $businessImportID, $image ) )
+                        {
+                            die( "setBusinessLogo Error: ".$exporter->getErrorsAsString() );
+                        }
+                    }
+                    else
+                    {
+                        echo "Logo error: ".$bbbApi->getError()."\n";
+                    }
+                }
+                elseif ( $sourceCompanyRow[ "website" ] && filter_var( $sourceCompanyRow[ "website" ], FILTER_VALIDATE_URL ) )
+                {
+                    echo "Making screenshot...\n";
+                    $screenshot = new ScreenshotApiHelper();
+                    $reply = $screenshot->getScreenshot( $sourceCompanyRow[ "website" ] );
+                    if ( !$reply )
+                    {
+                        var_dump( $reply );
+                        echo "Error: making screenshot error: ".$screenshot->getError()."\n";
+                        exit;
+                    }
+                    if ( !$exporter->setBusinessLogo( $businessImportID, $reply->image_content ) )
                     {
                         die( "setBusinessLogo Error: ".$exporter->getErrorsAsString() );
                     }
-                } else {
-                    echo "Logo error: ".$bbbApi->getError()."\n";
-                }
-            } elseif ( $sourceCompanyRow["website"] && filter_var($sourceCompanyRow["website"], FILTER_VALIDATE_URL) )
-            {
-                echo "Making screenshot...\n";
-
-                $screenshot = new ScreenshotApiHelper();
-                $reply = $screenshot->getScreenshot($sourceCompanyRow["website"]);
-                if ( !$reply ) {
-                    var_dump($reply);
-                    echo "Error: making screenshot error: ".$screenshot->getError()."\n";
-                    exit;
-                }
-
-                if ( !$exporter->setBusinessLogo( $businessImportID, $reply->image_content ) )
-                {
-                    die( "setBusinessLogo Error: ".$exporter->getErrorsAsString() );
                 }
             }
         } else {

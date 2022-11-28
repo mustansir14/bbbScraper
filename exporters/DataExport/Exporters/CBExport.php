@@ -236,6 +236,16 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return true;
     }
 
+    public function isBusinessExported( string $importID, string $name ): bool
+    {
+        if( !$this->isBusinessExists( $importID, $name ) )
+        {
+            return false;
+        }
+
+        return $this->isBusinessExists( $importID, null );
+    }
+
     public function disableBusiness( string $importID ): bool
     {
         return $this->updateBusiness( $importID, [
