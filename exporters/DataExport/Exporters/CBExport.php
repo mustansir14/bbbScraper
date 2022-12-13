@@ -107,6 +107,14 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return 0;
     }
 
+    private function getImport( string $table, int $id ): ?array
+    {
+        $importData = $this->db->selectRow( '*', $table.'_imports', [ 'id' => $id ] );
+        $this->throwExceptionIf( $importData === false , $this->db->getError() );
+
+        return $importData;
+    }
+
     public function addImport( $table, $id, $importID, $importData ):void
     {
         $rs = $this->db->insert( $table. "_imports", [
@@ -521,8 +529,38 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return "scraper-bbb--complaint-id:{$complaintId}";
     }
 
+    public function getComplaintImportIDLike(): string
+    {
+        return $this->getComplaintImportID( '%' );
+    }
+
+    public function getAllImportedComplaints( int $businessID ): array
+    {
+        $rows = $this->db->selectArray(
+            "cc.*, ci.*",
+            [ "compl_complaints cc", "compl_complaints_imports ci" => "ci.id = cc.id" ],
+            "cc.compl_bname_id = '{$businessID}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
+        );
+        $this->throwExceptionIf( $rows === false, $this->db->getError() );
+
+        return $rows;
+    }
+
     public function removeComplaintByImportID( string $importID )
     {
+        $complaintID = $this->isComplaintExists( $importID );
+        if ( $complaintID )
+        {
+            $complaintRow = $this->db->selectRow( 'ID, uid', 'compl_complaints', [ 'id' => $complaintID ] );
+            $this->throwExceptionIf( !$complaintRow, $this->db->getExtendedError() );
+
+            $importData = $this->getImport( "panel_users", $complaintRow[ 'uid' ] );
+            if ( $importData )
+            {
+                $this->throwExceptionIf( !$this->removeUserByImportID( $importData[ 'import_id' ] ), $this->getErrorsAsString() );
+            }
+        }
+
         return $this->removeRecordByImportID( "compl_complaints", $importID );
     }
 
@@ -569,6 +607,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $checker->empty( $fields["date"], "Field: 'date' is empty" );
         $checker->empty( $fields["user_name"], "Field: 'user_name' is empty" );
         $checker->empty( $fields["import_data"], "Field: 'import_data' is empty" );
+        $checker->empty( $fields["type"], "Field: 'type' is empty, must be complaint or review" );
 
         if ( $checker->has() )
         {
@@ -579,6 +618,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         if ( $complaintID > 0 ) return $complaintID;
 
         $insertFields = [
+            "compl_type" => $fields["type"] === "review" ? "review" : "complaint",
             "compl_company" => $fields["company_id"],
             "compl_subject" => $fields["subject"],
             "compl_text" => $fields["text"],
@@ -589,6 +629,20 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         if ( isset( $fields["isOpen"] ) && $fields["isOpen"] )
         {
             $insertFields["compl_lock"] = 1;
+        }
+
+        if ( isset( $fields["is_resolved"] ) && $fields["is_resolved"] )
+        {
+            $insertFields["isResolved"] = 1;
+
+            $checker->empty( $fields["resolved_date"], "Field: 'resolved_date' is empty" );
+
+            if ( $checker->has() )
+            {
+                return false;
+            }
+
+            $insertFields["resolvedTime"] = $fields["resolved_date"];
         }
 
         $userID = $this->addUser( $this->getUserImportID( $fields["user_name"] ), $fields );
@@ -687,6 +741,18 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return "scraper-bbb--complaint-id:".$commentId;
     }
 
+    public function getAllImportedComments( int $businessID )
+    {
+        $rows = $this->db->selectArray(
+            "cp.*, ci.*",
+            [ "compl_posts cp", "compl_posts_imports ci" => "ci.id = cp.id", "compl_complaints cc" => "cc.id = cp.compl_id" ],
+            "cc.compl_bname_id = '{$businessID}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
+        );
+        $this->throwExceptionIf( $rows === false, $this->db->getError() );
+
+        return $rows;
+    }
+
     public function isCommentExists( string $importID )
     {
         return $this->isRecordExists( "compl_posts", $importID, "", null );
@@ -694,6 +760,19 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
     public function removeCommentByImportID( string $importID )
     {
+        $commentID = $this->isCommentExists( $importID );
+        if ( $commentID )
+        {
+            $commentRow = $this->db->selectRow( 'ID, uid', 'compl_posts', [ 'id' => $commentID ] );
+            $this->throwExceptionIf( !$commentRow, $this->db->getExtendedError() );
+
+            $importData = $this->getImport( "panel_users", $commentRow[ 'uid' ] );
+            if ( $importData )
+            {
+                $this->throwExceptionIf( !$this->removeUserByImportID( $importData[ 'import_id' ] ), $this->getErrorsAsString() );
+            }
+        }
+
         return $this->removeRecordByImportID( "compl_posts", $importID );
     }
 

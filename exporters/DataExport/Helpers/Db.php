@@ -23,7 +23,7 @@ class Db
             return false;
         }
 
-        $this->db->set_charset('utf8mb4');
+       # $this->db->set_charset('utf8mb4');
         $this->host = $host;
         $this->user = $user;
         $this->pass = $pass;
