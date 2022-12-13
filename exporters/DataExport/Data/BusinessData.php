@@ -22,17 +22,17 @@ class BusinessData
         }
     }
 
-    public static function removeAllPosts( object $exporter, array $sourceCompanyRow)
+    public static function removeAllPosts( object $exporter, array $sourceCompanyRow, string $type)
     {
         $businessID = $exporter->isBusinessExists( $exporter->getBusinessImportID( $sourceCompanyRow['company_id'] ), null );
         if ( $businessID )
         {
-            foreach ( $exporter->getAllImportedComments( $businessID ) as $comment )
+            foreach ( $exporter->getAllImportedComments( $businessID, $type ) as $comment )
             {
                 $exporter->removeCommentByImportID( $comment[ 'import_id' ] );
             }
 
-            foreach ( $exporter->getAllImportedComplaints( $businessID ) as $complaint )
+            foreach ( $exporter->getAllImportedComplaints( $businessID, $type ) as $complaint )
             {
                 $exporter->removeComplaintByImportID( $complaint[ 'import_id' ] );
             }
@@ -47,7 +47,8 @@ class BusinessData
         if ( $businessID ) {
             echo "Remove business & company: ".$sourceCompanyRow["company_id"]."\n";
 
-            static::removeAllPosts( $exporter, $sourceCompanyRow );
+            static::removeAllPosts( $exporter, $sourceCompanyRow, "review" );
+            static::removeAllPosts( $exporter, $sourceCompanyRow, "complaint" );
 
             if ( !$exporter->removeCompanyByImportID( $exporter->getCompanyImportID( $sourceCompanyRow["company_id"] ) ) )
             {

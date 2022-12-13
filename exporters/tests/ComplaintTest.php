@@ -9,7 +9,7 @@ final class ComplaintTest extends TestCase
     {
         global $db;
 
-        $cb = new CBExport( $db );
+        $cb = new CBExport( $db, "" );
 
         return $cb;
     }
@@ -18,7 +18,7 @@ final class ComplaintTest extends TestCase
     {
         $export = $this->getExport();
 
-        $value = $export->getComplaintImportID( __FUNCTION__ );
+        $value = $export->getComplaintImportID( __FUNCTION__, "complaint" );
 
         $this->assertNotEmpty( $value, "Import id empty" );
     }
@@ -53,7 +53,7 @@ final class ComplaintTest extends TestCase
         $export = $this->getExport();
 
         $companyId = $this->addCompany( __FUNCTION__ );
-        $importId  = $export->getComplaintImportID( __FUNCTION__ );
+        $importId  = $export->getComplaintImportID( __FUNCTION__, "complaint" );
 
         {
             $exists = $export->isComplaintExists( $importId, __FUNCTION__ );
@@ -67,6 +67,7 @@ final class ComplaintTest extends TestCase
                 "company_id"  => $companyId,
                 "subject"     => "subject",
                 "text"        => "text",
+                "type"        => "complaint",
                 "date"        => date( "Y-m-d" ),
                 "user_name"   => __FUNCTION__,
                 "import_data" => __FUNCTION__,

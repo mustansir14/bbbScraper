@@ -9,7 +9,7 @@ final class CommentTest extends TestCase
     {
         global $db;
 
-        $cb = new CBExport( $db );
+        $cb = new CBExport( $db, "" );
 
         return $cb;
     }
@@ -52,13 +52,14 @@ final class CommentTest extends TestCase
     {
         $export = $this->getExport();
 
-        $importId = $export->getComplaintImportID( __FUNCTION__ );
+        $importId = $export->getComplaintImportID( __FUNCTION__, "complaint" );
 
         {
             $complaintId = $export->addComplaint( $importId, [
                 "company_id"  => $companyId,
                 "subject"     => __FUNCTION__,
                 "text"        => __FUNCTION__,
+                "type"        => "complaint",
                 "date"        => date( "Y-m-d" ),
                 "user_name"   => __FUNCTION__,
                 "import_data" => __FUNCTION__,

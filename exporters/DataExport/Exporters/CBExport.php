@@ -524,9 +524,11 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
     #####################################################################################################
 
-    public function getComplaintImportID( $complaintId ): string
+    public function getComplaintImportID( $complaintId, string $type ): string
     {
-        return "scraper-bbb--complaint-id:{$complaintId}";
+        $this->throwExceptionIf( !in_array( $type, [ 'complaint', 'review' ] ), "Unknown type" );
+
+        return "scraper-bbb--{$type}-id:{$complaintId}";
     }
 
     public function getComplaintImportIDLike(): string
@@ -534,12 +536,12 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return $this->getComplaintImportID( '%' );
     }
 
-    public function getAllImportedComplaints( int $businessID ): array
+    public function getAllImportedComplaints( int $businessID, string $complaintType ): array
     {
         $rows = $this->db->selectArray(
             "cc.*, ci.*",
             [ "compl_complaints cc", "compl_complaints_imports ci" => "ci.id = cc.id" ],
-            "cc.compl_bname_id = '{$businessID}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
+            "cc.compl_bname_id = '{$businessID}' and cc.compl_type='{$complaintType}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
         );
         $this->throwExceptionIf( $rows === false, $this->db->getError() );
 
@@ -741,12 +743,12 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return "scraper-bbb--complaint-id:".$commentId;
     }
 
-    public function getAllImportedComments( int $businessID )
+    public function getAllImportedComments( int $businessID, string $complaintType )
     {
         $rows = $this->db->selectArray(
             "cp.*, ci.*",
             [ "compl_posts cp", "compl_posts_imports ci" => "ci.id = cp.id", "compl_complaints cc" => "cc.id = cp.compl_id" ],
-            "cc.compl_bname_id = '{$businessID}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
+            "cc.compl_bname_id = '{$businessID}' and cc.compl_type='{$complaintType}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
         );
         $this->throwExceptionIf( $rows === false, $this->db->getError() );
 

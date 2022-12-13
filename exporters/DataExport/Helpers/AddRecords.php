@@ -23,14 +23,14 @@ class AddRecords
         $this->counter = $this->vars['counter'];
     }
     
-    private function addComplaint( object $exporter, array $complaint )
+    private function addComplaint( object $exporter, array $row, string $type )
     {
-        $complaintText = TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' );
+        $complaintText = TextFormatter::fixText( $row["{$type}_text"], 'complaintsboard.com' );
         if ( $complaintText )
         {
-            echo ($this->counter++).") ({$complaint['complaint_id']}) ".$complaint[ "complaint_date" ].": ".substr( $complaintText, 0, 60 )."...\n";
+            echo ($this->counter++).") ({$row['{$type}_id']}) ".$row[ "{$type}_date" ].": ".substr( $complaintText, 0, 60 )."...\n";
 
-            $lines = explode( ".", $complaint[ "complaint_text" ] );
+            $lines = explode( ".", $row[ "{$type}_text" ] );
             $subject = "";
             foreach ( $lines as $line )
             {
@@ -51,29 +51,29 @@ class AddRecords
             $makeResolved = $this->vars['ifResponseMakeResolved'] ?? false;
 
             if ( $makeResolved ) {
-                $updateText = TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' );
+                $updateText = TextFormatter::fixText( $row["company_response_text"], 'complaintsboard.com' );
                 if ( $updateText ) {
-                    $resolvedDate = $complaint[ "company_response_date" ];
+                    $resolvedDate = $row[ "company_response_date" ];
                 }
             }
 
             $fakeUserName = substr( $this->faker->firstName(), 0, 1 ).". ".$this->faker->lastName();
-            $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ), [
+            $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ] ), [
                 "company_id"  => $this->vars['destCompanyID'],
                 "subject"     => $subject,
                 "text"        => $complaintText,
-                "type"        => $complaint["type"],
-                "date"        => $complaint[ "complaint_date" ],
+                "type"        => $type,
+                "date"        => $row[ "{$type}_date" ],
                 "user_name"   => $fakeUserName,
-                "user_date"   => date( "Y-m-d", strtotime( $complaint[ "complaint_date" ] ) - 60 ),
+                "user_date"   => date( "Y-m-d", strtotime( $row[ "{$type}_date" ] ) - 60 ),
                 "is_resolved"  => $resolvedDate ?: 0,
                 "resolved_date" => $resolvedDate ?: null,
                 "isOpen"      => 1,
                 "import_data" => [
                     "company_id"   => $this->vars['sourceCompanyRow'][ "company_id" ],
-                    "complaint_id" => $complaint[ "complaint_id" ],
+                    "{$type}_id" => $row[ "{$type}_id" ],
                     "company_url"  => $this->vars['sourceCompanyRow'][ "url" ],
-                    "type"         => "complaint",
+                    "type"         => $type,
                     "scraper"      => $this->vars['importInfoScraper'],
                     "version"      => 1,
                 ],
@@ -85,13 +85,13 @@ class AddRecords
             if ( $this->vars['makeSpamComplaints'] )
             {
                 $exporter->spamComplaint(
-                    $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ),
+                    $exporter->getComplaintImportID( $row[ "{$type}_id" ] ),
                     basename( __FILE__ ).": make private"
                 );
             }
             else
             {
-                $exporter->unspamComplaint( $exporter->getComplaintImportID( $complaint[ "complaint_id" ] ) );
+                $exporter->unspamComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ] ) );
             }
 
             return $complaintID;
@@ -100,31 +100,31 @@ class AddRecords
         return 0;
     }
 
-    private function addResponse( object $exporter, array $complaint, int $complaintID )
+    private function addResponse( object $exporter, array $row, int $complaintID, string $type )
     {
-        if ( $complaint["company_response_text"] )
+        if ( $row["company_response_text"] )
         {
             $userName = "{$this->vars['companyNameWithoutAbbr']} Support";
 
-            $updateText = TextFormatter::fixText( $complaint["company_response_text"], 'complaintsboard.com' );
+            $updateText = TextFormatter::fixText( $row["company_response_text"], 'complaintsboard.com' );
             if ( $updateText )
             {
                 echo "Update: ".substr( $updateText, 0, 60 )."\n";
 
-                $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint[ "complaint_id" ] ), [
+                $commentID = $exporter->addComment( $exporter->getCommentImportID( $row[ "{$type}_id" ] ), [
                     "complaint_id" => $complaintID,
                     "text"         => $updateText,
                     "is_update"    => true,
-                    "date"         => $complaint[ "company_response_date" ],
+                    "date"         => $row[ "company_response_date" ],
                     "user_name"    => $userName,
-                    "user_date"    => date( "Y-m-d", strtotime( $complaint[ "company_response_date" ] ) - 1 * 365 * 24 * 3600 ),
+                    "user_date"    => date( "Y-m-d", strtotime( $row[ "company_response_date" ] ) - 1 * 365 * 24 * 3600 ),
                     "user_email"   => $this->faker->email(),
                     "user_support" => $this->vars['destBusinessID'],
                     "import_data"  => [
                         "company_id"   => $this->vars['sourceCompanyRow'][ "company_id" ],
-                        "complaint_id" => $complaint[ "complaint_id" ],
+                        "{$type}_id"   => $row[ "{$type}_id" ],
                         "company_url"  => $this->vars['sourceCompanyRow'][ "url" ],
-                        "type"         => "complaint-response",
+                        "type"         => "{$type}-response",
                         "scraper"      => $this->vars['importInfoScraper'],
                         "version"      => 1,
                     ],
@@ -137,15 +137,15 @@ class AddRecords
         }
     }
 
-    public function insertComplaint( array $complaint ): int
+    private function insertComplaintOrReview( array $item, string $type ): int
     {
         $exporter = $this->vars['exporter'];
 
         if ( $this->vars['isInsert'] ) {
-            $complaintID = $this->addComplaint( $exporter, $complaint );
+            $complaintID = $this->addComplaint( $exporter, $item, $type );
             if ( $complaintID )
             {
-                $this->addResponse( $exporter, $complaint, $complaintID );
+                $this->addResponse( $exporter, $item, $complaintID, $type );
 
                 $exporter->callUpdateComplaint( $complaintID );
             }
@@ -156,14 +156,22 @@ class AddRecords
         return 0;
     }
 
-    public function insertAsComment( array $complaint, int $toComplaintID )
+    public function insertReview( array $review ): int
+    {
+        return $this->insertComplaintOrReview( $review, "review" );
+    }
+
+    public function insertComplaint( array $complaint ): int
+    {
+        return $this->insertComplaintOrReview( $complaint, "complaint" );
+    }
+
+    public function insertAsComment( array $complaint, int $toComplaintID, string $type )
     {
         $exporter = $this->vars['exporter'];
 
         if ( $this->vars['isInsert'] ) {
-            $userName = "{$this->vars['companyNameWithoutAbbr']} Support";
-
-            $updateText = TextFormatter::fixText( $complaint["complaint_text"], 'complaintsboard.com' );
+            $updateText = TextFormatter::fixText( $complaint["{$type}_text"], 'complaintsboard.com' );
             if ( $updateText )
             {
                 echo "Update: ".substr( $updateText, 0, 60 )."\n";
@@ -174,14 +182,14 @@ class AddRecords
                     "complaint_id" => $toComplaintID,
                     "text"         => $updateText,
                     "is_update"    => false,
-                    "date"         => $complaint[ "complaint_date" ],
+                    "date"         => $complaint[ "{$type}_date" ],
                     "user_name"   => $fakeUserName,
-                    "user_date"   => date( "Y-m-d", strtotime( $complaint[ "complaint_date" ] ) - 60 ),
+                    "user_date"   => date( "Y-m-d", strtotime( $complaint[ "{$type}_date" ] ) - 60 ),
                     "import_data"  => [
                         "company_id"   => $this->vars['sourceCompanyRow'][ "company_id" ],
-                        "complaint_id" => $complaint[ "complaint_id" ],
+                        "{$type}_id" => $complaint[ "{$type}_id" ],
                         "company_url"  => $this->vars['sourceCompanyRow'][ "url" ],
-                        "type"         => "complaint-as-comment",
+                        "type"         => "{$type}-as-comment",
                         "scraper"      => $this->vars['importInfoScraper'],
                         "version"      => 1,
                     ],

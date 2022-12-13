@@ -13,7 +13,7 @@ $config = require __DIR__."/config.php";
 $profileName = "local";
 #$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
-$complaintType = 0 ? "review" : "complaint";
+$complaintType = 1 ? "review" : "complaint";
 $removeBN = false;
 $removeAllPosts = true;
 $addComplaints = true;
@@ -103,7 +103,7 @@ foreach( $companies as $companyNbr => $companyId )
 
     if ( $removeAllPosts )
     {
-        BusinessData::removeAllPosts( $exporter, $sourceCompanyRow );
+        BusinessData::removeAllPosts( $exporter, $sourceCompanyRow, $complaintType );
     }
 
     [ $destBusinessID, $destCompanyID ] = BusinessData::create( $exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper, $makeScreenshot, $makeSpamComplaints );

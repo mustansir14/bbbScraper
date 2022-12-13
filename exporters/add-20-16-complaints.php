@@ -26,7 +26,8 @@ $complaints20 = $srcDb->queryArray("SELECT p.* FROM
     WHERE company_id='{$sourceCompanyRow["company_id"]}' and complaint_date < '{$afterDate}' 
     order by complaint_date desc 
 ) p 
-order by char_length(complaint_text) DESC limit 20");
+order by char_length(complaint_text) DESC 
+limit 20");
 
 $skipIDs = [];
 $insertedComplaints = [];
@@ -47,8 +48,6 @@ foreach( $complaints20 as $complaintNbr => $complaint )
         'makeSpamComplaints' => $makeSpamComplaints,
         'ifResponseMakeResolved' => true,
     ]);
-
-    $complaint['type'] = $complaintType;
 
     $complaintID = $helper->insertComplaint($complaint);
     if ( $complaintID ) {
@@ -104,5 +103,5 @@ foreach( $division as $complaintNbr => $divisionRow )
         'makeSpamComplaints' => $makeSpamComplaints,
     ]);
 
-    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint']);
+    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);
 }

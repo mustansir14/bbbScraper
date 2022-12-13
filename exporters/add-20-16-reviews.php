@@ -12,9 +12,9 @@ if ( !$addComplaints ) return;
 use DataExport\Helpers\AddRecords;
 
 $afterDate = $srcDb->selectColumn(
-    'complaint_date',
-    'complaint',
-    "company_id = {$sourceCompanyRow["company_id"]}", false,"complaint_date desc", "14,1");
+    'review_date',
+    'review',
+    "company_id = {$sourceCompanyRow["company_id"]}", false,"review_date desc", "14,1");
 if ( !$afterDate ) die( $srcDb->getError());
 
 echo "After data: {$afterDate}\n";
@@ -22,45 +22,45 @@ echo "After data: {$afterDate}\n";
 $complaints20 = $srcDb->queryArray("SELECT p.* FROM 
 ( 
     select * 
-    from `complaint` 
-    WHERE company_id='{$sourceCompanyRow["company_id"]}' and complaint_date < '{$afterDate}' 
-    order by complaint_date desc 
+    from `review` 
+    WHERE company_id='{$sourceCompanyRow["company_id"]}' and review_date < '{$afterDate}' 
+    order by review_date desc 
 ) p 
-order by char_length(complaint_text) DESC limit 20");
+order by char_length(review_text) DESC 
+limit 20");
+if ( $complaints20 === false ) throw new \Exception( __LINE__ );
 
 $skipIDs = [];
 $insertedComplaints = [];
 
 foreach( $complaints20 as $complaintNbr => $complaint )
 {
-    $skipIDs[] = $complaint["complaint_id"];
+    $skipIDs[] = $complaint["review_id"];
 
     $helper = new AddRecords([
         'counter' => $complaintNbr + 1,
         'isInsert' => true,
         'companyNameWithoutAbbr' => $companyNameWithoutAbbr,
-        'removeComments' => $removeComments,
-        'removeComplaints' => $removeComplaints,
         'exporter' => $exporter,
         'destCompanyID' => $destCompanyID,
         'destBusinessID' => $destBusinessID,
         'sourceCompanyRow' => $sourceCompanyRow,
         'importInfoScraper' => $importInfoScraper,
         'makeSpamComplaints' => $makeSpamComplaints,
-        'ifResponseMakeResolved' => true,
     ]);
 
-    $complaintID = $helper->insertComplaint($complaint);
+    $complaintID = $helper->insertReview($complaint);
     if ( $complaintID ) {
         $insertedComplaints[] = $complaintID;
     }
 }
 
 $complaints16 = $srcDb->queryArray("select * 
-from `complaint` 
-WHERE company_id='{$sourceCompanyRow["company_id"]}' and complaint_date < '{$afterDate}' and complaint_id not in (".implode(",",$skipIDs).")
-order by complaint_date desc 
+from `review` 
+WHERE company_id='{$sourceCompanyRow["company_id"]}' and review_date < '{$afterDate}' and complaint_id not in (".implode(",",$skipIDs).")
+order by review_date desc 
 limit 16");
+if ( $complaints16 === false ) throw new \Exception( __LINE__ );
 
 # first complaint insert will be last in BN
 $insertedComplaints = array_reverse($insertedComplaints);
@@ -106,5 +106,5 @@ foreach( $division as $complaintNbr => $divisionRow )
         'makeSpamComplaints' => $makeSpamComplaints,
     ]);
 
-    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint']);
+    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);
 }

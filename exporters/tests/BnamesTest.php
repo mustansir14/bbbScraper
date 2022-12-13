@@ -9,7 +9,7 @@ final class BnamesTest extends TestCase
     {
         global $db;
 
-        $cb = new CBExport( $db );
+        $cb = new CBExport( $db, "" );
 
         return $cb;
     }
