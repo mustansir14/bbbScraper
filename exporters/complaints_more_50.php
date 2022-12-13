@@ -15,6 +15,7 @@ $profileName = "local";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $complaintType = 1 ? "review" : "complaint";
 $removeBN = false;
+$debugComplaintsAndReviews = false;
 $removeAllPosts = true;
 $addComplaints = true;
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
@@ -99,6 +100,15 @@ foreach( $companies as $companyNbr => $companyId )
     if ( $removeBN )
     {
         BusinessData::remove( $exporter, $sourceCompanyRow, $companyNameWithoutAbbr );
+    }
+
+    # for debug only
+    if ( $debugComplaintsAndReviews ) {
+        BusinessData::removeAllPosts( $exporter, $sourceCompanyRow, "complaint" );
+        BusinessData::removeAllPosts( $exporter, $sourceCompanyRow, "review" );
+
+        echo "All imported complaints & comments removed\n";
+        exit;
     }
 
     if ( $removeAllPosts )

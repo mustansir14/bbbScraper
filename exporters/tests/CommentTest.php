@@ -18,7 +18,7 @@ final class CommentTest extends TestCase
     {
         $export = $this->getExport();
 
-        $value = $export->getCommentImportID( __FUNCTION__ );
+        $value = $export->getCommentImportID( __FUNCTION__, "complaint" );
 
         $this->assertNotEmpty( $value, "Import id empty" );
     }
@@ -84,7 +84,7 @@ final class CommentTest extends TestCase
 
         $companyId = $this->addCompany( __FUNCTION__ );
         $complaintId = $this->addComplaint( $companyId );
-        $importId  = $export->getCommentImportID( __FUNCTION__ );
+        $importId  = $export->getCommentImportID( __FUNCTION__, "complaint" );
 
         {
             $exists = $export->isCommentExists( $importId );

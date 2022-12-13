@@ -531,9 +531,9 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return "scraper-bbb--{$type}-id:{$complaintId}";
     }
 
-    public function getComplaintImportIDLike(): string
+    public function getComplaintImportIDLike(string $complaintType): string
     {
-        return $this->getComplaintImportID( '%' );
+        return $this->getComplaintImportID( '%', $complaintType );
     }
 
     public function getAllImportedComplaints( int $businessID, string $complaintType ): array
@@ -541,7 +541,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $rows = $this->db->selectArray(
             "cc.*, ci.*",
             [ "compl_complaints cc", "compl_complaints_imports ci" => "ci.id = cc.id" ],
-            "cc.compl_bname_id = '{$businessID}' and cc.compl_type='{$complaintType}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
+            "cc.compl_bname_id = '{$businessID}' and cc.compl_type='{$complaintType}' and ci.import_id like '".$this->getComplaintImportIDLike($complaintType)."'"
         );
         $this->throwExceptionIf( $rows === false, $this->db->getError() );
 
@@ -557,7 +557,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $this->throwExceptionIf( !$complaintRow, $this->db->getExtendedError() );
 
             $importData = $this->getImport( "panel_users", $complaintRow[ 'uid' ] );
-            if ( $importData )
+            if ( $importData && $this->getUserRefsCount( $complaintRow['uid'] ) )
             {
                 $this->throwExceptionIf( !$this->removeUserByImportID( $importData[ 'import_id' ] ), $this->getErrorsAsString() );
             }
@@ -738,9 +738,15 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
     ######################################################################################
 
-    public function getCommentImportID( $commentId ): string
+    public function getCommentImportID( $commentId, string $type ): string
     {
-        return "scraper-bbb--complaint-id:".$commentId;
+        $this->throwExceptionIf( !in_array( $type, ['review','complaint'] ), "Unknown type: {$type}" );
+        return "scraper-bbb--{$type}-id:".$commentId;
+    }
+
+    public function getCommentImportIDLike(string $type): string
+    {
+        return $this->getCommentImportID('%', $type);
     }
 
     public function getAllImportedComments( int $businessID, string $complaintType )
@@ -748,7 +754,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $rows = $this->db->selectArray(
             "cp.*, ci.*",
             [ "compl_posts cp", "compl_posts_imports ci" => "ci.id = cp.id", "compl_complaints cc" => "cc.id = cp.compl_id" ],
-            "cc.compl_bname_id = '{$businessID}' and cc.compl_type='{$complaintType}' and ci.import_id like '".$this->getComplaintImportIDLike()."'"
+            "cc.compl_bname_id = '{$businessID}' and cc.compl_type='{$complaintType}' and ci.import_id like '".$this->getCommentImportIDLike($complaintType)."'"
         );
         $this->throwExceptionIf( $rows === false, $this->db->getError() );
 
@@ -760,6 +766,17 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return $this->isRecordExists( "compl_posts", $importID, "", null );
     }
 
+    public function getUserRefsCount( int $userID )
+    {
+        $refsComplaints = $this->db->selectColumn('count(*)', 'compl_complaints', ['uid' => $userID ]);
+        $this->throwExceptionIf( $refsComplaints === false, $this->db->getExtendedError() );
+
+        $refsPosts = $this->db->selectColumn('count(*)', 'compl_posts', ['uid' => $userID ]);
+        $this->throwExceptionIf( $refsPosts === false, $this->db->getExtendedError() );
+
+        return $refsComplaints + $refsPosts;
+    }
+
     public function removeCommentByImportID( string $importID )
     {
         $commentID = $this->isCommentExists( $importID );
@@ -769,7 +786,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $this->throwExceptionIf( !$commentRow, $this->db->getExtendedError() );
 
             $importData = $this->getImport( "panel_users", $commentRow[ 'uid' ] );
-            if ( $importData )
+            if ( $importData && $this->getUserRefsCount( $commentRow['uid'] ) )
             {
                 $this->throwExceptionIf( !$this->removeUserByImportID( $importData[ 'import_id' ] ), $this->getErrorsAsString() );
             }

@@ -28,7 +28,7 @@ class AddRecords
         $complaintText = TextFormatter::fixText( $row["{$type}_text"], 'complaintsboard.com' );
         if ( $complaintText )
         {
-            echo ($this->counter++).") ({$row['{$type}_id']}) ".$row[ "{$type}_date" ].": ".substr( $complaintText, 0, 60 )."...\n";
+            echo ($this->counter++).") ".$row["{$type}_id"].") ".$row[ "{$type}_date" ].": ".substr( $complaintText, 0, 60 )."...\n";
 
             $lines = explode( ".", $row[ "{$type}_text" ] );
             $subject = "";
@@ -58,7 +58,7 @@ class AddRecords
             }
 
             $fakeUserName = substr( $this->faker->firstName(), 0, 1 ).". ".$this->faker->lastName();
-            $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ] ), [
+            $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ], $type ), [
                 "company_id"  => $this->vars['destCompanyID'],
                 "subject"     => $subject,
                 "text"        => $complaintText,
@@ -85,7 +85,7 @@ class AddRecords
             if ( $this->vars['makeSpamComplaints'] )
             {
                 $exporter->spamComplaint(
-                    $exporter->getComplaintImportID( $row[ "{$type}_id" ] ),
+                    $exporter->getComplaintImportID( $row[ "{$type}_id" ], $type ),
                     basename( __FILE__ ).": make private"
                 );
             }
@@ -111,7 +111,7 @@ class AddRecords
             {
                 echo "Update: ".substr( $updateText, 0, 60 )."\n";
 
-                $commentID = $exporter->addComment( $exporter->getCommentImportID( $row[ "{$type}_id" ] ), [
+                $commentID = $exporter->addComment( $exporter->getCommentImportID( $row[ "{$type}_id" ], $type ), [
                     "complaint_id" => $complaintID,
                     "text"         => $updateText,
                     "is_update"    => true,
@@ -178,7 +178,7 @@ class AddRecords
 
                 $fakeUserName = substr( $this->faker->firstName(), 0, 1 ).". ".$this->faker->lastName();
 
-                $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint[ "complaint_id" ] ), [
+                $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint[ "{$type}_id" ], $type ), [
                     "complaint_id" => $toComplaintID,
                     "text"         => $updateText,
                     "is_update"    => false,

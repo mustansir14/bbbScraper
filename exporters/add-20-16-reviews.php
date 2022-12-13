@@ -57,10 +57,10 @@ foreach( $complaints20 as $complaintNbr => $complaint )
 
 $complaints16 = $srcDb->queryArray("select * 
 from `review` 
-WHERE company_id='{$sourceCompanyRow["company_id"]}' and review_date < '{$afterDate}' and complaint_id not in (".implode(",",$skipIDs).")
+WHERE company_id='{$sourceCompanyRow["company_id"]}' and review_date < '{$afterDate}' and review_id not in (".implode(",",$skipIDs).")
 order by review_date desc 
 limit 16");
-if ( $complaints16 === false ) throw new \Exception( __LINE__ );
+if ( $complaints16 === false ) throw new \Exception( $srcDb->getExtendedError() );
 
 # first complaint insert will be last in BN
 $insertedComplaints = array_reverse($insertedComplaints);
@@ -96,8 +96,6 @@ foreach( $division as $complaintNbr => $divisionRow )
         'counter' => $complaintNbr + 1,
         'isInsert' => true,
         'companyNameWithoutAbbr' => $companyNameWithoutAbbr,
-        'removeComments' => $removeComments,
-        'removeComplaints' => $removeComplaints,
         'exporter' => $exporter,
         'destCompanyID' => $destCompanyID,
         'destBusinessID' => $destBusinessID,
