@@ -29,11 +29,13 @@ class BusinessData
         {
             foreach ( $exporter->getAllImportedComments( $businessID, $type ) as $comment )
             {
+                #echo $comment[ 'import_id' ]."\n";
                 $exporter->removeCommentByImportID( $comment[ 'import_id' ] );
             }
 
             foreach ( $exporter->getAllImportedComplaints( $businessID, $type ) as $complaint )
             {
+                #echo $complaint[ 'import_id' ]."\n";
                 $exporter->removeComplaintByImportID( $complaint[ 'import_id' ] );
             }
         }

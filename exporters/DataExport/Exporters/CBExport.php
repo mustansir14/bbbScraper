@@ -557,7 +557,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $this->throwExceptionIf( !$complaintRow, $this->db->getExtendedError() );
 
             $importData = $this->getImport( "panel_users", $complaintRow[ 'uid' ] );
-            if ( $importData && $this->getUserRefsCount( $complaintRow['uid'] ) )
+            if ( $importData && $this->getUserRefsCount( $complaintRow['uid'] ) < 2 )
             {
                 $this->throwExceptionIf( !$this->removeUserByImportID( $importData[ 'import_id' ] ), $this->getErrorsAsString() );
             }
@@ -786,7 +786,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $this->throwExceptionIf( !$commentRow, $this->db->getExtendedError() );
 
             $importData = $this->getImport( "panel_users", $commentRow[ 'uid' ] );
-            if ( $importData && $this->getUserRefsCount( $commentRow['uid'] ) )
+            if ( $importData && $this->getUserRefsCount( $commentRow['uid'] ) < 2 )
             {
                 $this->throwExceptionIf( !$this->removeUserByImportID( $importData[ 'import_id' ] ), $this->getErrorsAsString() );
             }

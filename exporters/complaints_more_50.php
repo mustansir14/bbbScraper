@@ -14,28 +14,28 @@ $profileName = "local";
 #$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $complaintType = 1 ? "review" : "complaint";
-$removeBN = false;
-$debugComplaintsAndReviews = false;
-$removeAllPosts = true;
-$addComplaints = true;
+$removeBN = false; # remove bn before try create new
+$debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
+$removeAllPosts = true; # before insert remove all old
+$addComplaints = true; # without that no complaints or reviews will be added
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
-$makeSpamComplaints = true;
-$makeScreenshot = $profileName !== "local";
+$makeSpamComplaints = true; # may create not spamed complaints for fast insert
+$makeScreenshot = true; # if no logo and website url exists and makeScreenshot == True try create screenshot
 $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    #"https://www.bbb.org/us/wi/monroe/profile/catalog-shopping/colony-brands-inc-0694-22000113",
-    #"https://www.bbb.org/us/ca/san-francisco/profile/computer-hardware/fitbit-inc-1116-380612",
-    #"https://www.bbb.org/us/fl/orlando/profile/event-ticket-sales/entertainment-benefits-group-llc-0733-233704229",
-    #"https://www.bbb.org/us/oh/columbus/profile/credit-cards-and-plans/comenity-capital-bank-0302-70009182",
-    #"https://www.bbb.org/us/nv/las-vegas/profile/credit-cards-and-plans/credit-one-bank-1086-48541",
-    #"https://www.bbb.org/us/ny/rochester/profile/clothing/fairyseasoncom-0041-235987200",
-    #"https://www.bbb.org/us/ca/santa-clara/profile/textbooks/cheggcom-1216-238456",
-    #"https://www.bbb.org/us/ca/los-angeles/profile/online-retailer/farfetch-1216-264428",
-    #"https://www.bbb.org/us/pa/coraopolis/profile/sporting-goods-retail/dicks-sporting-goods-inc-0141-16001055",
-    "https://www.bbb.org/us/ca/los-angeles/profile/fashion-accessories/fabfitfun-inc-1216-1004302",
+    "https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
+    /*"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",
+    "https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
+    "https://www.bbb.org/us/ca/benicia/profile/online-shopping/blendjet-1116-882016",
+    "https://www.bbb.org/us/ca/chatsworth/profile/online-retailer/city-beauty-1216-718336",
+    "https://www.bbb.org/us/wi/appleton/profile/wheels/custom-offsets-llc-0694-1000017885",
+    "https://www.bbb.org/us/ca/beverly-hills/profile/online-cosmetic-sales/beverly-hills-md-1216-356713",
+    "https://www.bbb.org/us/mn/north-mankato/profile/masquerade-costumes/halloween-costumescom-0704-96001483",
+    "https://www.bbb.org/us/mi/ferndale/profile/new-auto-parts/detroit-axle-0332-90015722",
+    "https://www.bbb.org/us/fl/largo/profile/canes/fashionable-canes-hats-0653-18002096",*/
 ];
 $websiteUrls = [];
 
