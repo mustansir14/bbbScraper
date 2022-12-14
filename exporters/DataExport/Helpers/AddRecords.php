@@ -3,6 +3,8 @@
 namespace DataExport\Helpers;
 
 use DataExport\Formatters\TextFormatter;
+use DataExport\Helpers\Functions;
+use DataExport\Helpers\GoogleTextChecker;
 
 class AddRecords
 {
@@ -29,6 +31,17 @@ class AddRecords
         if ( $complaintText )
         {
             echo ($this->counter++).") ".$row["{$type}_id"].") ".$row[ "{$type}_date" ].": ".substr( $complaintText, 0, 60 )."...\n";
+
+            $checker = new GoogleTextChecker();
+            $response = $checker->test( $complaintText );
+            if ( !$response ) die( "Google text checker error: ".$checker->getError() );
+
+            echo "Google matched: ".$response->data."\n".$response->url."\n";
+
+            if ( $response->data > 0 ) {
+                echo "EXIST IN GOOGLE, skip\n";
+                return 0;
+            }
 
             $lines = explode( ".", $row[ "{$type}_text" ] );
             $subject = "";
@@ -57,15 +70,18 @@ class AddRecords
                 }
             }
 
+            $useDate = Functions::getPostDate( $row[ "{$type}_date" ] );
+
             $fakeUserName = substr( $this->faker->firstName(), 0, 1 ).". ".$this->faker->lastName();
             $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ], $type ), [
                 "company_id"  => $this->vars['destCompanyID'],
                 "subject"     => $subject,
                 "text"        => $complaintText,
                 "type"        => $type,
-                "date"        => $row[ "{$type}_date" ],
+                "date"        => $useDate,
+                "stars"       => $row["{$type}_rating"] ?? 0,
                 "user_name"   => $fakeUserName,
-                "user_date"   => date( "Y-m-d", strtotime( $row[ "{$type}_date" ] ) - 60 ),
+                "user_date"   => date( "Y-m-d", strtotime( $useDate ) - 60 ),
                 "is_resolved"  => $resolvedDate ?: 0,
                 "resolved_date" => $resolvedDate ?: null,
                 "isOpen"      => 1,

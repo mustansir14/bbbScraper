@@ -628,6 +628,15 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             "compl_country" => 3,
         ];
 
+        if ( isset( $fields["stars"] ) && (int)$fields["stars"] )
+        {
+            $stars = (int)$fields["stars"];
+            $stars = $stars < 1 ? 1 : $stars;
+            $stars = $stars > 5 ? 5 : $stars;
+
+            $insertFields["compl_stars"] = $stars;
+        }
+
         if ( isset( $fields["isOpen"] ) && $fields["isOpen"] )
         {
             $insertFields["compl_lock"] = 1;
@@ -651,6 +660,8 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         if ( !$userID ) return false;
 
         $insertFields["uid"] = $userID;
+
+        #print_r($insertFields);
 
         $rs = $this->db->insert( "compl_complaints", $insertFields );
         $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
