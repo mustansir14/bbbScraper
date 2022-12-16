@@ -8,10 +8,10 @@ final class FunctionsTest extends TestCase
     public function testDateOlderThenOneYear()
     {
         $dateOlderOneYear = date( "Y-m-d",time() - 365 * 24 * 3600);
-        $this->assertSame( Functions::getPostDate( $dateOlderOneYear ), $dateOlderOneYear );
+        $this->assertSame( Functions::getPostDate( $dateOlderOneYear ), date("Y-m-d", time() - 365 * 24 * 3600) );
 
         $dateOlderOneYear = date( "Y-m-d",time() - 712 * 24 * 3600);
-        $this->assertSame( Functions::getPostDate( $dateOlderOneYear ), $dateOlderOneYear );
+        $this->assertSame( Functions::getPostDate( $dateOlderOneYear ), date("Y-m-d", time() - 365 * 24 * 3600) );
     }
 
     public function testDateInYear()

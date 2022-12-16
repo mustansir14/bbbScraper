@@ -9,7 +9,7 @@ class Functions
 
         $useDate = strtotime( $date );
         $useDate = $useDate < time() - 365*24*3600
-            ? date("Y-m-d", $useDate )
+            ? date("Y-m-d", time() - 365*24*3600 )
             : date( "Y-m-d", rand( time() - 85 * 24 * 3600, time() ) );
 
         return $useDate;
