@@ -16,8 +16,14 @@ class AddRecords
         $this->vars = $vars;
         $this->faker = \Faker\Factory::create();
 
-        foreach( ['companyNameWithoutAbbr','exporter','isInsert','destCompanyID','destBusinessID','sourceCompanyRow','importInfoScraper','makeSpamComplaints','counter'] as $name ) {
-            if ( !array_key_exists( $name, $this->vars ) || empty( $this->vars[$name]) ) {
+        foreach( ['companyNameWithoutAbbr','exporter','isInsert','destCompanyID','destBusinessID','sourceCompanyRow','importInfoScraper','makeSpamComplaints','counter','checkTextInGoogle'] as $name ) {
+            if ( !array_key_exists( $name, $this->vars )
+                || ( is_string( $this->vars[$name] ) && empty( $this->vars[$name]) )
+                || ( is_int( $this->vars[$name] ) && $this->vars[$name] < 1 )
+                || ( is_array( $this->vars[$name] ) && count( $this->vars) == 0 )
+                || is_null( $this->vars[$name] )
+            ) {
+                debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
                 die( "Error: key {$name} not exists in vars" );
             }
         }
@@ -32,15 +38,22 @@ class AddRecords
         {
             echo ($this->counter++).") ".$row["{$type}_id"].") ".$row[ "{$type}_date" ].": ".substr( $complaintText, 0, 60 )."...\n";
 
-            $checker = new GoogleTextChecker();
-            $response = $checker->test( $complaintText );
-            if ( !$response ) die( "Google text checker error: ".$checker->getError() );
+            if( $this->vars['checkTextInGoogle'] )
+            {
+                echo "Checking in google...\n";
+                $checker = new GoogleTextChecker();
+                $response = $checker->test( $complaintText );
+                if ( !$response )
+                {
+                    die( "Google text checker error: ".$checker->getError() );
+                }
+                echo "Google matched: ".( (string)$response->data )."\n".$response->url."\n";
+                if ( $response->data > 0 )
+                {
+                    echo "EXIST IN GOOGLE, skip\n";
 
-            echo "Google matched: ".$response->data."\n".$response->url."\n";
-
-            if ( $response->data > 0 ) {
-                echo "EXIST IN GOOGLE, skip\n";
-                return 0;
+                    return 0;
+                }
             }
 
             $lines = explode( ".", $row[ "{$type}_text" ] );

@@ -2,6 +2,7 @@
 /**
  * @var bool $addComplaints
  * @var bool $removeComplaints
+ * @var bool $checkTextInGoogle
  * @var CBExport $exporter
  * @var array $sourceCompanyRow
  * @var Db $srcDb
@@ -47,6 +48,7 @@ foreach( $complaints20 as $complaintNbr => $complaint )
         'sourceCompanyRow' => $sourceCompanyRow,
         'importInfoScraper' => $importInfoScraper,
         'makeSpamComplaints' => $makeSpamComplaints,
+        'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
     $complaintID = $helper->insertReview($complaint);
@@ -102,6 +104,7 @@ foreach( $division as $complaintNbr => $divisionRow )
         'sourceCompanyRow' => $sourceCompanyRow,
         'importInfoScraper' => $importInfoScraper,
         'makeSpamComplaints' => $makeSpamComplaints,
+        'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
     $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);

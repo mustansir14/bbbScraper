@@ -21,21 +21,22 @@ $addComplaints = true; # without that no complaints or reviews will be added
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
 $makeSpamComplaints = true; # may create not spamed complaints for fast insert
-$makeScreenshot = true; # if no logo and website url exists and makeScreenshot == True try create screenshot
+$makeScreenshot = $profileName !== "local"; # if no logo and website url exists and makeScreenshot == True try create screenshot
+$checkTextInGoogle = $profileName !== "local";
 $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
     "https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
-    /*"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",
-    "https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
-    "https://www.bbb.org/us/ca/benicia/profile/online-shopping/blendjet-1116-882016",
-    "https://www.bbb.org/us/ca/chatsworth/profile/online-retailer/city-beauty-1216-718336",
-    "https://www.bbb.org/us/wi/appleton/profile/wheels/custom-offsets-llc-0694-1000017885",
-    "https://www.bbb.org/us/ca/beverly-hills/profile/online-cosmetic-sales/beverly-hills-md-1216-356713",
-    "https://www.bbb.org/us/mn/north-mankato/profile/masquerade-costumes/halloween-costumescom-0704-96001483",
-    "https://www.bbb.org/us/mi/ferndale/profile/new-auto-parts/detroit-axle-0332-90015722",
-    "https://www.bbb.org/us/fl/largo/profile/canes/fashionable-canes-hats-0653-18002096",*/
+    #"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",
+    #"https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
+    #"https://www.bbb.org/us/ca/benicia/profile/online-shopping/blendjet-1116-882016",
+    #"https://www.bbb.org/us/ca/chatsworth/profile/online-retailer/city-beauty-1216-718336",
+    #"https://www.bbb.org/us/wi/appleton/profile/wheels/custom-offsets-llc-0694-1000017885",
+    #"https://www.bbb.org/us/ca/beverly-hills/profile/online-cosmetic-sales/beverly-hills-md-1216-356713",
+    #"https://www.bbb.org/us/mn/north-mankato/profile/masquerade-costumes/halloween-costumescom-0704-96001483",
+    #"https://www.bbb.org/us/mi/ferndale/profile/new-auto-parts/detroit-axle-0332-90015722",
+    #"https://www.bbb.org/us/fl/largo/profile/canes/fashionable-canes-hats-0653-18002096",
 ];
 $websiteUrls = [];
 

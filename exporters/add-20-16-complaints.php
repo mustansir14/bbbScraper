@@ -47,6 +47,7 @@ foreach( $complaints20 as $complaintNbr => $complaint )
         'importInfoScraper' => $importInfoScraper,
         'makeSpamComplaints' => $makeSpamComplaints,
         'ifResponseMakeResolved' => true,
+        'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
     $complaintID = $helper->insertComplaint($complaint);
@@ -101,6 +102,7 @@ foreach( $division as $complaintNbr => $divisionRow )
         'sourceCompanyRow' => $sourceCompanyRow,
         'importInfoScraper' => $importInfoScraper,
         'makeSpamComplaints' => $makeSpamComplaints,
+        'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
     $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);

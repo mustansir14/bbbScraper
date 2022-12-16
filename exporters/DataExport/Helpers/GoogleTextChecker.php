@@ -13,7 +13,7 @@ class GoogleTextChecker
     public function __construct()
     {
         $this->setApiHost("http://65.109.70.91:3000");
-        $this->setApiTimeout( 30 );
+        $this->setApiTimeout( 180 );
     }
 
     public function test( string $text )

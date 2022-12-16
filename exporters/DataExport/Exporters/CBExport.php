@@ -735,6 +735,8 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             }
 
             $insertFields["bnameID"] = $fields["user_support"];
+            $insertFields["bnameShowInContacts"] = 0;
+            $insertFields["bnameEmailStatus"] = 0;
         }
 
         $rs = $this->db->insert( "panel_users", $insertFields );
