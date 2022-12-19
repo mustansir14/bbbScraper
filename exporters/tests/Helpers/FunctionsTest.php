@@ -30,4 +30,20 @@ final class FunctionsTest extends TestCase
                 "Try date: {$dateInOneYear}, returned: {$dateReturned}" );
         }
     }
+
+    public function testCommentDate()
+    {
+        foreach( range( 1, 10000 ) as $nbr )
+        {
+            $dateReturned = Functions::getCommentDate();
+            $dateReturnedTime = strtotime( $dateReturned );
+
+            #echo $dateReturned."\n";
+            #var_dump($dateReturnedTime >= time() - 90 * 24 * 3600,$dateReturnedTime <= time());
+
+            $this->assertTrue(
+                $dateReturnedTime >= strtotime( date( "Y-m-d", time() - 7 * 24 * 3600 ) ) && $dateReturnedTime <= time(),
+                "Returned: {$dateReturned}" );
+        }
+    }
 }

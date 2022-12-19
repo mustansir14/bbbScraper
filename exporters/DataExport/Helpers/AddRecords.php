@@ -206,14 +206,15 @@ class AddRecords
                 echo "Update: ".substr( $updateText, 0, 60 )."\n";
 
                 $fakeUserName = substr( $this->faker->firstName(), 0, 1 ).". ".$this->faker->lastName();
+                $insertDate = Functions::getCommentDate();
 
                 $commentID = $exporter->addComment( $exporter->getCommentImportID( $complaint[ "{$type}_id" ], $type ), [
                     "complaint_id" => $toComplaintID,
                     "text"         => $updateText,
                     "is_update"    => false,
-                    "date"         => $complaint[ "{$type}_date" ],
+                    "date"         => $insertDate,
                     "user_name"   => $fakeUserName,
-                    "user_date"   => date( "Y-m-d", strtotime( $complaint[ "{$type}_date" ] ) - 60 ),
+                    "user_date"   => date( "Y-m-d", strtotime( $insertDate ) - 60 ),
                     "import_data"  => [
                         "company_id"   => $this->vars['sourceCompanyRow'][ "company_id" ],
                         "{$type}_id" => $complaint[ "{$type}_id" ],

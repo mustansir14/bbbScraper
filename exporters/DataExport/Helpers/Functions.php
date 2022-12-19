@@ -14,4 +14,9 @@ class Functions
 
         return $useDate;
     }
+
+    public static function getCommentDate(): string
+    {
+        return date( "Y-m-d", rand( time() - 7 * 24 * 3600, time() ) );
+    }
 }
