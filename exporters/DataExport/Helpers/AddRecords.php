@@ -82,6 +82,7 @@ class AddRecords
             $subject = mb_substr( $subject, 0, 145, "utf-8" );
             $subject = stripos( $subject, ' ' ) !== false ? preg_replace( "#[a-z0-9']{1,}$#si", "", $subject ) : $subject;
             $subject = trim( $subject, ".," );
+            $subject = preg_replace("#([\.,\!]){2,}#", '$1', $subject);
             #echo "Insert complaint\n";
             #print_r( $complaint );
 
