@@ -6,6 +6,22 @@ use DataExport\Helpers\Functions;
 
 final class FunctionsTest extends TestCase
 {
+    public function testTextLines()
+    {
+        $lines = Functions::getTextLines("some complaintsboard.com text...   in space!!!");
+        $this->assertSame($lines, [
+            "some complaintsboard.com text...   ",
+            "in space!!!"
+        ]);
+
+
+        $lines = Functions::getTextLines("some complaintsboard.com text $7.203, in space! New sentense");
+        $this->assertSame($lines, [
+            "some complaintsboard.com text $7.203, in space! ",
+            "New sentense"
+        ]);
+    }
+
     private function removeTimePart($datetime)
     {
         return explode(" ", $datetime)[ 0 ];

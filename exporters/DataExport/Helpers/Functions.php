@@ -18,4 +18,18 @@ class Functions
     {
         return date( "Y-m-d", rand( time() - 7 * 24 * 3600, time() ) );
     }
+
+    public static function getTextLines(string $text)
+    {
+        $parts = preg_split( '#([\.\!\?]{1,}(?!com|net|info|org|[0-9]{1,})\s*)#si', $text, -1 , PREG_SPLIT_DELIM_CAPTURE);
+        $lines = [];
+
+        for($i = 0; $i < count( $parts ); $i += 2 )
+        {
+            if ( $i == count( $parts ) - 1 && !$parts[$i]) break;
+            $lines[] = $parts[$i].($parts[$i+1] ?? "");
+        }
+
+        return $lines;
+    }
 }
