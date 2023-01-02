@@ -22,14 +22,14 @@ $addOnly = 0; # if createAll and addOnly == country then create record or zero t
 $maxCompanies = false;
 $makeSpamComplaints = true; # may create not spamed complaints for fast insert
 $makeScreenshot = $profileName !== "local"; # if no logo and website url exists and makeScreenshot == True try create screenshot
-$checkTextInGoogle = $profileName !== "local";
+$checkTextInGoogle = false; #$profileName !== "local";
 $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    "https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
+    #"https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
     #"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",
-    #"https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
+    "https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
     #"https://www.bbb.org/us/ca/benicia/profile/online-shopping/blendjet-1116-882016",
     #"https://www.bbb.org/us/ca/chatsworth/profile/online-retailer/city-beauty-1216-718336",
     #"https://www.bbb.org/us/wi/appleton/profile/wheels/custom-offsets-llc-0694-1000017885",
@@ -39,6 +39,7 @@ $companyUrls = [
     #"https://www.bbb.org/us/fl/largo/profile/canes/fashionable-canes-hats-0653-18002096",
 ];
 $websiteUrls = [];
+$websiteInstagramMedia = [];
 
 ##################################################################################
 
@@ -119,6 +120,11 @@ foreach( $companies as $companyNbr => $companyId )
 
     [ $destBusinessID, $destCompanyID ] = BusinessData::create( $exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper, $makeScreenshot, $makeSpamComplaints );
 
+    if ( $exporter->isBusinessActive( $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]) ) ) {
+        echo "Stop: business profile is active, may be already records changed!\n";
+        exit;
+    }
+
     if ( $complaintType === "complaint" )
     {
         #require __DIR__."/add-all-complaints.php";
@@ -134,9 +140,10 @@ foreach( $companies as $companyNbr => $companyId )
         $exporter->callUpdateCompany( $destCompanyID );
         $exporter->callUpdateBusiness( $destBusinessID );
 
-        $url = $profile["host"]."/asd-b".$destBusinessID;
+        $url = $profile["host"]."/asd-b".$destBusinessID.( $complaintType == "review" ? "/reviews" : "");
 
         $websiteUrls[] = $url;
+        $websiteInstagramMedia[] = "php cron.php LoadInstagramMedia {$destBusinessID}";
 
         echo $url."\n";
     } else {
@@ -145,5 +152,8 @@ foreach( $companies as $companyNbr => $companyId )
 }
 
 print_r($websiteUrls);
+
+echo "DO NOT FORGET ADD MEDIA TO WEBSITE\n\n";
+echo implode( "\n", $websiteInstagramMedia)."\n\n";
 
 echo "Script ends.\n";

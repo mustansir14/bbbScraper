@@ -28,7 +28,7 @@ $complaints20 = $srcDb->queryArray("SELECT p.* FROM
     order by review_date desc 
 ) p 
 order by char_length(review_text) DESC 
-limit 20");
+limit 25");
 if ( $complaints20 === false ) throw new \Exception( __LINE__ );
 
 $skipIDs = [];

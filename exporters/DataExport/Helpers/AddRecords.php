@@ -30,6 +30,19 @@ class AddRecords
 
         $this->counter = $this->vars['counter'];
     }
+
+    private function getTextLines(string $text)
+    {
+        $parts = preg_split( '#([\.\!\?]{1,}(?!com|net|info|org)\s*)#si', $text, -1 , PREG_SPLIT_DELIM_CAPTURE);
+        $lines = [];
+
+        for($i = 0; $i < count( $parts ); $i += 2 )
+        {
+            $lines[] = $parts[$i].($parts[$i+1] ?? "");
+        }
+
+        return $lines;
+    }
     
     private function addComplaint( object $exporter, array $row, string $type )
     {
@@ -56,11 +69,10 @@ class AddRecords
                 }
             }
 
-            $lines = explode( ".", $row[ "{$type}_text" ] );
             $subject = "";
-            foreach ( $lines as $line )
+            foreach ( $this->getTextLines($row[ "{$type}_text" ]) as $line )
             {
-                $subject .= $line.". ";
+                $subject .= $line;
                 if ( mb_strlen( $subject, "utf-8" ) >= 40 )
                 {
                     break;
@@ -111,6 +123,7 @@ class AddRecords
             {
                 die( $exporter->getErrorsAsString() );
             }
+
             if ( $this->vars['makeSpamComplaints'] )
             {
                 $exporter->spamComplaint(
