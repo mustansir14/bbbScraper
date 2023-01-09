@@ -14,22 +14,23 @@ $profileName = "local";
 #$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $complaintType = 1 ? "review" : "complaint";
-$removeBN = false; # remove bn before try create new
+$removeBN = $profileName === "local"; # remove bn before try create new
 $debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
 $removeAllPosts = true; # before insert remove all old
 $addComplaints = true; # without that no complaints or reviews will be added
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
 $makeSpamComplaints = true; # may create not spamed complaints for fast insert
-$makeScreenshot = $profileName !== "local"; # if no logo and website url exists and makeScreenshot == True try create screenshot
+$makeScreenshot = true; # if no logo and website url exists and makeScreenshot == True try create screenshot
 $checkTextInGoogle = false; #$profileName !== "local";
 $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
+    "https://www.bbb.org/us/ma/boston/profile/food-and-beverage-services/butcherbox-llc-0021-186401",
     #"https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
     #"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",
-    "https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
+    #"https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
     #"https://www.bbb.org/us/ca/benicia/profile/online-shopping/blendjet-1116-882016",
     #"https://www.bbb.org/us/ca/chatsworth/profile/online-retailer/city-beauty-1216-718336",
     #"https://www.bbb.org/us/wi/appleton/profile/wheels/custom-offsets-llc-0694-1000017885",
@@ -46,9 +47,11 @@ $websiteInstagramMedia = [];
 $profile = $config["dest"][ $profileName ];
 if ( !is_array( $profile ) ) die( "Error: no profile data" );
 
+echo "Creating source db...\n";
 $srcDb = new Db();
 $srcDb->connectOrDie( $config["source_db"]["host"], $config["source_db"]["user"], $config["source_db"]["pass"], $config["source_db"]["name"] );
 
+echo "Creating dest db...\n";
 $destDb = new Db();
 $destDb->connectOrDie(  $profile["db"]["host"], $profile["db"]["user"], $profile["db"]["pass"], $profile["db"]["name"] );
 

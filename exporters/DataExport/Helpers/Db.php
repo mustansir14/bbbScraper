@@ -41,7 +41,7 @@ class Db
     {
         if ( !$this->connect( $host, $user, $pass, $db ) )
         {
-            die( $this->error() );
+            die( $this->getError() );
         }
     }
 
