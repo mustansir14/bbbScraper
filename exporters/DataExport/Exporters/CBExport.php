@@ -338,9 +338,11 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
             if ( $response->getStatusCode() != 200 ) return $this->setError( "Http code not 200" );
 
-            $json = json_decode($response->getBody()->getContents());
+            $body = $response->getBody()->getContents();
+
+            $json = json_decode($body);
             if ( !$json ) {
-                $checker->append( $response->getBody()->getContents()."\nJson decode fail");
+                $checker->append( $body."\nJson decode fail");
                 return false;
             }
             if ( !$json->success ) {
@@ -459,6 +461,16 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         if ( isset( $fields["hours"] ) )
         {
             $insertFields["bname_hours"] = $fields["hours"];
+        }
+
+        $socials = [
+            "facebook", "instagram", "twitter", "youtube", "pinterest", "linkedin", "tumblr",
+        ];
+
+        foreach($socials as $social) {
+            if ($fields[$social] ?? false) {
+                $insertFields["bname_".$social] = $fields[$social];
+            }
         }
 
         $rs = $this->db->insert( "bnames", $insertFields );

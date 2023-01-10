@@ -12,11 +12,17 @@ if ( !$addComplaints ) return;
 
 use DataExport\Helpers\AddRecords;
 
+echo "Select review_date...\n";
+
 $afterDate = $srcDb->selectColumn(
     'review_date',
     'review',
     "company_id = {$sourceCompanyRow["company_id"]}", false,"review_date desc", "14,1");
-if ( !$afterDate ) die( $srcDb->getError());
+if ( $afterDate === false ) throw new \Exception( __LINE__ );
+if ( !$afterDate ) {
+    echo "Info: no reviews, skip\n";
+    return;
+}
 
 echo "After data: {$afterDate}\n";
 

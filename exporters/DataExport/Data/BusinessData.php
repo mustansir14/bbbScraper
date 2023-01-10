@@ -72,16 +72,19 @@ class BusinessData
         string $importInfoScraper
     ) {
         $businessImportID = $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]);
+
         if (!preg_match('#bbb\.org/(us|ca)/#si', $sourceCompanyRow[ "url" ], $match)) {
             echo "Url: ".$sourceCompanyRow[ "url" ]."\n";
             die("Error:unknown country in url!");
         }
+
         $countryShortName = $match[ 1 ];
         $hours = $sourceCompanyRow[ "working_hours" ] ? HoursFormatter::fromString(
             $sourceCompanyRow[ "working_hours" ]
         ) : null;
         $hours = $hours ? HoursFormatter::convertToCBInternalFormat($hours) : null;
-        $destBusinessID = $exporter->addBusiness($businessImportID, [
+
+        $bnameFields = [
             "name"        => $companyNameWithoutAbbr,
             "ltd"         => $sourceCompanyRow[ "company_name" ],
             "country"     => $countryShortName,
@@ -101,13 +104,161 @@ class BusinessData
                 "scraper"      => $importInfoScraper,
                 "version"      => 1,
             ],
-        ]);
+        ];
+
+        if ($sourceCompanyRow[ "website" ] && filter_var(
+                $sourceCompanyRow[ "website" ],
+                FILTER_VALIDATE_URL
+            )
+        ) {
+            echo "Get klazify information...\n";
+
+            $scraper = new KlazifyScraper(TokenManager::get());
+            #$scraper->verbose();
+            $result = $scraper->getWebInformation($sourceCompanyRow[ "website" ]);
+            if ($result) {
+                $socialMedia = $result['domain']['social_media'] ?? false;
+                if($socialMedia) {
+                    # {
+                    #   "facebook_url":"https:\/\/www.facebook.com\/CBSNews",
+                    #   "twitter_url":"https:\/\/twitter.com\/CBSNews",
+                    #   "instagram_url":"https:\/\/instagram.com\/cbsnews",
+                    #   "medium_url":null,
+                    #   "youtube_url":"http:\/\/www.youtube.com\/user\/CBSNewsOnline",
+                    #   "pinterest_url":null,
+                    #   "linkedin_url":null,
+                    #   "github_url":null
+                    #}
+
+                    $fields = [
+                        "facebook_url"  => "facebook",
+                        "twitter_url"   => "twitter",
+                        "instagram_url" => "instagram",
+                        "youtube_url"   => "youtube",
+                        "linkedin_url"  => "linkedin",
+                        "pinterest_url" => "pinterest",
+                    ];
+                    foreach ($fields as $klazifyFieldName => $cbFieldName) {
+                        if ($socialMedia[$klazifyFieldName] ?? false) {
+                            if (!isset($bnameFields[$cbFieldName]) || empty($bnameFields[$cbFieldName])) {
+                                $bnameFields[$cbFieldName] = $socialMedia[$klazifyFieldName];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #print_r($bnameFields);
+
+        $destBusinessID = $exporter->addBusiness($businessImportID, $bnameFields);
+
         if (!$destBusinessID) {
             die($exporter->getErrorsAsString());
         }
+
         echo "New business id: {$destBusinessID}\n";
 
         return $destBusinessID;
+    }
+
+    private static function uploadBBBLogo(array $sourceCompanyRow, object $exporter, string $businessImportID): bool
+    {
+        if ($sourceCompanyRow[ "logo" ]) {
+            $bbbApi = new BBBAPIHelper();
+            $image = $bbbApi->getLogo(basename($sourceCompanyRow[ "logo" ]));
+            if ($image) {
+                if (!$exporter->setBusinessLogo($businessImportID, $image)) {
+                    die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
+                }
+
+                return true;
+            } else {
+                echo "Logo error: ".$bbbApi->getError()."\n";
+            }
+        }
+
+        return false;
+    }
+
+    private static function uploadKlazifyLogo(array $sourceCompanyRow, object $exporter, string $businessImportID): bool
+    {
+        if ($sourceCompanyRow[ "website" ] && filter_var(
+                $sourceCompanyRow[ "website" ],
+                FILTER_VALIDATE_URL
+            )
+        ) {
+            echo "Get klazify information...\n";
+
+            $scraper = new KlazifyScraper(TokenManager::get());
+            #$scraper->verbose();
+
+            $result = $scraper->getWebInformation($sourceCompanyRow[ "website" ]);
+            if (!$result) {
+                die("Klazify error: ".$scraper->getError());
+            }
+
+            $logo_url = $result[ 'domain' ][ 'logo_url' ] ?? false;
+            if ($logo_url) {
+                $client = new Client([
+                    'verify'  => false,
+                    'timeout' => 15,
+                ]);
+
+                echo "Download logo...\n";
+
+                $response = $client->get($logo_url);
+                if ($response->getStatusCode() != 200) {
+                    die("Klazify logo code: ".$response->getStatusCode());
+                }
+
+                $contentType = $response->getHeader("Content-type")[ 0 ] ?? false;
+                if (!preg_match("#^image/#si", $contentType)) {
+                    die("Klazify logo content type: {$contentType}");
+                }
+
+                $body = $response->getBody()->getContents();
+                if (!$exporter->setBusinessLogo($businessImportID, $body)) {
+                    die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
+                }
+
+                return true;
+            } else {
+                print_r($result);
+                echo "Klazify no logo_url";
+            }
+        }
+
+        return false;
+    }
+
+    private static function uploadWebScreenshotLogo(
+        array $sourceCompanyRow,
+        object $exporter,
+        string $businessImportID,
+        bool $makeScreenshot
+    ): bool {
+        if ($sourceCompanyRow[ "website" ] && filter_var(
+                $sourceCompanyRow[ "website" ],
+                FILTER_VALIDATE_URL
+            ) && $makeScreenshot
+        ) {
+            echo "Making screenshot...\n";
+            $screenshot = new ScreenshotApiHelper();
+            $reply = $screenshot->getScreenshot($sourceCompanyRow[ "website" ]);
+            if (!$reply) {
+                var_dump($reply);
+                echo "Error: making screenshot error: ".$screenshot->getError()."\n";
+                exit;
+            }
+            if (!$exporter->setBusinessLogo($businessImportID, $reply->image_content)) {
+                die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     public static function uploadLogo(
@@ -121,65 +272,15 @@ class BusinessData
         if ($exporter->isBusinessExported($businessImportID, $companyNameWithoutAbbr)) {
             echo "Logo: ".$sourceCompanyRow[ "logo" ]."\n";
             echo "Web: ".$sourceCompanyRow[ "website" ]."\n";
-            # BBB has bad logos do not export
-            if (0 && $sourceCompanyRow[ "logo" ]) {
-                $bbbApi = new BBBAPIHelper();
-                $image = $bbbApi->getLogo(basename($sourceCompanyRow[ "logo" ]));
-                if ($image) {
-                    if (!$exporter->setBusinessLogo($businessImportID, $image)) {
-                        die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
-                    }
-                } else {
-                    echo "Logo error: ".$bbbApi->getError()."\n";
-                }
-            } elseif ($sourceCompanyRow[ "website" ] && filter_var(
-                    $sourceCompanyRow[ "website" ],
-                    FILTER_VALIDATE_URL
-                )
-            ) {
-                echo "Get klazify information...\n";
-                $scraper = new KlazifyScraper(TokenManager::get());
-                $result = $scraper->getWebInformation($sourceCompanyRow[ "website" ]);
-                if (!$result) {
-                    die("Klazify error: ".$scraper->getError());
-                }
-                $logo_url = $result[ 'domain' ][ 'logo_url' ] ?? false;
-                if (!$logo_url) {
-                    die("Klazify no logo_url");
-                }
-                $client = new Client([
-                    'verify'  => false,
-                    'timeout' => 15,
-                ]);
-                echo "Download logo...\n";
-                $response = $client->get($logo_url);
-                if ($response->getStatusCode() != 200) {
-                    die("Klazify logo code: ".$response->getStatusCode());
-                }
-                $contentType = $response->getHeader("Content-type")[ 0 ] ?? false;
-                if (!preg_match("#^image/#si", $contentType)) {
-                    die("Klazify logo content type: {$contentType}");
-                }
-                $body = $response->getBody()->getContents();
-                if (!$exporter->setBusinessLogo($businessImportID, $body)) {
-                    die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
-                }
-            } elseif ($sourceCompanyRow[ "website" ] && filter_var(
-                    $sourceCompanyRow[ "website" ],
-                    FILTER_VALIDATE_URL
-                ) && $makeScreenshot
-            ) {
-                echo "Making screenshot...\n";
-                $screenshot = new ScreenshotApiHelper();
-                $reply = $screenshot->getScreenshot($sourceCompanyRow[ "website" ]);
-                if (!$reply) {
-                    var_dump($reply);
-                    echo "Error: making screenshot error: ".$screenshot->getError()."\n";
-                    exit;
-                }
-                if (!$exporter->setBusinessLogo($businessImportID, $reply->image_content)) {
-                    die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
-                }
+
+            if (static::uploadKlazifyLogo($sourceCompanyRow, $exporter, $businessImportID)) {
+                return;
+            }
+            if (static::uploadWebScreenshotLogo($sourceCompanyRow, $exporter, $businessImportID, $makeScreenshot)) {
+                return;
+            }
+            if (static::uploadBBBLogo($sourceCompanyRow, $exporter, $businessImportID)) {
+                return;
             }
         }
     }
@@ -204,7 +305,10 @@ class BusinessData
         string $importInfoScraper,
         int $destBusinessID
     ) {
+        echo "Add business faq...\n";
+
         $faqList = FAQData::prepare($sourceCompanyRow, $companyNameWithoutAbbr);
+
         foreach ($faqList as $faqID => $faqRow) {
             $faqImportID = $exporter->getBusinessFAQImportID($destBusinessID, $faqRow[ "question" ]);
             $id = $exporter->addBusinessFAQ($faqImportID, [
@@ -250,12 +354,15 @@ class BusinessData
         } else {
             echo "Use BN id: {$destBusinessID}\n";
         }
+
         if (!$destBusinessID) {
             throw new \Exception("critical");
         }
+
         static::addFAQ($exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper, $destBusinessID);
+
         if (!$exporter->linkCompanyToBusiness($destCompanyID, $destBusinessID)) {
-            die($exporter->getErrorsAsString());
+            die("linkCompanyToBusiness error: ".$exporter->getErrorsAsString());
         }
 
         return [

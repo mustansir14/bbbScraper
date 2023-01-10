@@ -27,7 +27,8 @@ $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    "https://www.bbb.org/us/ma/boston/profile/food-and-beverage-services/butcherbox-llc-0021-186401",
+    "https://www.bbb.org/ca/ab/airdrie/profile/moving-and-storage-companies/easy-moving-calgary-ltd-0017-126599",
+    #"https://www.bbb.org/us/ma/boston/profile/food-and-beverage-services/butcherbox-llc-0021-186401",
     #"https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
     #"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",
     #"https://www.bbb.org/us/ca/city-of-industry/profile/party-supplies/tableclothsfactorycom-1216-100104360",
@@ -128,6 +129,28 @@ foreach( $companies as $companyNbr => $companyId )
         exit;
     }
 
+    $businessRow = $exporter->getBusiness($exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]));
+    if($businessRow["bname_instagram"]) {
+        echo "Add instagram media from ".$businessRow["bname_instagram"]." to BN...\n";
+
+        $http = new GuzzleHttp\Client(['verify' => false, 'timeout' => 180]);
+        $response = $http->get(
+            $profileAPI.'/api/business/instagram-media?id='.$destBusinessID.'&do=load-media&token=jdf89jo343kgjs8gfds895jk3g'
+        );
+        if ($response->getStatusCode() != 200) {
+            echo 'Import instagram media error: '.$response->getBody()->getContents()."\n";
+            exit;
+        }
+        $json = json_decode($response->getBody()->getContents());
+        if (!$json->success) {
+            echo "Instagram media error:\n";
+            print_r($json->errors);
+            exit;
+        }
+    }
+
+    echo "Try add {$complaintType} in BN...\n";
+
     if ( $complaintType === "complaint" )
     {
         #require __DIR__."/add-all-complaints.php";
@@ -140,13 +163,14 @@ foreach( $companies as $companyNbr => $companyId )
 
     if ( $destBusinessID )
     {
+        echo "Call update company & bn...\n";
+
         $exporter->callUpdateCompany( $destCompanyID );
         $exporter->callUpdateBusiness( $destBusinessID );
 
         $url = $profile["host"]."/asd-b".$destBusinessID.( $complaintType == "review" ? "/reviews" : "");
 
         $websiteUrls[] = $url;
-        $websiteInstagramMedia[] = "php cron.php LoadInstagramMedia {$destBusinessID}";
 
         echo $url."\n";
     } else {
@@ -155,8 +179,5 @@ foreach( $companies as $companyNbr => $companyId )
 }
 
 print_r($websiteUrls);
-
-echo "DO NOT FORGET ADD MEDIA TO WEBSITE\n\n";
-echo implode( "\n", $websiteInstagramMedia)."\n\n";
 
 echo "Script ends.\n";

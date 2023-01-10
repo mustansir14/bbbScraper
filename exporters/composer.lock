@@ -668,7 +668,7 @@
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/klazify-scraper.git",
-                "reference": "d1812b67df3a18df8e536f811a46e91a4398de7d"
+                "reference": "172b44020672950d47c8be3155d01805275e17f6"
             },
             "require": {
                 "php": ">=7.4"
@@ -698,7 +698,7 @@
                 }
             ],
             "description": "Scrape information by url from klazify.",
-            "time": "2023-01-09T13:38:29+00:00"
+            "time": "2023-01-10T06:53:36+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
