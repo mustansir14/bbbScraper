@@ -27,7 +27,7 @@ $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    "https://www.bbb.org/ca/ab/airdrie/profile/moving-and-storage-companies/easy-moving-calgary-ltd-0017-126599",
+    "https://www.bbb.org/ca/ab/acadia-valley/profile/construction-services/vortrax-construction-ltd-0017-129974",
     #"https://www.bbb.org/us/ma/boston/profile/food-and-beverage-services/butcherbox-llc-0021-186401",
     #"https://www.bbb.org/us/az/phoenix/profile/home-services/george-brazil-plumbing-electrical-1126-5000904",
     #"https://www.bbb.org/us/az/phoenix/profile/pool-supplies/wild-west-pool-supplies-llc-1126-1000036991",

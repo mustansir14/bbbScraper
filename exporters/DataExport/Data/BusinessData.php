@@ -7,6 +7,7 @@ use DataExport\Formatters\WebFormatter;
 use DataExport\Formatters\HoursFormatter;
 use DataExport\Helpers\BBBAPIHelper;
 use DataExport\Helpers\ScreenshotApiHelper;
+use DataExport\Helpers\ScrapeWeb;
 use DataExport\Data\CompanyData;
 use DataExport\Data\FAQData;
 use srgteam\klazify\KlazifyScraper;
@@ -65,6 +66,103 @@ class BusinessData
         }
     }
 
+    private static function addSocialsToBNFromScrapeWeb(array $sourceCompanyRow, array &$bnameFields)
+    {
+        if ($sourceCompanyRow["website"] && filter_var(
+                $sourceCompanyRow["website"],
+                FILTER_VALIDATE_URL
+            )
+        ) {
+            echo "Get socials from scrape web...\n";
+
+            $scraper = new ScrapeWeb();
+            $socialMedia = $scraper->getSocials($sourceCompanyRow["website"]);
+            if ($socialMedia === false) {
+                $skipErrors = [
+                    "Failed to connect to",
+                ];
+
+                $isSkip = false;
+                foreach ($skipErrors as $findText) {
+                    if (stripos($scraper->getError(), $findText) !== false) {
+                        $isSkip = true;
+                    }
+                }
+
+                if (!$isSkip) {
+                    die("ScrapeWeb::getSocials() error: ".$scraper->getError());
+                }
+            }
+
+            $fields = [
+                "facebook_url"  => "facebook",
+                "twitter_url"   => "twitter",
+                "instagram_url" => "instagram",
+                "youtube_url"   => "youtube",
+                "linkedin_url"  => "linkedin",
+                "pinterest_url" => "pinterest",
+            ];
+            foreach ($fields as $scrapeWebFieldName => $cbFieldName) {
+                if ($socialMedia[$scrapeWebFieldName] ?? false && count($socialMedia[$scrapeWebFieldName]) > 0) {
+                    if (!isset($bnameFields[$cbFieldName]) || empty($bnameFields[$cbFieldName])) {
+                        $bnameFields[$cbFieldName] = $socialMedia[$scrapeWebFieldName][0];
+
+                        echo "ScrapeWeb {$cbFieldName}: {$bnameFields[$cbFieldName]}\n";
+                    }
+                }
+            }
+        }
+    }
+
+    private static function addSocialsToBNFromKlazify(array $sourceCompanyRow, array &$bnameFields)
+    {
+        if ($sourceCompanyRow["website"] && filter_var(
+                $sourceCompanyRow["website"],
+                FILTER_VALIDATE_URL
+            )
+        ) {
+            echo "Get socials from klazify...\n";
+
+            $scraper = new KlazifyScraper(TokenManager::get());
+            #$scraper->verbose();
+
+            $result = $scraper->getWebInformation($sourceCompanyRow["website"]);
+            if ($result) {
+                $socialMedia = $result['domain']['social_media'] ?? false;
+                if ($socialMedia) {
+                    # {
+                    #   "facebook_url":"https:\/\/www.facebook.com\/CBSNews",
+                    #   "twitter_url":"https:\/\/twitter.com\/CBSNews",
+                    #   "instagram_url":"https:\/\/instagram.com\/cbsnews",
+                    #   "medium_url":null,
+                    #   "youtube_url":"http:\/\/www.youtube.com\/user\/CBSNewsOnline",
+                    #   "pinterest_url":null,
+                    #   "linkedin_url":null,
+                    #   "github_url":null
+                    #}
+
+                    $fields = [
+                        "facebook_url"  => "facebook",
+                        "twitter_url"   => "twitter",
+                        "instagram_url" => "instagram",
+                        "youtube_url"   => "youtube",
+                        "linkedin_url"  => "linkedin",
+                        "pinterest_url" => "pinterest",
+                    ];
+                    foreach ($fields as $klazifyFieldName => $cbFieldName) {
+                        if ($socialMedia[$klazifyFieldName] ?? false) {
+                            if (!isset($bnameFields[$cbFieldName]) || empty($bnameFields[$cbFieldName])) {
+                                $bnameFields[$cbFieldName] = $socialMedia[$klazifyFieldName];
+
+                                echo "Klazify {$cbFieldName}: {$bnameFields[$cbFieldName]}\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public static function createDbRecord(
         object $exporter,
         array $sourceCompanyRow,
@@ -106,48 +204,8 @@ class BusinessData
             ],
         ];
 
-        if ($sourceCompanyRow[ "website" ] && filter_var(
-                $sourceCompanyRow[ "website" ],
-                FILTER_VALIDATE_URL
-            )
-        ) {
-            echo "Get klazify information...\n";
-
-            $scraper = new KlazifyScraper(TokenManager::get());
-            #$scraper->verbose();
-            $result = $scraper->getWebInformation($sourceCompanyRow[ "website" ]);
-            if ($result) {
-                $socialMedia = $result['domain']['social_media'] ?? false;
-                if($socialMedia) {
-                    # {
-                    #   "facebook_url":"https:\/\/www.facebook.com\/CBSNews",
-                    #   "twitter_url":"https:\/\/twitter.com\/CBSNews",
-                    #   "instagram_url":"https:\/\/instagram.com\/cbsnews",
-                    #   "medium_url":null,
-                    #   "youtube_url":"http:\/\/www.youtube.com\/user\/CBSNewsOnline",
-                    #   "pinterest_url":null,
-                    #   "linkedin_url":null,
-                    #   "github_url":null
-                    #}
-
-                    $fields = [
-                        "facebook_url"  => "facebook",
-                        "twitter_url"   => "twitter",
-                        "instagram_url" => "instagram",
-                        "youtube_url"   => "youtube",
-                        "linkedin_url"  => "linkedin",
-                        "pinterest_url" => "pinterest",
-                    ];
-                    foreach ($fields as $klazifyFieldName => $cbFieldName) {
-                        if ($socialMedia[$klazifyFieldName] ?? false) {
-                            if (!isset($bnameFields[$cbFieldName]) || empty($bnameFields[$cbFieldName])) {
-                                $bnameFields[$cbFieldName] = $socialMedia[$klazifyFieldName];
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        static::addSocialsToBNFromScrapeWeb($sourceCompanyRow, $bnameFields);
+        static::addSocialsToBNFromKlazify($sourceCompanyRow,$bnameFields);
 
         #print_r($bnameFields);
 
@@ -225,7 +283,7 @@ class BusinessData
                 return true;
             } else {
                 print_r($result);
-                echo "Klazify no logo_url";
+                echo "Klazify no logo_url\n";
             }
         }
 
