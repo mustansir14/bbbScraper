@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "27f72fb90cb44e9dabada23f4c6531e2",
+    "content-hash": "d39ef559011063c22632875f335a4c83",
     "packages": [
         {
             "name": "fakerphp/faker",
@@ -664,11 +664,11 @@
         },
         {
             "name": "srgteam/klazify",
-            "version": "dev-master",
+            "version": "1.2",
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/klazify-scraper.git",
-                "reference": "172b44020672950d47c8be3155d01805275e17f6"
+                "reference": "bc6714e40d5f7f874076d3314770a6ba9504e1dd"
             },
             "require": {
                 "php": ">=7.4"
@@ -676,7 +676,6 @@
             "require-dev": {
                 "phpunit/phpunit": "^9.5"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -698,7 +697,41 @@
                 }
             ],
             "description": "Scrape information by url from klazify.",
-            "time": "2023-01-10T06:53:36+00:00"
+            "time": "2023-01-10T14:11:05+00:00"
+        },
+        {
+            "name": "srgteam/scrape-web",
+            "version": "1.0",
+            "source": {
+                "type": "git",
+                "url": "git@bitbucket.org:srgteam/scrape-web.git",
+                "reference": "7a5d65c424a75953df10b31a523ccdccec02a14a"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.5",
+                "php": ">=7.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "SrgTeam\\ScrapeWeb\\": "src/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "%cd%/vendor/bin/phpunit --testdox tests"
+                ]
+            },
+            "authors": [
+                {
+                    "name": "Konstantin K",
+                    "email": "systema.working@gmail.com"
+                }
+            ],
+            "time": "2023-01-10T15:24:03+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -2548,9 +2581,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "srgteam/klazify": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

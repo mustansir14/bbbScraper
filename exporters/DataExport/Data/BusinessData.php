@@ -7,11 +7,11 @@ use DataExport\Formatters\WebFormatter;
 use DataExport\Formatters\HoursFormatter;
 use DataExport\Helpers\BBBAPIHelper;
 use DataExport\Helpers\ScreenshotApiHelper;
-use DataExport\Helpers\ScrapeWeb;
 use DataExport\Data\CompanyData;
 use DataExport\Data\FAQData;
 use srgteam\klazify\KlazifyScraper;
 use srgteam\klazify\TokenManager;
+use SrgTeam\ScrapeWeb\Scraper as WebScraper;
 use GuzzleHttp\Client;
 
 class BusinessData
@@ -75,7 +75,7 @@ class BusinessData
         ) {
             echo "Get socials from scrape web...\n";
 
-            $scraper = new ScrapeWeb();
+            $scraper = new WebScraper();
             $socialMedia = $scraper->getSocials($sourceCompanyRow["website"]);
             if ($socialMedia === false) {
                 $skipErrors = [
