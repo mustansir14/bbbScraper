@@ -664,13 +664,14 @@
         },
         {
             "name": "srgteam/klazify",
-            "version": "1.2",
+            "version": "1.5",
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/klazify-scraper.git",
-                "reference": "bc6714e40d5f7f874076d3314770a6ba9504e1dd"
+                "reference": "b12dbc2b9afc8987cf24348b903cd42f62bc4954"
             },
             "require": {
+                "guzzlehttp/guzzle": "^7.5",
                 "php": ">=7.4"
             },
             "require-dev": {
@@ -684,7 +685,7 @@
             },
             "scripts": {
                 "test": [
-                    "%cd%/vendor/bin/phpunit --testdox tests"
+                    "%cd%/vendor/bin/phpunit --testdox --stop-on-failure tests"
                 ],
                 "php-stan": [
                     "%cd%/vendor/bin/phpstan analyse --memory-limit 1G src tests"
@@ -697,15 +698,15 @@
                 }
             ],
             "description": "Scrape information by url from klazify.",
-            "time": "2023-01-10T14:11:05+00:00"
+            "time": "2023-01-17T08:58:08+00:00"
         },
         {
             "name": "srgteam/scrape-web",
-            "version": "1.0",
+            "version": "1.1",
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/scrape-web.git",
-                "reference": "7a5d65c424a75953df10b31a523ccdccec02a14a"
+                "reference": "b9fe44790e4320fb25478d5745e3184828ae6637"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.5",
@@ -731,7 +732,7 @@
                     "email": "systema.working@gmail.com"
                 }
             ],
-            "time": "2023-01-10T15:24:03+00:00"
+            "time": "2023-01-17T10:09:11+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",

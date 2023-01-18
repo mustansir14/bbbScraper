@@ -80,6 +80,8 @@ class BusinessData
             if ($socialMedia === false) {
                 $skipErrors = [
                     "Failed to connect to",
+                    "CloudFlare challenge active",
+                    "Http code is 403",
                 ];
 
                 $isSkip = false;
@@ -249,11 +251,10 @@ class BusinessData
             echo "Get klazify information...\n";
 
             $scraper = new KlazifyScraper(TokenManager::get());
-            #$scraper->verbose();
-
             $result = $scraper->getWebInformation($sourceCompanyRow[ "website" ]);
             if (!$result) {
-                die("Klazify error: ".$scraper->getError());
+                echo "Klazify error: ".$scraper->getError()."\n";
+                return false;
             }
 
             $logo_url = $result[ 'domain' ][ 'logo_url' ] ?? false;

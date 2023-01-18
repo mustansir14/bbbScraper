@@ -10,6 +10,7 @@ use DataExport\Exporters\CBExport\StateTrait;
 use DataExport\Exporters\CBExport\CityTrait;
 use DataExport\Exporters\CBExport\CategoryTrait;
 use DataExport\Exporters\CBExport\BusinessFAQTrait;
+use DataExport\Formatters\TextFormatter;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Utils;
 
@@ -321,7 +322,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
             $client = new Client( [
                 'base_uri' => $this->apiHost,
                 'verify'  => false,
-                'timeout' => 20,
+                'timeout' => 60,
                 #'debug' => true,
                 #'proxy' => 'http://localhost:8888',
             ] );
@@ -634,8 +635,8 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         $insertFields = [
             "compl_type" => $fields["type"] === "review" ? "review" : "complaint",
             "compl_company" => $fields["company_id"],
-            "compl_subject" => $fields["subject"],
-            "compl_text" => $fields["text"],
+            "compl_subject" => TextFormatter::removeUtf8FourByteChars($fields["subject"]),
+            "compl_text" => TextFormatter::removeUtf8FourByteChars($fields["text"]),
             "compl_time" => $fields["date"],
             "compl_country" => 3,
         ];

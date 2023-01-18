@@ -20,7 +20,7 @@ $afterDate = $srcDb->selectColumn(
     "company_id = {$sourceCompanyRow["company_id"]}", false,"review_date desc", "14,1");
 if ( $afterDate === false ) throw new \Exception( __LINE__ );
 if ( !$afterDate ) {
-    echo "Info: no reviews, skip\n";
+    echo "Info: no reviews, may be review count < 14, skip\n";
     return;
 }
 
@@ -56,6 +56,10 @@ foreach( $complaints20 as $complaintNbr => $complaint )
         'makeSpamComplaints' => $makeSpamComplaints,
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
+
+    if($checkTextInCsv) {
+        fputcsv($csvFile,[$complaint['review_id'],$complaint['review_text']]);
+    }
 
     $complaintID = $helper->insertReview($complaint);
     if ( $complaintID ) {
@@ -112,6 +116,10 @@ foreach( $division as $complaintNbr => $divisionRow )
         'makeSpamComplaints' => $makeSpamComplaints,
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
+
+    if($checkTextInCsv) {
+        fputcsv($csvFile,[$divisionRow['row']['review_id'],$divisionRow['row']['review_text']]);
+    }
 
     $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);
 }

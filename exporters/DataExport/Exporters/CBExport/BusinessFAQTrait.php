@@ -80,6 +80,8 @@ trait BusinessFAQTrait
         $faqID = $this->isBusinessFAQExists( $fields["business_id"], $importID, $fields["question"] );
         if ( $faqID > 0 ) return $faqID;
 
+        $fields['answer'] = iconv('UTF-8', 'UTF-8//IGNORE', $fields['answer']);
+
         $rs = $this->db->insert( "bname_faq", [
             "bname_id" => $fields["business_id"],
             "question" => $fields["question"],
