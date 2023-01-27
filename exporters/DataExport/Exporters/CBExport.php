@@ -176,9 +176,9 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return $this->removeRecordByImportID( "compl_companies", $importID );
     }
 
-    public function isCompanyExists( string $importID, string $name ): int
+    public function isCompanyExists( string $importID, ?string $name ): int
     {
-        return $this->isRecordExists( "compl_companies", $importID, $name, "company_name" );
+        return $this->isRecordExists( "compl_companies", $importID, $name, ( $name === null ? null : "company_name" ) );
     }
 
     public function addCompany( string $importID, array $fields )
@@ -232,6 +232,22 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
     public function getBusinessImportID( $companyId ): string
     {
         return "scraper-bbb--company-id:{$companyId}";
+    }
+
+    public function getBusinessComplaintsCount(string $importID): int
+    {
+        $business = $this->getBusiness($importID);
+        if(!$business) return 0;
+
+        return $business["bname_complaints"];
+    }
+
+    public function getBusinessReviewsCount(string $importID): int
+    {
+        $business = $this->getBusiness($importID);
+        if(!$business) return 0;
+
+        return $business["bname_reviews"];
     }
 
     public function updateBusiness( string $importID, array $fields ): bool
@@ -819,6 +835,28 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         }
 
         return $this->removeRecordByImportID( "compl_posts", $importID );
+    }
+
+    public function spamComment( string $importID, string $reason )
+    {
+        $commentID = $this->isCommentExists( $importID );
+        if ( $commentID ) {
+            $this->db->update( "compl_posts", [
+                'is_spam' => 2,
+                'spam_reason' => $reason,
+            ], "ID = '{$commentID}'" );
+        }
+    }
+
+    public function unspamComment( string $importID )
+    {
+        $commentID = $this->isCommentExists( $importID );
+        if ( $commentID ) {
+            $this->db->update( "compl_posts", [
+                'is_spam' => 0,
+                'spam_reason' => null,
+            ], "ID = '{$commentID}'" );
+        }
     }
 
     public function addComment( string $importID, array $fields )

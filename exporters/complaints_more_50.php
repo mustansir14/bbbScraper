@@ -5,16 +5,17 @@ use DataExport\Helpers\Db;
 use DataExport\Exporters\CBExport;
 use DataExport\Formatters\TextFormatter;
 use DataExport\Data\BusinessData;
+use DataExport\Helpers\CheckUniqueTextViaCSV;
 
 $config = require __DIR__."/config.php";
 
 ##################################################################################
 
 $profileName = "local";
-$profileName = "cb";
+#$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $complaintType = 1 ? "review" : "complaint";
-$removeBN = false; #$profileName === "local"; # remove bn before try create new
+$removeBN = $profileName === "local"; # remove bn before try create new
 $debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
 $removeAllPosts = true; # before insert remove all old
 $addComplaints = true; # without that no complaints or reviews will be added
@@ -23,7 +24,10 @@ $maxCompanies = false;
 $makeSpamComplaints = true; # may create not spamed complaints for fast insert
 $makeScreenshot = true; # if no logo and website url exists and makeScreenshot == True try create screenshot
 $checkTextInGoogle = false; #$profileName !== "local";
-$checkTextInCsv = false;
+
+$checkUniqueViaCSV = new CheckUniqueTextViaCSV('check_texts.csv', 'check_texts_results.csv');
+$checkUniqueViaCSV->setDisabledMode();
+
 $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
@@ -223,7 +227,7 @@ foreach( $companies as $companyNbr => $companyId )
 
     if ( $exporter->isBusinessActive( $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]) ) ) {
         echo "Stop: business profile is active, may be already records changed!\n";
-        exit;
+        continue;
     }
 
     $businessRow = $exporter->getBusiness($exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]));
@@ -255,11 +259,6 @@ foreach( $companies as $companyNbr => $companyId )
 
     $csvFile = null;
 
-    if($checkTextInCsv) {
-        $csvFile = fopen('check_texts.csv','w');
-        if(!$csvFile) die("Error: can not create check_texts.csv");
-    }
-
     if ( $complaintType === "complaint" )
     {
         require __DIR__."/add-20-16-complaints.php";
@@ -267,10 +266,6 @@ foreach( $companies as $companyNbr => $companyId )
         require __DIR__."/add-20-16-reviews.php";
     } else {
         die( "Unknown complain type: {$complaintType}" );
-    }
-
-    if($checkTextInCsv) {
-        fclose($csvFile);
     }
 
     if ( $destBusinessID )
@@ -289,6 +284,8 @@ foreach( $companies as $companyNbr => $companyId )
         echo "Removed all from company: ".$sourceCompanyRow["company_id"]."\n";
     }
 }
+
+$checkUniqueViaCSV->close();
 
 print_r($websiteUrls);
 

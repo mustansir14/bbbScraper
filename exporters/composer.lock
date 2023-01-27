@@ -664,11 +664,11 @@
         },
         {
             "name": "srgteam/klazify",
-            "version": "1.5",
+            "version": "1.7",
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/klazify-scraper.git",
-                "reference": "b12dbc2b9afc8987cf24348b903cd42f62bc4954"
+                "reference": "a3fb88ada3ecd233cacbe7b7a5f1250f2d2e51dc"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.5",
@@ -698,7 +698,7 @@
                 }
             ],
             "description": "Scrape information by url from klazify.",
-            "time": "2023-01-17T08:58:08+00:00"
+            "time": "2023-01-19T13:53:29+00:00"
         },
         {
             "name": "srgteam/scrape-web",

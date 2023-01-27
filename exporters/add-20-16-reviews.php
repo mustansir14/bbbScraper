@@ -7,6 +7,7 @@
  * @var array $sourceCompanyRow
  * @var Db $srcDb
  * @var Db $destDb
+ * @var object $checkUniqueViaCSV
  */
 if ( !$addComplaints ) return;
 
@@ -57,8 +58,13 @@ foreach( $complaints20 as $complaintNbr => $complaint )
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
-    if($checkTextInCsv) {
-        fputcsv($csvFile,[$complaint['review_id'],$complaint['review_text']]);
+    if($checkUniqueViaCSV->isModeCollect()) {
+        $checkUniqueViaCSV->saveRecord($complaint['review_id'], $complaint['review_text']);
+    } elseif($checkUniqueViaCSV->isModeUse()) {
+        if(!$checkUniqueViaCSV->isIDUnique($complaint['review_id'])) {
+            echo "Text not unique for {$complaint['review_id']}, skip...\n";
+            continue;
+        }
     }
 
     $complaintID = $helper->insertReview($complaint);
@@ -117,8 +123,13 @@ foreach( $division as $complaintNbr => $divisionRow )
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
-    if($checkTextInCsv) {
-        fputcsv($csvFile,[$divisionRow['row']['review_id'],$divisionRow['row']['review_text']]);
+    if($checkUniqueViaCSV->isModeCollect()) {
+        $checkUniqueViaCSV->saveRecord($divisionRow['row']['review_id'], $divisionRow['row']['review_text']);
+    } elseif($checkUniqueViaCSV->isModeUse()) {
+        if(!$checkUniqueViaCSV->isIDUnique($divisionRow['row']['review_id'])) {
+            echo "Text not unique for {$divisionRow['row']['review_id']}, skip...\n";
+            continue;
+        }
     }
 
     $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);

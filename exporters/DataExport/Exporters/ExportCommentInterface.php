@@ -7,4 +7,6 @@ interface ExportCommentInterface
     public function removeCommentByImportID( string $importID );
     public function isCommentExists( string $importID );
     public function addComment( string $importID, array $fields );
+    public function spamComment( string $importID, string $reason );
+    public function unspamComment( string $importID );
 }

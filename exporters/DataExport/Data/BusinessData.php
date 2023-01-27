@@ -43,6 +43,24 @@ class BusinessData
         }
     }
 
+    public static function unspamAllPosts(object $exporter, array $sourceCompanyRow, string $type)
+    {
+        $businessID = $exporter->isBusinessExists(
+            $exporter->getBusinessImportID($sourceCompanyRow[ 'company_id' ]),
+            null
+        );
+        if ($businessID) {
+            foreach ($exporter->getAllImportedComments($businessID, $type) as $comment) {
+                #echo $comment[ 'import_id' ]."\n";
+                $exporter->unspamComment($comment[ 'import_id' ]);
+            }
+            foreach ($exporter->getAllImportedComplaints($businessID, $type) as $complaint) {
+                #echo $complaint[ 'import_id' ]."\n";
+                $exporter->unspamComplaint($complaint[ 'import_id' ]);
+            }
+        }
+    }
+
     public static function remove(object $exporter, array $sourceCompanyRow, string $companyNameWithoutAbbr)
     {
         static::removeFAQ($exporter, $sourceCompanyRow, $companyNameWithoutAbbr);
@@ -308,7 +326,7 @@ class BusinessData
             if (!$reply) {
                 var_dump($reply);
                 echo "Error: making screenshot error: ".$screenshot->getError()."\n";
-                exit;
+                return false;
             }
             if (!$exporter->setBusinessLogo($businessImportID, $reply->image_content)) {
                 die("setBusinessLogo Error: ".$exporter->getErrorsAsString());
