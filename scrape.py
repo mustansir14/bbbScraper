@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
 import time
@@ -47,7 +48,8 @@ class BBBScraper():
             }
         self.session.headers.update(headers)
         options = Options()
-        options.add_argument('--headless')
+        # headless does not support extensions
+        #options.add_argument('--headless')
         options.add_argument("window-size=1920,1080")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
@@ -150,7 +152,23 @@ class BBBScraper():
             company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
             company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
         return company
-
+        
+    def getSchemaOrgByType(self, type):
+        scriptTags = self.driver.find_elements(By.CSS_SELECTOR, 'script[type*="ld+json"]')
+        for scriptTag in scriptTags:
+            schemaOrgArray = json.loads(scriptTag.get_attribute('innerHTML').strip("\r\n\t ;"))
+            for schemaOrg in schemaOrgArray:
+                if schemaOrg['@type'] == type:
+                    return schemaOrg
+                    
+        return None
+        
+    def getCompanyLDJson(self):
+        localBusiness = self.getSchemaOrgByType('LocalBusiness')
+        if localBusiness is None:
+            raise Exception("Can not get company ld json")
+        
+        return localBusiness
 
     def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True, half_scraped=False) -> Company:
 
@@ -168,6 +186,7 @@ class BBBScraper():
                 raise Exception("Company with ID %s does not exist" % str(company_id))
             
         logging.info("Scraping Company Details for " + company_url)
+        
         company = Company()
         company.url = company_url
         company.half_scraped = half_scraped
@@ -182,19 +201,16 @@ class BBBScraper():
                 time.sleep(60)
             else:
                 break
-
+                
+        companyLdJson = self.getCompanyLDJson()
+        
+        company.name = companyLdJson['name']
+        
         try:
-            company.name = self.driver.find_element_by_class_name("MuiTypography-root.MuiTypography-h2").text.strip()
-        except:
-            logging.error("Error in scraping: " + company_url + " Page Broken (502)")
-            company.name = company_url
-            company.status = "error"
-            company.log = "Page broken (502)"
-            return company
-        try:
-            logo = self.driver.find_element_by_class_name("dtm-logo").find_element_by_tag_name("img").get_attribute("src")
-            if logo != "https://www.bbb.org/TerminusContent/dist/img/non-ab-icon__300w.png":
+            logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR, "img").get_attribute("src")
+            if not "non-ab-icon__300w.png" in logo:
                 company.logo = "file/logo/" + slugify(company.name) + ".png"
+                
                 self.driver.execute_script(f'''window.open("{logo}","_blank");''')
                 self.driver.switch_to.window(self.driver.window_handles[1])
                 self.driver.save_screenshot(company.logo)
@@ -202,60 +218,69 @@ class BBBScraper():
                 self.driver.switch_to.window(self.driver.window_handles[0])
         except Exception as e:
             company.logo = ""
+            
         try:
             if GET_SOURCE_CODE:
                 company.source_code = self.driver.page_source
             try:
-                company.categories = " > ".join([x.text for x in self.driver.find_element_by_class_name("dtm-breadcrumbs").find_elements_by_tag_name("li")[:4]])
+                company.categories = " > ".join([x.text for x in self.driver.find_element(By.CSS_SELECTOR, ".dtm-breadcrumbs").find_element(By.CSS_SELECTOR, "li")[:4]])
             except:
                 pass
-            company.phone = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-phone"))
-            company.address = self.driver.find_element_by_tag_name("address").text
-            company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"))
+            company.phone = companyLdJson['telephone']
+            company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
+            company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"))
             if company.website and company.website.lower().strip() == "visit website":
-                company.website = self._get_first_with_text(self.driver.find_elements_by_class_name("dtm-url"), get_href=True)
+                company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"), get_href=True)
             lines = company.address.split("\n")
-            company.street_address = lines[0]
-            if len(lines) > 1:
-                comma_split = lines[1].split(",")
-                company.address_locality = comma_split[0].strip()
-                if len(comma_split) > 1:
-                    company.address_region = comma_split[1].split()[0]
-                    company.postal_code = " ".join(comma_split[1].split()[1:])
-            icons = self.driver.find_elements_by_class_name("with-icon")
+            
+            company.street_address = companyLdJson['address']['streetAddress']
+            company.address_locality = companyLdJson['address']['addressLocality']
+            company.address_region = companyLdJson['address']['addressRegion']
+            company.postal_code = companyLdJson['address']['postalCode']
+            company.street_address = companyLdJson['address']['streetAddress']
+            
+            icons = self.driver.find_elements(By.CSS_SELECTOR, ".find_elementwith-icon")
             company.hq = False
             for icon in icons:
                 if "Headquarters" in icon.text:
                     company.hq = True
                     break
+                    
             try:
-                self.driver.find_element_by_class_name("dtm-accreditation-badge")
+                self.driver.find_element(By.CSS_SELECTOR, ".dtm-accreditation-badge")
                 company.is_accredited = True
             except:
                 company.is_accredited = False
+                
             try:
-                company.rating = self.driver.find_elements_by_class_name("dtm-rating")[-1].text.strip().split()[0][:2]
+                company.rating = self.driver.find_elements(By.CSS_SELECTOR, ".dtm-rating")[-1].text.strip().split()[0][:2]
             except:
                 company.rating = None
+                
             try:
-                review_box = self.driver.find_elements_by_class_name("MuiCardContent-root.stack.e1bq2n4p0.css-qo261a")[1]
-                company.number_of_stars = round(float(review_box.find_element_by_class_name("MuiTypography-root.MuiTypography-body2.text-size-70.css-8gocr").text.split("/")[0]), 2)
-                company.number_of_reviews = int(review_box.text.split("Average of ")[1].split(" Customer")[0].replace(",", ""))
+                element = self.driver.find_element(By.XPATH, '//*[contains(@class,"dtm-stars")]/following-sibling::*')
+                company.number_of_stars = round(float(element.text.strip().split("/")[0]), 2)
             except:
                 company.number_of_stars = None
-                company.number_of_reviews = 0
+                
+            text = self.driver.find_element(By.XPATH, '//h2[normalize-space(text())="Customer Reviews"]/following-sibling::p').text.strip()
+            text = re.sub("[^0-9]", '', text)
+            company.number_of_reviews = int(text)
+                
+            text = self.driver.find_element(By.XPATH, '//h2[normalize-space(text())="Customer Complaints"]/following-sibling::p').text.strip()
+            text = re.sub("[^0-9]", '', text)
+            company.number_of_complaints = int(text)
+                
             try:
-                company.number_of_complaints = int(self.driver.find_element(By.CSS_SELECTOR, "#content > div.css-zv8g12.e7lprtl0 > div > div:nth-child(3) > div > div:nth-child(3) > div > div:nth-child(2) > div > div.stack.css-0.e1dc2hmq0 > p:nth-child(1) > strong").text.replace(",", ""))
+                company.overview = self.driver.find_element(By.CSS_SELECTOR, "#overview .line-clamp").text
             except:
-                company.number_of_complaints = 0
+                company.overview = None
+                
             try:
-                company.overview = self.driver.find_element_by_id("overview").find_element_by_class_name("MuiTypography-paragraph").text
+                company.products_and_services = self.driver.find_element(By.CSS_SELECTOR, ".dtm-products-services").text
             except:
                 pass
-            try:
-                company.products_and_services = self.driver.find_element_by_class_name("dtm-products-services").text
-            except:
-                pass
+                
             while True:
                 self.driver.get(company_url.split("?")[0] + "/details")
                 if "403" in self.driver.title:
@@ -263,16 +288,11 @@ class BBBScraper():
                     time.sleep(60)
                 else:
                     break
-            try:
-                buttons = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").find_elements_by_tag_name("button")
-                for button in buttons:
-                    if "Read More" in button.text:
-                        self.driver.execute_script("arguments[0].click();", button)
-            except:
-                pass
+                
             if GET_SOURCE_CODE:
                 company.source_code_details = self.driver.page_source
-            detail_lines = self.driver.find_element_by_class_name("MuiCardContent-root.e5hddx44.css-1hr2ai0").text.split("\n")
+                
+            detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
             fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
             fields_dict = {}
             current_field = None
@@ -395,7 +415,7 @@ class BBBScraper():
                         company.additional_websites += url + "\n"
             if "Alternate Business Name" in fields_dict:
                 company.alternate_business_name = fields_dict["Alternate Business Name"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
-            social_media_links = self.driver.find_elements_by_class_name("with-icon.css-1csllio.e13hff4y0")
+            social_media_links = self.driver.find_elements(By.CSS_SELECTOR, ".with-icon.css-1csllio.e13hff4y0")
             for link in social_media_links:
                 link_text = link.text.lower().strip()
                 if link_text == "facebook":
@@ -472,7 +492,7 @@ class BBBScraper():
         while True:
             found = False
             try:
-                buttons = self.driver.find_elements_by_class_name("bds-button")
+                buttons = self.driver.find_elements(By.CSS_SELECTOR, ".bds-button")
                 for button in buttons:
                     if button.text.strip().lower() == "load more":
                         self.driver.execute_script("arguments[0].click();", button)
@@ -485,12 +505,12 @@ class BBBScraper():
                 break
 
         try:
-            review_tags = self.driver.find_element_by_class_name("stack.css-zyn7di.e62xhj40").find_elements_by_tag_name("li")
+            review_tags = self.driver.find_element(By.CSS_SELECTOR, ".stack.css-zyn7di.e62xhj40").find_elements(By.CSS_SELECTOR, "li")
         except:
             logging.info("No reviews for company: " + company_url)
             return []
         for review_tag in review_tags:
-            username = review_tag.find_element_by_tag_name("h3").text.strip().replace("Review from\n", "")
+            username = review_tag.find_element(By.CSS_SELECTOR, "h3").text.strip().replace("Review from\n", "")
             if scrape_specific_review and username != review_results[0]["username"]:
                 continue
             review = Review()
@@ -499,7 +519,7 @@ class BBBScraper():
             review.company_id = company_id
             review.username = username
             try:
-                date = review_tag.find_element_by_class_name("MuiTypography-root.text-gray-70.MuiTypography-body2").text.strip()
+                date = review_tag.find_element(By.CSS_SELECTOR, ".MuiTypography-root.text-gray-70.MuiTypography-body2").text.strip()
                 try:
                     review.review_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
                 except:
@@ -510,20 +530,20 @@ class BBBScraper():
                 review.status = "error"
             if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
                 continue
-            review_texts = review_tag.find_elements_by_class_name("MuiTypography-root.text-black.MuiTypography-body2")
+            review_texts = review_tag.find_elements(By.CSS_SELECTOR, ".MuiTypography-root.text-black.MuiTypography-body2")
             if not review_texts:
-                review_texts = review_tag.find_elements_by_class_name("css-1epoynv.ei2kcdu0")
+                review_texts = review_tag.find_elements(By.CSS_SELECTOR, ".css-1epoynv.ei2kcdu0")
             try:
                 review.review_text = review_texts[0].text
             except:
                 review.review_text = ""
             try:
-                review.review_rating = round(float(review_tag.find_element_by_class_name("css-amhf5.ei2kcdu2").find_element_by_class_name("visually-hidden").text.split()[0]), 1)
+                review.review_rating = round(float(review_tag.find_element(By.CSS_SELECTOR, ".css-amhf5.ei2kcdu2").find_element(By.CSS_SELECTOR, ".visually-hidden").text.split()[0]), 1)
             except:
                 pass
             try:
                 review.company_response_text = review_texts[1].text
-                date = review_tag.find_element_by_class_name("MuiTypography-root.text-gray-70.MuiTypography-body1").text.strip()
+                date = review_tag.find_element(By.CSS_SELECTOR, ".MuiTypography-root.text-gray-70.MuiTypography-body1").text.strip()
                 try:
                     review.company_response_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
                 except:

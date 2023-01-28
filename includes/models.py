@@ -98,6 +98,8 @@ class Company:
                 return_string += '\nWorking hours: ' + self.working_hours
         if self.number_of_stars:
                 return_string += '\nNumber of stars: ' + str(self.number_of_stars)
+        if self.number_of_complaints:
+                return_string += '\nNumber of complaints: ' + str(self.number_of_complaints)
         if self.number_of_reviews:
                 return_string += '\nNumber of reviews: ' + str(self.number_of_reviews)
         if self.overview:
