@@ -234,20 +234,31 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
         return "scraper-bbb--company-id:{$companyId}";
     }
 
-    public function getBusinessComplaintsCount(string $importID): int
+    private function getBusinessImportedTypeCount(string $type, string $importID): int
     {
-        $business = $this->getBusiness($importID);
-        if(!$business) return 0;
+        $businessID = $this->isBusinessExists($importID, null);
+        if (!$businessID) {
+            return false;
+        }
+        $count = $this->db->countRows(
+            ['compl_complaints cc', 'compl_complaints_imports ci' => 'ci.id = cc.id'],
+            "cc.compl_bname_id = '{$businessID}' 
+            and cc.compl_type = '".$this->db->escape($type)."' 
+            and ci.id is not null"
+        );
+        $this->throwExceptionIf($count === false, $this->db->getExtendedError());
 
-        return $business["bname_complaints"];
+        return $count;
     }
 
-    public function getBusinessReviewsCount(string $importID): int
+    public function getBusinessImportedComplaintsCount(string $importID): int
     {
-        $business = $this->getBusiness($importID);
-        if(!$business) return 0;
+        return $this->getBusinessImportedTypeCount('complaint', $importID);
+    }
 
-        return $business["bname_reviews"];
+    public function getBusinessImportedReviewsCount(string $importID): int
+    {
+        return $this->getBusinessImportedTypeCount('review', $importID);
     }
 
     public function updateBusiness( string $importID, array $fields ): bool

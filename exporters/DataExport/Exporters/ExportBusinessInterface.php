@@ -26,8 +26,8 @@ interface ExportBusinessInterface
 
     public function enableBusiness(string $importID): bool;
 
-    public function getBusinessComplaintsCount(string $importID): int;
+    public function getBusinessImportedComplaintsCount(string $importID): int;
 
-    public function getBusinessReviewsCount(string $importID): int;
+    public function getBusinessImportedReviewsCount(string $importID): int;
 
 }
