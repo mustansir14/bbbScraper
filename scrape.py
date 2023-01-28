@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
 import time
@@ -46,9 +47,11 @@ class BBBScraper():
             }
         self.session.headers.update(headers)
         options = Options()
+        options.add_argument('--headless')
         options.add_argument("window-size=1920,1080")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
+        options.add_argument('--disable-gpu')
         options.add_argument('--disable-dev-shm-usage')
         # options.add_argument('--single-process'); # one process to take less memory
         options.add_argument('--renderer-process-limit=1'); # do not allow take more resources
@@ -127,9 +130,9 @@ class BBBScraper():
             self.display = Display(visible=0, size=(1920, 1080))
             self.display.start()
         if chromedriver_path:
-            self.driver = webdriver.Chrome(executable_path=chromedriver_path, options=options)
+            self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
         else:
-            self.driver = webdriver.Chrome(options=options, executable_path=ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
         if not os.path.exists("file/logo/"):
             os.makedirs("file/logo")
         self.db = DB()
