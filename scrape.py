@@ -505,55 +505,53 @@ class BBBScraper():
                 break
 
         try:
-            review_tags = self.driver.find_element(By.CSS_SELECTOR, ".stack.css-zyn7di.e62xhj40").find_elements(By.CSS_SELECTOR, "li")
+            review_tags = self.driver.find_elements(By.XPATH, '//*[contains(@class,"dtm-review")]/ancestor::*[contains(@class,"MuiCardContent-root")]')
         except:
             logging.info("No reviews for company: " + company_url)
             return []
+            
         for review_tag in review_tags:
             username = review_tag.find_element(By.CSS_SELECTOR, "h3").text.strip().replace("Review from\n", "")
             if scrape_specific_review and username != review_results[0]["username"]:
                 continue
+                
             review = Review()
+            
             if GET_SOURCE_CODE:
                 review.source_code = review_tag.get_attribute('innerHTML')
+                
             review.company_id = company_id
             review.username = username
-            try:
-                date = review_tag.find_element(By.CSS_SELECTOR, ".MuiTypography-root.text-gray-70.MuiTypography-body2").text.strip()
-                try:
-                    review.review_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
-                except:
-                    review.review_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
-            except:
-                review.review_date = None
-                review.log += "Error while scraping/parsing date\n"
-                review.status = "error"
+            
+            childs = review_tag.find_elements(By.CSS_SELECTOR, ".dtm-review > *")
+            if len(childs) < 4:
+                raise Exception("Invalid child elements count")
+                
+            if not re.match('^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$',childs[3].text.strip()):
+                raise Exception("Child[3] not date element")
+                
+            review.review_date = datetime.datetime.strptime(childs[3].text.strip(), "%m/%d/%Y").strftime('%Y-%m-%d')
             if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
                 continue
-            review_texts = review_tag.find_elements(By.CSS_SELECTOR, ".MuiTypography-root.text-black.MuiTypography-body2")
-            if not review_texts:
-                review_texts = review_tag.find_elements(By.CSS_SELECTOR, ".css-1epoynv.ei2kcdu0")
-            try:
-                review.review_text = review_texts[0].text
-            except:
-                review.review_text = ""
-            try:
-                review.review_rating = round(float(review_tag.find_element(By.CSS_SELECTOR, ".css-amhf5.ei2kcdu2").find_element(By.CSS_SELECTOR, ".visually-hidden").text.split()[0]), 1)
-            except:
-                pass
-            try:
-                review.company_response_text = review_texts[1].text
-                date = review_tag.find_element(By.CSS_SELECTOR, ".MuiTypography-root.text-gray-70.MuiTypography-body1").text.strip()
-                try:
-                    review.company_response_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
-                except:
-                    review.company_response_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
-            except:
-                pass
+            
+            review.review_rating = round(float(review_tag.find_element(By.XPATH, '//*[contains(@class,"dtm-review")]//*[contains(@class,"visually-hidden") and contains(text(),"star")]').text.split()[0]), 1)
+       
+            if len(childs) > 4:
+                review.review_text = childs[4].text.strip()
+            else:
+                texts = review_tag.find_elements(By.XPATH, '//*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-black")]')
+                dates = review_tag.find_elements(By.XPATH, '//*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-gray-70")]')
+                
+                review.review_text = texts.pop(0).text.strip()
+                review.company_response_text = texts[0].text.strip()
+                review.company_response_date = datetime.datetime.strptime(dates[0].text.strip(), "%m/%d/%Y").strftime('%Y-%m-%d')
+                
             if review.status == "error":
                 send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+                
             if not review.status:
                 review.status = "success"
+                
             reviews.append(review)
             if scrape_specific_review:
                 break
