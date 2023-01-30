@@ -624,51 +624,39 @@ class BBBScraper():
             self.driver.get(complaint_url + "?page=" + str(page))
             
             try:
-                complaint_tags = self.driver.find_element_by_class_name("stack.css-zyn7di.e62xhj40").find_elements_by_tag_name("li")
+                complaint_tags = self.driver.find_elements(By.XPATH, "//li[@id]")
             except:
                 break
+                
+            if not complaint_tags:
+                break
+                
             for complaint_tag in complaint_tags:
                 complaint = Complaint()
+                
                 if GET_SOURCE_CODE:
                     complaint.source_code = complaint_tag.get_attribute('innerHTML')
+                    
                 complaint.company_id = company_id
-                try:
-                    complaint.complaint_type = complaint_tag.find_element_by_class_name("css-17a6kq4.e1n5qf2o2").text.replace("Complaint Type:", "").replace("Anonymous complaint:", "").strip()
-                except:
-                    continue
-                try:
-                    date = complaint_tag.find_element(By.CLASS_NAME, "stack").find_element(By.TAG_NAME, "p").text.strip()
-                    try:
-                        complaint.complaint_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
-                    except:
-                        complaint.complaint_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
-                except:
-                    complaint.complaint_date = None
-                    complaint.log += "Error while scraping/parsing date\n"
-                    complaint.status = "error"
-                stack_space = complaint_tag.find_element_by_class_name("stack-space-24")
-                try:
-                    complaint.complaint_text = stack_space.find_element_by_tag_name("div").text.strip()
-                except:
-                    complaint.complaint_text = None
-                    complaint.log += "Error while scraping complaint text\n"
-                    complaint.status = "error"
+                complaint.complaint_type = complaint_tag.find_element(By.XPATH, './/*[normalize-space(text())="Complaint Type:"]/following-sibling::*').text.strip()
+                complaint.complaint_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h3/following-sibling::*').text.strip())
+                complaint.complaint_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[1]').text.strip()
+                
                 if scrape_specific_complaint and (complaint.complaint_type != complaint_results[0]["complaint_type"] or str(complaint.complaint_date) != str(complaint_results[0]["complaint_date"]) or complaint.complaint_text != complaint_results[0]["complaint_text"]):
                     continue
+                    
                 try:
-                    company_response_divs = stack_space.find_element_by_class_name("css-17q6oin.e1n5qf2o0").find_elements_by_tag_name("div")
-                    complaint.company_response_text = company_response_divs[1].text.strip()
-                    date = company_response_divs[0].find_element_by_tag_name("p").text.strip()
-                    try:
-                        complaint.company_response_date = datetime.datetime.strptime(date, "%m/%d/%Y").strftime('%Y-%m-%d')
-                    except:
-                        complaint.company_response_date = datetime.datetime.strptime(date, "%d/%m/%Y").strftime('%Y-%m-%d')
+                    complaint.company_response_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h4/following-sibling::*').text.strip())
+                    complaint.company_response_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[2]//*[@data-body]').text.strip()
                 except:
                     pass
+                    
                 if complaint.status == "error":
                     send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+                    
                 if not complaint.status:
                     complaint.status = "success"
+                    
                 complaints.append(complaint)
                 if scrape_specific_complaint:
                     break
@@ -801,6 +789,7 @@ if __name__ == '__main__':
             except Exception as e:
                 print(e)
             print("\n")
+            
             company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("%s Reviews for %s scraped successfully.\n" % (len(company.reviews), company.name))
             for i, review in enumerate(company.reviews, start=1):
@@ -810,6 +799,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(e)
                 print("\n")
+                
             company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("%s Complaints for %s scraped successfully.\n" % (len(company.complaints), company.name))
             for i, complaint in enumerate(company.complaints, start=1):
