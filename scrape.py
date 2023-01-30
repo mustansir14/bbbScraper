@@ -222,10 +222,8 @@ class BBBScraper():
         try:
             if GET_SOURCE_CODE:
                 company.source_code = self.driver.page_source
-            try:
-                company.categories = " > ".join([x.text for x in self.driver.find_element(By.CSS_SELECTOR, ".dtm-breadcrumbs").find_element(By.CSS_SELECTOR, "li")[:4]])
-            except:
-                pass
+            
+            company.categories = " > ".join([x.text for x in self.driver.find_element(By.CSS_SELECTOR, ".dtm-breadcrumbs").find_elements(By.CSS_SELECTOR, "li")[:4]])
             company.phone = companyLdJson['telephone']
             company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
             company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"))
