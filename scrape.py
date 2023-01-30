@@ -446,6 +446,20 @@ class BBBScraper():
         if save_to_db:
             self.db.insert_or_update_company(company)
         return company
+        
+    def convertDateToOurFormat(self,text):
+        # BBB have date problem:
+        # https://www.bbb.org/us/ca/tracy/profile/mattress-supplies/zinus-inc-1156-90044368/customer-reviews
+        # 02/28/2022
+        # https://www.bbb.org/ca/ab/calgary/profile/insurance-agency/bayside-associates-0017-52776/customer-reviews
+        # 15/09/2020
+        # that's why %m/%d/%Y not work
+        try:
+            return datetime.datetime.strptime(text, "%m/%d/%Y").strftime('%Y-%m-%d')
+        except:
+            pass
+        
+        return datetime.datetime.strptime(text, "%d/%m/%Y").strftime('%Y-%m-%d')
 
 
     def scrape_company_reviews(self, company_url=None, company_id = None, save_to_db=True, scrape_specific_review=None) -> List[Review]:
@@ -530,7 +544,7 @@ class BBBScraper():
             if not re.match('^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$',childs[3].text.strip()):
                 raise Exception("Child[3] not date element")
                 
-            review.review_date = datetime.datetime.strptime(childs[3].text.strip(), "%m/%d/%Y").strftime('%Y-%m-%d')
+            review.review_date = self.convertDateToOurFormat(childs[3].text.strip())
             if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
                 continue
             
@@ -544,7 +558,7 @@ class BBBScraper():
                 
                 review.review_text = texts.pop(0).text.strip()
                 review.company_response_text = texts[0].text.strip()
-                review.company_response_date = datetime.datetime.strptime(dates[0].text.strip(), "%m/%d/%Y").strftime('%Y-%m-%d')
+                review.company_response_date = self.convertDateToOurFormat(dates[0].text.strip())
                 
             if review.status == "error":
                 send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
