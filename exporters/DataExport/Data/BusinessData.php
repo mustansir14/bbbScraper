@@ -91,7 +91,7 @@ class BusinessData
                 FILTER_VALIDATE_URL
             )
         ) {
-            echo "Get socials from scrape web...\n";
+            echo "Get socials from scrape web: {$sourceCompanyRow['website']}...\n";
 
             $scraper = new WebScraper();
             $socialMedia = $scraper->getSocials($sourceCompanyRow["website"]);

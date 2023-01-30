@@ -148,10 +148,10 @@ class Review:
                 return_string += '\nReview date: ' + self.review_date
         if self.username:
                 return_string += '\nUsername: ' + self.username
-        if self.review_text:
-                return_string += '\nReview text: ' + self.review_text
         if self.review_rating:
                 return_string += '\nReview rating: ' + str(self.review_rating)
+        if self.review_text:
+                return_string += '\nReview text: ' + self.review_text
         if self.company_response_text:
                 return_string += '\nCompany response text: ' + self.company_response_text
         if self.company_response_date:

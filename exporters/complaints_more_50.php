@@ -32,7 +32,8 @@ $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    "https://www.bbb.org/us/wa/yarrow-point/profile/pet-insurance/healthy-paws-pet-insurance-llc-1296-22528158",
+    "https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835"
+    /*"https://www.bbb.org/us/wa/yarrow-point/profile/pet-insurance/healthy-paws-pet-insurance-llc-1296-22528158",
     "https://www.bbb.org/us/ga/atlanta/profile/auto-diagnosis/fixd-automotive-inc-0443-27709950",
     "https://www.bbb.org/us/ca/san-francisco/profile/computer-software/discord-inc-1116-918699",
     "https://www.bbb.org/us/fl/orlando/profile/information-bureaus/checkpeople-llc-0733-90442795",
@@ -131,7 +132,7 @@ $companyUrls = [
     "https://www.bbb.org/us/az/tempe/profile/loan-broker/freedomplus-1126-1000053878",
     "https://www.bbb.org/us/nj/hoboken/profile/manufactured-home-supplies/snow-joe-llc-0221-90100213",
     "https://www.bbb.org/us/fl/mary-esther/profile/major-appliance-parts/genuine-replacement-parts-0683-90040196",
-    "https://www.bbb.org/us/ca/thousand-oaks/profile/cell-phone-supplies/red-pocket-mobile-1236-92011052",
+    "https://www.bbb.org/us/ca/thousand-oaks/profile/cell-phone-supplies/red-pocket-mobile-1236-92011052",*/
 ];
 $websiteUrls = [];
 $websiteInstagramMedia = [];

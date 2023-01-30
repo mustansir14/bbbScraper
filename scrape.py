@@ -534,13 +534,13 @@ class BBBScraper():
             if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
                 continue
             
-            review.review_rating = round(float(review_tag.find_element(By.XPATH, '//*[contains(@class,"dtm-review")]//*[contains(@class,"visually-hidden") and contains(text(),"star")]').text.split()[0]), 1)
+            review.review_rating = round(float(review_tag.find_element(By.XPATH, './/*[contains(@class,"dtm-review")]//*[contains(@class,"visually-hidden") and contains(text(),"star")]').text.split()[0]), 1)
        
             if len(childs) > 4:
                 review.review_text = childs[4].text.strip()
-            else:
-                texts = review_tag.find_elements(By.XPATH, '//*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-black")]')
-                dates = review_tag.find_elements(By.XPATH, '//*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-gray-70")]')
+            else: 
+                texts = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-black")]')
+                dates = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-gray-70")]')
                 
                 review.review_text = texts.pop(0).text.strip()
                 review.company_response_text = texts[0].text.strip()
