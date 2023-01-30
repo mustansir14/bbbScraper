@@ -18,7 +18,7 @@ import time
 from typing import List
 from includes.DB import DB
 from includes.models import Company, Complaint, Review
-from config import *
+from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
 import datetime
 import os
@@ -66,7 +66,7 @@ class BBBScraper():
             if not proxy_port:
                 raise Exception("Proxy Port missing.")
             if proxy_user and proxy_pass:
-                self.session.proxies.update({PROXY_TYPE: PROXY_TYPE + "://" + PROXY_USER + ":" + PROXY_PASS + "@" + PROXY + ":" + str(PROXY_PORT)})
+                self.session.proxies.update({proxy_type: proxy_type + "://" + proxy_user + ":" + proxy_pass + "@" + proxy + ":" + str(proxy_port)})
                 manifest_json = """
                 {
                     "version": "1.0.0",
@@ -126,7 +126,7 @@ class BBBScraper():
                     zp.writestr("background.js", background_js)
                 options.add_extension(pluginfile)
             else:
-                self.session.proxies.update({PROXY_TYPE: PROXY_TYPE + "://" + PROXY + ":" + PROXY_PORT})
+                self.session.proxies.update({proxy_type: proxy_type + "://" + proxy + ":" + proxy_port})
                 options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
         if os.name != "nt":
             self.display = Display(visible=0, size=(1920, 1080))
@@ -178,7 +178,7 @@ class BBBScraper():
             self.db.cur.execute("Select url from company where company_id = %s;", (company_id, ))
             fetched_results = self.db.cur.fetchall()
             if len(fetched_results) == 1:
-                if USE_MARIA_DB:
+                if os.getenv('USE_MARIA_DB') is not None:
                     company_url = fetched_results[0][0]
                 else:
                     company_url = fetched_results[0]["company_url"]
@@ -194,6 +194,7 @@ class BBBScraper():
         if company.country not in ['us', 'ca']:
             send_message("Company %s does not have valid country in url!!" % company.url)
             company.country = None
+            
         while True:
             self.driver.get(company_url)
             if "403" in self.driver.title:
@@ -201,6 +202,11 @@ class BBBScraper():
                 time.sleep(60)
             else:
                 break
+            
+        if "<title>Page not found |" in self.driver.page_source:
+            company.status = "error"
+            company.log = "On url request returned: 404 - Whoops! Page not found!"
+            return company
                 
         companyLdJson = self.getCompanyLDJson()
         
@@ -220,11 +226,11 @@ class BBBScraper():
             company.logo = ""
             
         try:
-            if GET_SOURCE_CODE:
+            if os.getenv('GET_SOURCE_CODE') is not None:
                 company.source_code = self.driver.page_source
             
             company.categories = " > ".join([x.text for x in self.driver.find_element(By.CSS_SELECTOR, ".dtm-breadcrumbs").find_elements(By.CSS_SELECTOR, "li")[:4]])
-            company.phone = companyLdJson['telephone']
+            company.phone = companyLdJson['telephone'] if 'telephone' in companyLdJson else None
             company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
             company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"))
             if company.website and company.website.lower().strip() == "visit website":
@@ -287,36 +293,24 @@ class BBBScraper():
                 else:
                     break
                 
-            if GET_SOURCE_CODE:
+            if os.getenv('GET_SOURCE_CODE') is not None:
                 company.source_code_details = self.driver.page_source
                 
             detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
-            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
+            fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Related Businesses", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
             fields_dict = {}
             current_field = None
             for i, line in enumerate(detail_lines):
                 if line == "Read Less":
                     continue
                 if "Business Started:" in line:
-                    try:
-                        company.business_started = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
-                    except:
-                        company.business_started = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
+                    company.business_started = self.convertDateToOurFormat(detail_lines[i+1].strip().split()[0])
                 elif "Business Incorporated:" in line:
-                    try:
-                        company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
-                    except:
-                        company.business_incorporated = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
+                    company.business_incorporated = self.convertDateToOurFormat(detail_lines[i+1].strip().split()[0])
                 elif "BBB File Opened:" in line:
-                    try:
-                        company.bbb_file_opened = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
-                    except:
-                        company.bbb_file_opened = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
+                    company.bbb_file_opened = self.convertDateToOurFormat(detail_lines[i+1].strip().split()[0])
                 elif "Accredited Since:" in line:
-                    try:
-                        company.accredited_since = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%m/%d/%Y").strftime('%Y-%m-%d')
-                    except:
-                        company.accredited_since = datetime.datetime.strptime(detail_lines[i+1].strip().split()[0], "%d/%m/%Y").strftime('%Y-%m-%d')
+                    company.accredited_since = self.convertDateToOurFormat(detail_lines[i+1].strip().split()[0])
                 elif "Type of Entity:" in line:
                     company.type_of_entity = detail_lines[i+1].strip()
                 elif "Years in Business:" in line:
@@ -329,6 +323,7 @@ class BBBScraper():
                     fields_headers.remove(line)
                 elif current_field:
                     fields_dict[current_field] += line + "\n"
+                    
             
             if "Hours of Operation" in fields_dict:
                 working_hours_dict = {}
@@ -471,7 +466,7 @@ class BBBScraper():
                 fetched_results = self.db.cur.fetchall()
             if len(fetched_results) == 0:
                 return []
-            if USE_MARIA_DB:
+            if os.getenv('USE_MARIA_DB') is not None:
                 company_id = fetched_results[0][0]
             else:
                 company_id = fetched_results[0]["company_id"]
@@ -480,7 +475,7 @@ class BBBScraper():
             self.db.cur.execute("Select url from company where company_id = %s;", (company_id, ))
             fetched_results = self.db.cur.fetchall()
             if len(fetched_results) == 1:
-                if USE_MARIA_DB:
+                if os.getenv('USE_MARIA_DB') is not None:
                     company_url = fetched_results[0][0]
                 else:
                     company_url = fetched_results[0]["company_url"]
@@ -529,7 +524,7 @@ class BBBScraper():
                 
             review = Review()
             
-            if GET_SOURCE_CODE:
+            if os.getenv('GET_SOURCE_CODE') is not None:
                 review.source_code = review_tag.get_attribute('innerHTML')
                 
             review.company_id = company_id
@@ -585,7 +580,7 @@ class BBBScraper():
                 fetched_results = self.db.cur.fetchall()
             if len(fetched_results) == 0:
                 return []
-            if USE_MARIA_DB:
+            if os.getenv('USE_MARIA_DB') is not None:
                 company_id = fetched_results[0][0]
             else:
                 company_id = fetched_results[0]["company_id"]
@@ -594,7 +589,7 @@ class BBBScraper():
             self.db.cur.execute("Select url from company where company_id = %s;", (company_id, ))
             fetched_results = self.db.cur.fetchall()
             if len(fetched_results) == 1:
-                if USE_MARIA_DB:
+                if os.getenv('USE_MARIA_DB') is not None:
                     company_url = fetched_results[0][0]
                 else:
                     company_url = fetched_results[0]["company_url"]
@@ -632,7 +627,7 @@ class BBBScraper():
             for complaint_tag in complaint_tags:
                 complaint = Complaint()
                 
-                if GET_SOURCE_CODE:
+                if os.getenv('GET_SOURCE_CODE') is not None:
                     complaint.source_code = complaint_tag.get_attribute('innerHTML')
                     
                 complaint.company_id = company_id
@@ -717,7 +712,8 @@ class BBBScraper():
     def scrape_urls_from_queue(self, q, scrape_reviews_and_complaints=True):
 
         try:
-            scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
+            proxy = getProxy()
+            scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
             
             while q.qsize():
                 company_url = q.get()
@@ -766,6 +762,7 @@ if __name__ == '__main__':
         parser.print_help(sys.stderr)
         sys.exit(1)
     args = parser.parse_args()
+    
     # setup logging based on arguments
     if args.log_file and platform == "linux" or platform == "linux2":
         logging.basicConfig(filename=args.log_file, filemode='a',format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
@@ -775,7 +772,10 @@ if __name__ == '__main__':
         logging.basicConfig(filename=args.log_file, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     else:
         logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-    scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
+        
+    proxy = getProxy()
+    scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])  
+        
     if str2bool(args.bulk_scrape):
         scraper.bulk_scrape(no_of_threads=args.no_of_threads)
     else:

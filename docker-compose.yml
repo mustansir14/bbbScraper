@@ -1,0 +1,21 @@
+version: "3.11"
+services:
+    bbb_mustansir:
+        restart: always
+        build: .
+        environment:
+          - USE_MARIA_DB=1
+          - GET_SOURCE_CODE=1
+          - DB_HOST=${DB_HOST}
+          - DB_USER=${DB_USER}
+          - DB_PASS=${DB_PASS}
+          - DB_NAME=${DB_NAME}
+          - EXPORT_URL=${EXPORT_URL}
+        deploy:
+          resources:
+            limits:
+              cpus: "1"
+              memory: 256M
+        volumes:
+          - ./logs/:/www/logs/
+        

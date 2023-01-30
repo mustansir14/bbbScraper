@@ -1,6 +1,6 @@
 from scrape import BBBScraper
-from config import *
 from sys import platform
+from includes.proxies import getProxy
 from multiprocessing import Queue, Process
 import argparse
 import logging
@@ -21,7 +21,8 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
-    scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
+    proxy = getProxy()
+    scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
     count = 0
     while True:
 

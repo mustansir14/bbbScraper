@@ -68,6 +68,8 @@ class Company:
     def __str__(self) -> str:
         if self.name:
                 return_string = 'Name: ' + self.name
+        if self.alternate_business_name:
+                return_string = 'Alternate name: ' + self.alternate_business_name
         if self.url:
                 return_string += '\nUrl: ' + self.url
         if self.logo:

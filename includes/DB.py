@@ -4,11 +4,10 @@
 # +923333487952
 ##########################################
 
-from config import *
 from typing import List
 from includes.models import *
-import datetime
-if USE_MARIA_DB:
+import datetime, os
+if os.getenv('USE_MARIA_DB') is not None:
     import mariadb
 else:
     import pymysql
@@ -18,18 +17,18 @@ import time
 class DB:
 
     def __init__(self):
-        self.host = DB_HOST
-        self.user = DB_USER
-        self.password = DB_PASSWORD
-        self.db = DB_NAME
-        if USE_MARIA_DB:
+        self.host = os.getenv('DB_HOST')
+        self.user = os.getenv('DB_USER')
+        self.password = os.getenv('DB_PASSWORD')
+        self.db = os.getenv('DB_NAME')
+        if os.getenv('USE_MARIA_DB') is not None:
             self.con = mariadb.connect(host=self.host, user=self.user, password=self.password, db=self.db)
         else:
             self.con = pymysql.connect(host=self.host, user=self.user, password=self.password, db=self.db, cursorclass=pymysql.cursors.DictCursor)
         self.cur = self.con.cursor()
         
     def getDbCursor(self):
-        if USE_MARIA_DB:
+        if os.getenv('USE_MARIA_DB') is not None:
             return self.con.cursor(dictionary=True)
             
         return self.con.cursor()
@@ -48,10 +47,11 @@ class DB:
         company = self.trim_object(company)
         while True:
             try:
+                print(company)
                 self.cur.execute("SELECT company_id from company where url = %s;", (company.url,))
                 fetched_results = self.cur.fetchall()
                 if len(fetched_results) == 1:
-                    if USE_MARIA_DB:
+                    if os.getenv('USE_MARIA_DB') is not None:
                         company_id = fetched_results[0][0]
                     else:
                         company_id = fetched_results[0]["company_id"]
@@ -94,7 +94,7 @@ class DB:
                     logging.info("Reconnecting after 10 seconds")
                     time.sleep(10)
                     try:
-                        if USE_MARIA_DB:
+                        if os.getenv('USE_MARIA_DB') is not None:
                             self.con = mariadb.connect(host=self.host, user=self.user, password=self.password, db=self.db)
                         else:
                             self.con = pymysql.connect(host=self.host, user=self.user, password=self.password, db=self.db, cursorclass=pymysql.cursors.DictCursor)
@@ -119,7 +119,7 @@ class DB:
                     self.cur.execute("SELECT review_id from review where company_id = %s and review_date = %s and username = %s;", (review.company_id, review.review_date, review.username))
                     fetched_results = self.cur.fetchall()
                     if len(fetched_results) >= 1:
-                        if USE_MARIA_DB:
+                        if os.getenv('USE_MARIA_DB') is not None:
                             review_id = fetched_results[0][0]
                         else:
                             review_id = fetched_results[0]["review_id"]
@@ -145,7 +145,7 @@ class DB:
                     logging.info("Reconnecting after 10 seconds")
                     time.sleep(10)
                     try:
-                        if USE_MARIA_DB:
+                        if os.getenv('USE_MARIA_DB') is not None:
                             self.con = mariadb.connect(host=self.host, user=self.user, password=self.password, db=self.db)
                         else:
                             self.con = pymysql.connect(host=self.host, user=self.user, password=self.password, db=self.db, cursorclass=pymysql.cursors.DictCursor)
@@ -169,7 +169,7 @@ class DB:
                     self.cur.execute("SELECT complaint_id from complaint where company_id = %s and complaint_date = %s and complaint_type = %s and complaint_text = %s;", (complaint.company_id, complaint.complaint_date, complaint.complaint_type, complaint.complaint_text))
                     fetched_results = self.cur.fetchall()
                     if len(fetched_results) >= 1:
-                        if USE_MARIA_DB:
+                        if os.getenv('USE_MARIA_DB') is not None:
                             complaint_id = fetched_results[0][0]
                         else:
                             complaint_id = fetched_results[0]["complaint_id"]
@@ -195,7 +195,7 @@ class DB:
                     logging.info("Reconnecting after 10 seconds")
                     time.sleep(10)
                     try:
-                        if USE_MARIA_DB:
+                        if os.getenv('USE_MARIA_DB') is not None:
                             self.con = mariadb.connect(host=self.host, user=self.user, password=self.password, db=self.db)
                         else:
                             self.con = pymysql.connect(host=self.host, user=self.user, password=self.password, db=self.db, cursorclass=pymysql.cursors.DictCursor)
