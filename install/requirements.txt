@@ -18,7 +18,6 @@ PyMySQL
 python-dotenv
 python-slugify
 PyVirtualDisplay
-pywin32
 requests
 selenium
 text-unidecode

@@ -19,7 +19,7 @@ class DB:
     def __init__(self):
         self.host = os.getenv('DB_HOST')
         self.user = os.getenv('DB_USER')
-        self.password = os.getenv('DB_PASSWORD')
+        self.password = os.getenv('DB_PASS')
         self.db = os.getenv('DB_NAME')
         self.con = None
         self.cur = None

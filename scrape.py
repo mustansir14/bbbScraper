@@ -781,14 +781,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # setup logging based on arguments
-    if args.log_file and platform == "linux" or platform == "linux2":
-        logging.basicConfig(filename=args.log_file, filemode='a',format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-    elif platform == "linux" or platform == "linux2":
-        logging.basicConfig(format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-    elif args.log_file:
-        logging.basicConfig(filename=args.log_file, filemode='a',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-    else:
-        logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+    logging.basicConfig(handlers=[
+        logging.FileHandler("logs/scrape.py.log"),
+        logging.StreamHandler()
+    ], filemode='a',format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         
     proxy = getProxy()
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])  

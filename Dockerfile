@@ -1,35 +1,26 @@
-FROM php:7.4-cli
+FROM python:3.11.1-bullseye
 
 WORKDIR /www
 
 RUN apt-get update
-RUN apt-get install -y libzip-dev cron rsyslog vim procps
-RUN docker-php-ext-install zip mysqli pdo pdo_mysql
+RUN pip3 install --upgrade pip
+RUN apt install -y wget curl gpg
 
-COPY composer.* .
+RUN wget https://r.mariadb.com/downloads/mariadb_repo_setup
+RUN echo "367a80b01083c34899958cdd62525104a3de6069161d309039e84048d89ee98b  mariadb_repo_setup" | sha256sum -c -
+RUN chmod +x mariadb_repo_setup
+RUN ./mariadb_repo_setup --mariadb-server-version="mariadb-10.9"
 
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN php composer-setup.php
-RUN php -r "unlink('composer-setup.php');"
-RUN php composer.phar install
+RUN apt install -y libmariadb3 libmariadb-dev
+RUN apt install -y xvfb
 
-# rsyslog setup
-RUN echo "*.* /www/logs/cron.log" > /etc/rsyslog.d/console.conf
+RUN wget -qO - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg
+RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+RUN apt-get update && apt-get install -y google-chrome-stable
 
-# crontab for test
-#RUN echo "* * * * * root /usr/local/bin/php -r 'echo date(\"c\");' > /www/logs/test.log" > /etc/cron.d/test
-#RUN chmod 0644 /etc/cron.d/test
+COPY ./install/requirements.txt ./install/requirements.txt
+RUN pip3 install -r ./install/requirements.txt
 
-# crontab for export
-# BugFix: write username
-# BugFix: write full php path
-COPY ./.env ./cron.env
-RUN echo "0 1 * * * root export \$(cat /www/cron.env | xargs); /usr/local/bin/php /www/export-to-scampulse.php >> /www/logs/export-to-scampulse.errors.log 2>&1" > /etc/cron.d/bbb_scamtracker_export
-RUN chmod 0644 /etc/cron.d/bbb_scamtracker_export
+COPY . /www
 
-COPY . .
-
-RUN ./vendor/bin/phinx migrate
-
-CMD rsyslogd && cron -L 15 && php main.php
+CMD [ "python3", "rescrape_all_from_db.py" ]
