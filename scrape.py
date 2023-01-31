@@ -655,6 +655,7 @@ class BBBScraper():
                         continue
                         
                     try:
+                        # Googd response hierarchy: https://www.bbb.org/us/ca/monrovia/profile/telecommunications/onesuite-corporation-1216-13050632/complaints
                         complaint.company_response_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h4/following-sibling::*').text.strip())
                         complaint.company_response_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[2]//*[@data-body]').text.strip()
                     except:
@@ -784,7 +785,7 @@ if __name__ == '__main__':
     logging.basicConfig(handlers=[
         logging.FileHandler("logs/scrape.py.log"),
         logging.StreamHandler()
-    ], filemode='a',format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         
     proxy = getProxy()
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])  

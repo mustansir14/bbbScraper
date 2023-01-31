@@ -1,4 +1,4 @@
-import requests
+import requests, logging
 import time
 from random import choice
 
@@ -10,6 +10,9 @@ def get_proxy_list():
     
     if proxyList is None or proxyListNextDownload < time.time():        
         url = 'http://94.140.123.40:25000/'
+        
+        logging.info("Download proxy list: " + url )
+        
         r = requests.get(url, timeout=10)
         
         if r.status_code==200:
@@ -47,7 +50,8 @@ def checkSocks5Proxy(proxy):
             'https': f'socks5://{proxy}'
         }
 
-        print("Check proxy: " + proxy)
+        logging.info("Check proxy: " + proxy)
+        
         response = requests.get(url='https://www.bbb.com/', headers=headers, proxies=proxies, verify=False)
         if response.status_code==200:
             return True

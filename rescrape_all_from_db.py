@@ -22,7 +22,7 @@ if __name__ == "__main__":
         logging.basicConfig(handlers=[
             logging.FileHandler("logs/rescrape_all_from_db.py.log"),
             logging.StreamHandler()
-        ], filemode='a',format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+        ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         
     sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
     proxy = getProxy()
