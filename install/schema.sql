@@ -172,6 +172,7 @@ ALTER TABLE `company`
   ADD KEY `company_name` (`company_name`),
   ADD KEY `url` (`url`);
 
+ALTER TABLE `company` ADD INDEX(`date_updated`); 
 --
 -- Индексы таблицы `complaint`
 --

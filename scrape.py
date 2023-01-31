@@ -571,8 +571,6 @@ class BBBScraper():
             if not review.status:
                 review.status = "success"
                 
-            print(review)
-                
             reviews.append(review)
             
             if scrape_specific_review:
@@ -796,33 +794,11 @@ if __name__ == '__main__':
         for url in args.urls:
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
-            try:
-                print(company)
-            except Exception as e:
-                print(e)
-                
-            print("\n")
             
             if company.status == "success":
                 company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
-                logging.info("%s Reviews for %s scraped successfully.\n" % (len(company.reviews), company.name))
-                for i, review in enumerate(company.reviews, start=1):
-                    print("Review# " + str(i))
-                    try:
-                        print(review)
-                    except Exception as e:
-                        print(e)
-                    print("\n")
-                    
                 company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
-                logging.info("%s Complaints for %s scraped successfully.\n" % (len(company.complaints), company.name))
-                for i, complaint in enumerate(company.complaints, start=1):
-                    print("Complaint# " + str(i))
-                    try:
-                        print(complaint)
-                    except Exception as e:
-                        print(e)
-                    print("\n")
+                logging.info("%s complaints and %s reviews scraped successfully.\n" % (len(company.complaints), len(company.reviews), ))
 
 
     scraper.kill_chrome()
