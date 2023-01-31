@@ -79,7 +79,7 @@ CREATE TABLE `company` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` varchar(255) DEFAULT NULL,
+  `log` LONGTEXT DEFAULT NULL,
   `half_scraped` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -102,7 +102,7 @@ CREATE TABLE `complaint` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` varchar(255) DEFAULT NULL
+  `log` LONGTEXT DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -141,7 +141,7 @@ CREATE TABLE `review` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` varchar(255) DEFAULT NULL
+  `log` LONGTEXT DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

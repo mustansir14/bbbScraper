@@ -176,13 +176,9 @@ class BBBScraper():
         if not company_url and not company_id:
             raise Exception("Please provide either company URL or company ID")
         elif company_id:
-            self.db.cur.execute("Select url from company where company_id = %s;", (company_id, ))
-            fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 1:
-                if os.getenv('USE_MARIA_DB') is not None:
-                    company_url = fetched_results[0][0]
-                else:
-                    company_url = fetched_results[0]["company_url"]
+            row = self.db.queryRow("Select url from company where company_id = %s;", (company_id, ))
+            if row is not None:
+                company_url = row['company_url']
             else:
                 raise Exception("Company with ID %s does not exist" % str(company_id))
             
@@ -205,7 +201,7 @@ class BBBScraper():
                 break
                 
         try:
-            if os.getenv('GET_SOURCE_CODE') is not None:
+            if os.getenv('GET_SOURCE_CODE', '0') == "1":
                 company.source_code = self.driver.page_source
                 
             if "<title>Page not found |" in self.driver.page_source:
@@ -292,7 +288,7 @@ class BBBScraper():
                 else:
                     break
                 
-            if os.getenv('GET_SOURCE_CODE') is not None:
+            if os.getenv('GET_SOURCE_CODE', '0') == "1":
                 company.source_code_details = self.driver.page_source
                 
             try:
@@ -465,27 +461,19 @@ class BBBScraper():
     def scrape_company_reviews(self, company_url=None, company_id = None, save_to_db=True, scrape_specific_review=None) -> List[Review]:
 
         if company_url:
-            self.db.cur.execute("Select company_id from company where url = %s;", (company_url, ))
-            fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 0:
+            row = self.db.queryRow("Select company_id from company where url = %s;", (company_url, ))
+            if row is None:
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
-                self.db.cur.execute("Select company_id from company where url = %s;", (company_url, ))
-                fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 0:
+                row = self.db.queryRow("Select company_id from company where url = %s;", (company_url, ))
+            if row is None:
                 return []
-            if os.getenv('USE_MARIA_DB') is not None:
-                company_id = fetched_results[0][0]
-            else:
-                company_id = fetched_results[0]["company_id"]
+                
+            company_id = row['company_id']
 
         elif company_id:
-            self.db.cur.execute("Select url from company where company_id = %s;", (company_id, ))
-            fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 1:
-                if os.getenv('USE_MARIA_DB') is not None:
-                    company_url = fetched_results[0][0]
-                else:
-                    company_url = fetched_results[0]["company_url"]
+            row = self.db.queryRow("Select url from company where company_id = %s;", (company_id, ))
+            if row:
+                company_url = row['company_url']
             else:
                 raise Exception("Company with ID %s does not exist" % str(company_id))
         else:
@@ -500,8 +488,7 @@ class BBBScraper():
         self.driver.get(review_url)
         
         if scrape_specific_review:
-            self.db.cur.execute("SELECT username, review_date from review where review_id = %s", (scrape_specific_review))
-            review_results = self.db.cur.fetchall()
+            review_results = self.db.queryArray("SELECT username, review_date from review where review_id = %s", (scrape_specific_review))
 
         reviews = []
         while True:
@@ -533,7 +520,7 @@ class BBBScraper():
                 if scrape_specific_review and username != review_results[0]["username"]:
                     continue
                 
-                if os.getenv('GET_SOURCE_CODE') is not None:
+                if os.getenv('GET_SOURCE_CODE', '0') == "1":
                     review.source_code = review_tag.get_attribute('innerHTML')
                     
                 review.company_id = company_id
@@ -585,27 +572,18 @@ class BBBScraper():
     def scrape_company_complaints(self, company_url=None, company_id = None, save_to_db=True, scrape_specific_complaint=None) -> List[Complaint]:
 
         if company_url:
-            self.db.cur.execute("Select company_id from company where url = %s;", (company_url, ))
-            fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 0:
+            row = self.db.queryRow("Select company_id from company where url = %s;", (company_url, ))
+            if row is None:
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
-                self.db.cur.execute("Select company_id from company where url = %s;", (company_url, ))
-                fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 0:
+                row = self.db.queryRow("Select company_id from company where url = %s;", (company_url, ))
+            if row is None:
                 return []
-            if os.getenv('USE_MARIA_DB') is not None:
-                company_id = fetched_results[0][0]
-            else:
-                company_id = fetched_results[0]["company_id"]
+            company_id = row["company_id"]
 
         elif company_id:
-            self.db.cur.execute("Select url from company where company_id = %s;", (company_id, ))
-            fetched_results = self.db.cur.fetchall()
-            if len(fetched_results) == 1:
-                if os.getenv('USE_MARIA_DB') is not None:
-                    company_url = fetched_results[0][0]
-                else:
-                    company_url = fetched_results[0]["company_url"]
+            row = self.db.queryRow("Select url from company where company_id = %s;", (company_id, ))
+            if row:
+                company_url = row["company_url"]
             else:
                 raise Exception("Company with ID %s does not exist" % str(company_id))
         else:
@@ -615,12 +593,11 @@ class BBBScraper():
             logging.info("Scraping Complaint with id %s for %s" % (scrape_specific_complaint, company_url))
         else:
             logging.info("Scraping Complaints for " + company_url)
+            
         complaint_url = company_url + "/complaints"
         
-        
         if scrape_specific_complaint:
-            self.db.cur.execute("SELECT username, complaint_date from complaint where complaint_id = %s", (scrape_specific_complaint))
-            complaint_results = self.db.cur.fetchall()
+            complaint_results = self.db.queryArray("SELECT username, complaint_date from complaint where complaint_id = %s", (scrape_specific_complaint))
 
         complaints = []
 
@@ -641,7 +618,7 @@ class BBBScraper():
                 complaint = Complaint()
                 
                 try:
-                    if os.getenv('GET_SOURCE_CODE') is not None:
+                    if os.getenv('GET_SOURCE_CODE', '0') == "1":
                         complaint.source_code = complaint_tag.get_attribute('innerHTML')
                         
                     complaint.company_id = company_id

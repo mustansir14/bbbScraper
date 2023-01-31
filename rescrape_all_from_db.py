@@ -30,8 +30,7 @@ if __name__ == "__main__":
     count = 0
     while True:
 
-        scraper.db.cur.execute(f"SELECT company_id, url from company where source_code is null LIMIT {count*5000}, 5000;")
-        companies = scraper.db.cur.fetchall()
+        companies = scraper.db.queryArray(f"SELECT company_id, url from company where source_code is null LIMIT {count*5000}, 5000;")
         if not companies:
             break
         
