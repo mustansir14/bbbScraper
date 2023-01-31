@@ -51,6 +51,8 @@ class DB:
         return False
         
     def execSQL(self,sql,args):
+        lastExceptionStr = None
+        
         for i in range(3):
             cur = self.getDbCursor()
             
@@ -58,6 +60,7 @@ class DB:
                 cur.execute(sql, args)
                 return True
             except Exception as e:
+                lastExceptionStr = str(e)
                 if "mysql server has gone away" not in str(e) and "Unknown prepared statement handler" not in str(e):
                     raise Exception(e)
                 
@@ -67,7 +70,7 @@ class DB:
                 if not cur.closed:
                     cur.close()
                     
-        raise Exception("Can not execute: " + sql)
+        raise Exception(lastExceptionStr)
         
     def getDbCursor(self):
         if os.getenv('USE_MARIA_DB') is not None:
