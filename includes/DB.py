@@ -78,7 +78,7 @@ class DB:
             
         return self.con.cursor()
     
-    def queryArray(self,sql,args):
+    def queryArray(self,sql,args = ()):
         cur = self.getDbCursor()
         
         cur.execute( sql,args )
@@ -88,7 +88,7 @@ class DB:
 
         return rows
         
-    def queryRow(self,sql,args):
+    def queryRow(self,sql,args = ()):
         rows = self.queryArray(sql,args)
         if len(rows):
             return rows[0]

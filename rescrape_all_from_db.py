@@ -38,11 +38,12 @@ if __name__ == "__main__":
             urls_to_scrape = Queue()
         else:
             urls_to_scrape = []
-        for company_id, company_url in companies:       
+            
+        for company in companies:
             if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
-                urls_to_scrape.put(company_url)
+                urls_to_scrape.put(company['url'])
             else:
-                urls_to_scrape.append(company_url)
+                urls_to_scrape.append(company['url'])
 
         if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
             processes = []

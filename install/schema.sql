@@ -110,13 +110,13 @@ CREATE TABLE `complaint` (
 --
 DELIMITER $$
 CREATE TRIGGER `complaint_before_insert` BEFORE INSERT ON `complaint` FOR EACH ROW BEGIN
-	set new.complaint_text_hash = md5(new.complaint_text);
+	set new.complaint_text_hash = md5(concat(new.company_id, new.complaint_text));
 end
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `complaint_before_update` BEFORE UPDATE ON `complaint` FOR EACH ROW BEGIN
-	set new.complaint_text_hash = md5(new.complaint_text);
+	set new.complaint_text_hash = md5(concat(new.company_id, new.complaint_text));
 end
 $$
 DELIMITER ;
@@ -149,13 +149,13 @@ CREATE TABLE `review` (
 --
 DELIMITER $$
 CREATE TRIGGER `review_before_insert` BEFORE INSERT ON `review` FOR EACH ROW BEGIN
-	SET NEW.review_text_hash = md5(NEW.review_text);
+	SET new.review_text_hash = md5(concat(new.company_id, new.review_text));
 END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `review_before_update` BEFORE UPDATE ON `review` FOR EACH ROW BEGIN
-	SET NEW.review_text_hash = md5(NEW.review_text);
+	SET new.review_text_hash = md5(concat(new.company_id, new.review_text));
 END
 $$
 DELIMITER ;
