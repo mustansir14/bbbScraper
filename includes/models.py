@@ -66,10 +66,12 @@ class Company:
         self.half_scraped = None
 
     def __str__(self) -> str:
+        return_string = ""
+        
         if self.name:
-                return_string = 'Name: ' + self.name
+                return_string += '\nName: ' + self.name
         if self.alternate_business_name:
-                return_string = 'Alternate name: ' + self.alternate_business_name
+                return_string += '\nAlternate name: ' + self.alternate_business_name
         if self.url:
                 return_string += '\nUrl: ' + self.url
         if self.logo:
@@ -126,6 +128,10 @@ class Company:
                 return_string += '\nFax numbers: ' + self.fax_numbers
         if self.serving_area:
                 return_string += '\nServing area: ' + self.serving_area
+        if self.status:
+                return_string += '\nStatus: ' + self.status
+        if self.log:
+                return_string += '\nLog: ' + self.log
 
         return return_string 
 
@@ -144,8 +150,9 @@ class Review:
         self.status = None
 
     def __str__(self) -> str:
+        return_string = ""
         if self.company_id:
-                return_string = 'Company id: ' + str(self.company_id)
+                return_string += '\nCompany id: ' + str(self.company_id)
         if self.review_date:
                 return_string += '\nReview date: ' + self.review_date
         if self.username:
@@ -158,6 +165,10 @@ class Review:
                 return_string += '\nCompany response text: ' + self.company_response_text
         if self.company_response_date:
                 return_string += '\nCompany response date: ' + self.company_response_date
+        if self.status:
+                return_string += '\nStatus: ' + self.status
+        if self.log:
+                return_string += '\nLog: ' + self.log
         return return_string
 
 class Complaint:
@@ -174,8 +185,9 @@ class Complaint:
         self.status = None
 
     def __str__(self) -> str:
+        return_string = ""
         if self.company_id:
-                return_string = 'Company id: ' + str(self.company_id)
+                return_string += '\nCompany id: ' + str(self.company_id)
         if self.complaint_type:
                 return_string += '\nComplaint type: ' + self.complaint_type
         if self.complaint_date:
@@ -186,5 +198,8 @@ class Complaint:
                 return_string += '\nCompany response text: ' + self.company_response_text
         if self.company_response_date:
                 return_string += '\nCompany response date: ' + self.company_response_date
-        
+        if self.status:
+                return_string += '\nStatus: ' + self.status
+        if self.log:
+                return_string += '\nLog: ' + self.log
         return return_string

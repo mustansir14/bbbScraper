@@ -14,7 +14,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
-import time
+import time, traceback
 from typing import List
 from includes.DB import DB
 from includes.models import Company, Complaint, Review
@@ -148,9 +148,10 @@ class BBBScraper():
         if url_split[-1] in ["details", "customer-reviews", "complaints"]:
             url = "/".join(url_split[:-1]) 
         company = self.scrape_company_details(company_url=url, save_to_db=save_to_db, half_scraped= not scrape_reviews_and_complaints)
-        if scrape_reviews_and_complaints:
-            company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
-            company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
+        if company.status == "success":
+            if scrape_reviews_and_complaints:
+                company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
+                company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
         return company
         
     def getSchemaOrgByType(self, type):
@@ -192,7 +193,7 @@ class BBBScraper():
         company.half_scraped = half_scraped
         company.country = company_url.replace("https://www.bbb.org/", "")[:2]
         if company.country not in ['us', 'ca']:
-            send_message("Company %s does not have valid country in url!!" % company.url)
+            #send_message("Company %s does not have valid country in url!!" % company.url)
             company.country = None
             
         while True:
@@ -202,32 +203,30 @@ class BBBScraper():
                 time.sleep(60)
             else:
                 break
-            
-        if "<title>Page not found |" in self.driver.page_source:
-            company.status = "error"
-            company.log = "On url request returned: 404 - Whoops! Page not found!"
-            return company
                 
-        companyLdJson = self.getCompanyLDJson()
-        
-        company.name = companyLdJson['name']
-        
-        try:
-            logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR, "img").get_attribute("src")
-            if not "non-ab-icon__300w.png" in logo:
-                company.logo = "file/logo/" + slugify(company.name) + ".png"
-                
-                self.driver.execute_script(f'''window.open("{logo}","_blank");''')
-                self.driver.switch_to.window(self.driver.window_handles[1])
-                self.driver.save_screenshot(company.logo)
-                self.driver.close()
-                self.driver.switch_to.window(self.driver.window_handles[0])
-        except Exception as e:
-            company.logo = ""
-            
         try:
             if os.getenv('GET_SOURCE_CODE') is not None:
                 company.source_code = self.driver.page_source
+                
+            if "<title>Page not found |" in self.driver.page_source:
+                raise Exception("On url request returned: 404 - Whoops! Page not found!")
+                
+            companyLdJson = self.getCompanyLDJson()
+            
+            company.name = companyLdJson['name']
+            
+            try:
+                logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR, "img").get_attribute("src")
+                if not "non-ab-icon__300w.png" in logo:
+                    company.logo = "file/logo/" + slugify(company.name) + ".png"
+                    
+                    self.driver.execute_script(f'''window.open("{logo}","_blank");''')
+                    self.driver.switch_to.window(self.driver.window_handles[1])
+                    self.driver.save_screenshot(company.logo)
+                    self.driver.close()
+                    self.driver.switch_to.window(self.driver.window_handles[0])
+            except Exception as e:
+                company.logo = ""
             
             company.categories = " > ".join([x.text for x in self.driver.find_element(By.CSS_SELECTOR, ".dtm-breadcrumbs").find_elements(By.CSS_SELECTOR, "li")[:4]])
             company.phone = companyLdJson['telephone'] if 'telephone' in companyLdJson else None
@@ -296,7 +295,11 @@ class BBBScraper():
             if os.getenv('GET_SOURCE_CODE') is not None:
                 company.source_code_details = self.driver.page_source
                 
-            detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
+            try:
+                detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
+            except:
+                detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"Business Started")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
+                
             fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Related Businesses", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
             fields_dict = {}
             current_field = None
@@ -431,13 +434,17 @@ class BBBScraper():
                 company.business_categories = fields_dict["Business Categories"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
         except Exception as e:
             logging.error(str(e))
-            send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+            # no need anymore
+            #send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
             company.status = "error"
-            company.log = "details page error: " + str(e)
+            company.log = traceback.format_exc()
+            
         if not company.status:
             company.status = "success"
+            
         if save_to_db:
             self.db.insert_or_update_company(company)
+            
         return company
         
     def convertDateToOurFormat(self,text):
@@ -488,6 +495,7 @@ class BBBScraper():
             logging.info("Scraping Review with id %s for %s" % (scrape_specific_review, company_url))
         else:
             logging.info("Scraping Reviews for " + company_url)
+            
         review_url = company_url + "/customer-reviews"
         self.driver.get(review_url)
         
@@ -518,48 +526,55 @@ class BBBScraper():
             return []
             
         for review_tag in review_tags:
-            username = review_tag.find_element(By.CSS_SELECTOR, "h3").text.strip().replace("Review from\n", "")
-            if scrape_specific_review and username != review_results[0]["username"]:
-                continue
-                
             review = Review()
             
-            if os.getenv('GET_SOURCE_CODE') is not None:
-                review.source_code = review_tag.get_attribute('innerHTML')
+            try:
+                username = review_tag.find_element(By.CSS_SELECTOR, "h3").text.strip().replace("Review from\n", "")
+                if scrape_specific_review and username != review_results[0]["username"]:
+                    continue
                 
-            review.company_id = company_id
-            review.username = username
-            
-            childs = review_tag.find_elements(By.CSS_SELECTOR, ".dtm-review > *")
-            if len(childs) < 4:
-                raise Exception("Invalid child elements count")
+                if os.getenv('GET_SOURCE_CODE') is not None:
+                    review.source_code = review_tag.get_attribute('innerHTML')
+                    
+                review.company_id = company_id
+                review.username = username
                 
-            if not re.match('^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$',childs[3].text.strip()):
-                raise Exception("Child[3] not date element")
+                childs = review_tag.find_elements(By.CSS_SELECTOR, ".dtm-review > *")
+                if len(childs) < 4:
+                    raise Exception("Invalid child elements count")
+                    
+                if not re.match('^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$',childs[3].text.strip()):
+                    raise Exception("Child[3] not date element")
+                    
+                review.review_date = self.convertDateToOurFormat(childs[3].text.strip())
+                if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
+                    continue
                 
-            review.review_date = self.convertDateToOurFormat(childs[3].text.strip())
-            if scrape_specific_review and str(review.review_date) != str(review_results[0]["review_date"]):
-                continue
-            
-            review.review_rating = round(float(review_tag.find_element(By.XPATH, './/*[contains(@class,"dtm-review")]//*[contains(@class,"visually-hidden") and contains(text(),"star")]').text.split()[0]), 1)
-       
-            if len(childs) > 4:
-                review.review_text = childs[4].text.strip()
-            else: 
-                texts = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-black")]')
-                dates = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-gray-70")]')
-                
-                review.review_text = texts.pop(0).text.strip()
-                review.company_response_text = texts[0].text.strip()
-                review.company_response_date = self.convertDateToOurFormat(dates[0].text.strip())
-                
-            if review.status == "error":
-                send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+                review.review_rating = round(float(review_tag.find_element(By.XPATH, './/*[contains(@class,"dtm-review")]//*[contains(@class,"visually-hidden") and contains(text(),"star")]').text.split()[0]), 1)
+           
+                if len(childs) > 4:
+                    review.review_text = childs[4].text.strip()
+                else: 
+                    texts = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-black")]')
+                    dates = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-gray-70")]')
+                    
+                    review.review_text = texts.pop(0).text.strip()
+                    review.company_response_text = texts[0].text.strip()
+                    review.company_response_date = self.convertDateToOurFormat(dates[0].text.strip())
+                    
+                #if review.status == "error":
+                    #send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+            except Exception as e:
+                review.status = "error"
+                review.log = traceback.format_exc()
                 
             if not review.status:
                 review.status = "success"
                 
+            print(review)
+                
             reviews.append(review)
+            
             if scrape_specific_review:
                 break
 
@@ -627,30 +642,32 @@ class BBBScraper():
             for complaint_tag in complaint_tags:
                 complaint = Complaint()
                 
-                if os.getenv('GET_SOURCE_CODE') is not None:
-                    complaint.source_code = complaint_tag.get_attribute('innerHTML')
-                    
-                complaint.company_id = company_id
-                complaint.complaint_type = complaint_tag.find_element(By.XPATH, './/*[normalize-space(text())="Complaint Type:"]/following-sibling::*').text.strip()
-                complaint.complaint_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h3/following-sibling::*').text.strip())
-                complaint.complaint_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[1]').text.strip()
-                
-                if scrape_specific_complaint and (complaint.complaint_type != complaint_results[0]["complaint_type"] or str(complaint.complaint_date) != str(complaint_results[0]["complaint_date"]) or complaint.complaint_text != complaint_results[0]["complaint_text"]):
-                    continue
-                    
                 try:
-                    complaint.company_response_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h4/following-sibling::*').text.strip())
-                    complaint.company_response_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[2]//*[@data-body]').text.strip()
-                except:
-                    pass
+                    if os.getenv('GET_SOURCE_CODE') is not None:
+                        complaint.source_code = complaint_tag.get_attribute('innerHTML')
+                        
+                    complaint.company_id = company_id
+                    complaint.complaint_type = complaint_tag.find_element(By.XPATH, './/*[normalize-space(text())="Complaint Type:"]/following-sibling::*').text.strip()
+                    complaint.complaint_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h3/following-sibling::*').text.strip())
+                    complaint.complaint_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[1]').text.strip()
                     
-                if complaint.status == "error":
-                    send_message("Error scraping complaint for company on BBB: " + company_url + "\n" + complaint.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
+                    if scrape_specific_complaint and (complaint.complaint_type != complaint_results[0]["complaint_type"] or str(complaint.complaint_date) != str(complaint_results[0]["complaint_date"]) or complaint.complaint_text != complaint_results[0]["complaint_text"]):
+                        continue
+                        
+                    try:
+                        complaint.company_response_date = self.convertDateToOurFormat(complaint_tag.find_element(By.XPATH, './/h4/following-sibling::*').text.strip())
+                        complaint.company_response_text = complaint_tag.find_element(By.XPATH, './/*[@data-body]/div[2]//*[@data-body]').text.strip()
+                    except:
+                        pass
+                except Exception as e:
+                    complaint.status = "error"
+                    complaint.log = traceback.format_exc()
                     
                 if not complaint.status:
                     complaint.status = "success"
-                    
+                        
                 complaints.append(complaint)
+                
                 if scrape_specific_complaint:
                     break
             
@@ -786,27 +803,29 @@ if __name__ == '__main__':
                 print(company)
             except Exception as e:
                 print(e)
+                
             print("\n")
             
-            company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
-            logging.info("%s Reviews for %s scraped successfully.\n" % (len(company.reviews), company.name))
-            for i, review in enumerate(company.reviews, start=1):
-                print("Review# " + str(i))
-                try:
-                    print(review)
-                except Exception as e:
-                    print(e)
-                print("\n")
-                
-            company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
-            logging.info("%s Complaints for %s scraped successfully.\n" % (len(company.complaints), company.name))
-            for i, complaint in enumerate(company.complaints, start=1):
-                print("Complaint# " + str(i))
-                try:
-                    print(complaint)
-                except Exception as e:
-                    print(e)
-                print("\n")
+            if company.status == "success":
+                company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
+                logging.info("%s Reviews for %s scraped successfully.\n" % (len(company.reviews), company.name))
+                for i, review in enumerate(company.reviews, start=1):
+                    print("Review# " + str(i))
+                    try:
+                        print(review)
+                    except Exception as e:
+                        print(e)
+                    print("\n")
+                    
+                company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
+                logging.info("%s Complaints for %s scraped successfully.\n" % (len(company.complaints), company.name))
+                for i, complaint in enumerate(company.complaints, start=1):
+                    print("Complaint# " + str(i))
+                    try:
+                        print(complaint)
+                    except Exception as e:
+                        print(e)
+                    print("\n")
 
 
     scraper.kill_chrome()
