@@ -230,7 +230,7 @@ class BBBScraper():
             except Exception as e:
                 company.logo = ""
             
-            company.categories = " > ".join([x.text for x in self.driver.find_element(By.CSS_SELECTOR, ".dtm-breadcrumbs").find_elements(By.CSS_SELECTOR, "li")[:4]])
+            company.categories = "\n".join([x['title'] for x in companyPreloadState['businessProfile']['categories']['links']])
             company.phone = companyLdJson['telephone'] if 'telephone' in companyLdJson else None
             company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
             company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"))
