@@ -128,15 +128,21 @@ class BBBScraper():
             else:
                 self.session.proxies.update({proxy_type: proxy_type + "://" + proxy + ":" + proxy_port})
                 options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
+        
+        self.usedProxy = proxy_type + "://" + proxy + ":" + proxy_port
+                
         if os.name != "nt":
             self.display = Display(visible=0, size=(1920, 1080))
             self.display.start()
+            
         if chromedriver_path:
             self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
         else:
             self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
+            
         if not os.path.exists("file/logo/"):
             os.makedirs("file/logo")
+            
         self.db = DB()
 
 
@@ -187,7 +193,7 @@ class BBBScraper():
             else:
                 raise Exception("Company with ID %s does not exist" % str(company_id))
             
-        logging.info("Scraping Company Details for " + company_url)
+        logging.info("Scraping Company Details with proxy " + self.usedProxy + " for " + company_url)
         
         company = Company()
         company.url = company_url
@@ -289,11 +295,27 @@ class BBBScraper():
             if os.getenv('GET_SOURCE_CODE', '0') == "1":
                 company.source_code_details = self.driver.page_source
                 
-            try:
-                detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
-            except:
-                detail_lines = self.driver.find_element(By.XPATH, '//*[contains(normalize-space(text()),"Business Started")]/ancestor::*[contains(@class,"MuiCardContent-root")]').text.split("\n")
-                
+            # some proxies are from Mexico, and output not english, need more patterns
+            patterns = [
+                '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]', 
+                '//*[contains(normalize-space(text()),"Business Started")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
+                '//*[contains(@class,"dtm-address")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
+                '//*[contains(@class,"dtm-email")]/ancestor::*[contains(@class,"MuiCardContent-root")]'
+                '//*[contains(@class,"dtm-find-location")]/ancestor::*[contains(@class,"MuiCardContent-root")]'
+            ]
+            
+            detail_lines = None
+            
+            for pattern in patterns:
+                try:
+                    detail_lines = self.driver.find_element(By.XPATH, pattern).text.split("\n")
+                    break
+                except:
+                    detail_lines = None
+            
+            if detail_lines is None:
+                raise Exception("Can not find detail_lines")
+               
             fields_headers = ["Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Related Businesses", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
             fields_dict = {}
             current_field = None
@@ -427,11 +449,10 @@ class BBBScraper():
             if "Business Categories" in fields_dict:
                 company.business_categories = fields_dict["Business Categories"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
         except Exception as e:
-            logging.error(traceback.format_exc())
-            # no need anymore
-            #send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
             company.status = "error"
-            company.log = traceback.format_exc()
+            company.log = "Proxy: " + self.usedProxy + "\n" + traceback.format_exc()
+            
+            logging.error(company.log)
             
         if not company.status:
             company.status = "success"
