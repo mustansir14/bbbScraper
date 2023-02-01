@@ -14,7 +14,7 @@ $config = require __DIR__."/config.php";
 $profileName = "local";
 #$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
-$complaintType = 1 ? "review" : "complaint";
+$complaintType = "all"; # "review", "complaint", "all"
 $removeBN = $profileName === "local"; # remove bn before try create new
 $debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
 $removeAllPosts = true; # before insert remove all old
@@ -264,6 +264,9 @@ foreach( $companies as $companyNbr => $companyId )
     {
         require __DIR__."/add-20-16-complaints.php";
     } elseif( $complaintType === "review" ) {
+        require __DIR__."/add-20-16-reviews.php";
+    } elseif( $complaintType === "all" ) {
+        require __DIR__."/add-20-16-complaints.php";
         require __DIR__."/add-20-16-reviews.php";
     } else {
         die( "Unknown complain type: {$complaintType}" );

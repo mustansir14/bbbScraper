@@ -132,5 +132,5 @@ foreach( $division as $complaintNbr => $divisionRow )
         }
     }
 
-    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);
+    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], "review");
 }

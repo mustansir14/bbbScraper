@@ -105,5 +105,5 @@ foreach( $division as $complaintNbr => $divisionRow )
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 
-    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], $complaintType);
+    $helper->insertAsComment($divisionRow['row'], $divisionRow['to_complaint'], "complaint");
 }
