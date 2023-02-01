@@ -345,7 +345,7 @@ class DB:
                         company_response_text = ?, 
                         company_response_date = ?, 
                         source_code = ?,
-                        date_inserted = ?,
+                        date_created = ?,
                         date_updated = ?, 
                         status = ?, 
                         log = ?"""
