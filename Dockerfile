@@ -23,4 +23,4 @@ RUN pip3 install -r ./install/requirements.txt
 
 COPY . /www
 
-CMD [ "python3", "rescrape_all_from_db.py" ]
+CMD python "${APP_TARGET}"

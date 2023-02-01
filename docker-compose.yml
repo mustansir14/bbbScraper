@@ -10,11 +10,32 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
+          - APP_TARGET=rescrape_all_from_db.py
         deploy:
           resources:
             limits:
-              cpus: "1"
+              cpus: "4"
               memory: 2G
         volumes:
           - ./logs/:/www/logs/
         
+    bbb_mustansir_api:
+        restart: always
+        build: .
+        ports:
+          - 5000:5000
+        environment:
+          - USE_MARIA_DB=1
+          - GET_SOURCE_CODE=1
+          - DB_HOST=${DB_HOST}
+          - DB_USER=${DB_USER}
+          - DB_PASS=${DB_PASS}
+          - DB_NAME=${DB_NAME}
+          - APP_TARGET=api.py
+        deploy:
+          resources:
+            limits:
+              cpus: "1"
+              memory: 256M
+        volumes:
+          - ./logs/:/www/logs/

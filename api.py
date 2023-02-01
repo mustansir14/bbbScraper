@@ -202,6 +202,32 @@ def flush_file():
         return json.dumps({"error" : "file not exists"})
         
     return send_file(path, as_attachment=True)
-
+    
+@api.route('/api/v1/stats', methods=['GET'])
+def stats_for_day():
+    if "date" not in request.args:
+        return json.dumps({"error" : "missing date argument"})
+        
+    db = DB()
+    errors = []
+        
+    sql = """select 
+    d.dt as date, 
+    (select count(*) from company where date_updated between concat(d.dt, " 00:00:00") and concat(d.dt, " 23:59:59") and status = 'success') as company_success, 
+    (select count(*) from company where date_updated between concat(d.dt, " 00:00:00") and concat(d.dt, " 23:59:59") and status <> 'success') as company_error,
+    (select count(*) from review where date_updated between concat(d.dt, " 00:00:00") and concat(d.dt, " 23:59:59") and status = 'success') as review_success, 
+    (select count(*) from review where date_updated between concat(d.dt, " 00:00:00") and concat(d.dt, " 23:59:59") and status <> 'success') as review_error,
+    (select count(*) from complaint where date_updated between concat(d.dt, " 00:00:00") and concat(d.dt, " 23:59:59") and status = 'success') as complaint_success, 
+    (select count(*) from complaint where date_updated between concat(d.dt, " 00:00:00") and concat(d.dt, " 23:59:59") and status <> 'success') as complaint_error
+from (
+    select ? dt
+) d"""
+    
+    row = db.queryRow( sql, (request.args["date"],))
+    if row is None:
+        errors.append( "Internal error" )
+        
+    return response( errors, row )
+    
 if __name__ == "__main__":
     api.run(host='0.0.0.0',port=5000)
