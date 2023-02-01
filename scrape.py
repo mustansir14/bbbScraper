@@ -170,6 +170,11 @@ class BBBScraper():
             raise Exception("Can not get company ld json")
         
         return localBusiness
+        
+    def getCompanyPreloadState(self):
+        code = self.driver.find_element(By.XPATH, '//script[contains(text(),"__PRELOADED_STATE__")]').get_attribute('innerHTML').strip("\r\n\t ;")
+        code = re.sub('^[^\{]+?{', '{', code)
+        return json.loads(code)
 
     def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True, half_scraped=False) -> Company:
 
@@ -208,6 +213,7 @@ class BBBScraper():
                 raise Exception("On url request returned: 404 - Whoops! Page not found!")
                 
             companyLdJson = self.getCompanyLDJson()
+            companyPreloadState = self.getCompanyPreloadState()
             
             company.name = companyLdJson['name']
             
@@ -262,18 +268,9 @@ class BBBScraper():
             except:
                 company.number_of_stars = None
                 
-            text = self.driver.find_element(By.XPATH, '//h2[normalize-space(text())="Customer Reviews"]/following-sibling::p').text.strip()
-            text = re.sub("[^0-9]", '', text)
-            company.number_of_reviews = int(text)
-                
-            text = self.driver.find_element(By.XPATH, '//h2[normalize-space(text())="Customer Complaints"]/following-sibling::p').text.strip()
-            text = re.sub("[^0-9]", '', text)
-            company.number_of_complaints = int(text)
-                
-            try:
-                company.overview = self.driver.find_element(By.CSS_SELECTOR, "#overview .line-clamp").text
-            except:
-                company.overview = None
+            company.number_of_reviews = companyPreloadState['businessProfile']['reviewsComplaintsSummary']['reviewsTotal']
+            company.number_of_complaints = companyPreloadState['businessProfile']['reviewsComplaintsSummary']['complaintsTotal']
+            company.overview = companyPreloadState['businessProfile']['orgDetails']['organizationDescription']
                 
             try:
                 company.products_and_services = self.driver.find_element(By.CSS_SELECTOR, ".dtm-products-services").text
@@ -429,7 +426,7 @@ class BBBScraper():
             if "Business Categories" in fields_dict:
                 company.business_categories = fields_dict["Business Categories"].replace("Read More", "").replace("Read Less", "").replace("\n\n", "\n")
         except Exception as e:
-            logging.error(str(e))
+            logging.error(traceback.format_exc())
             # no need anymore
             #send_message("Error scraping company on BBB: " + company.name + " " + company.url + "\n" + str(e), TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
             company.status = "error"
