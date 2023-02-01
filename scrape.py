@@ -268,8 +268,9 @@ class BBBScraper():
             except:
                 company.number_of_stars = None
                 
-            company.number_of_reviews = companyPreloadState['businessProfile']['reviewsComplaintsSummary']['reviewsTotal']
-            company.number_of_complaints = companyPreloadState['businessProfile']['reviewsComplaintsSummary']['complaintsTotal']
+            # these to fields updated in DB class, to write how much reviews/complaints scraped
+            company.number_of_reviews = 0
+            company.number_of_complaints = 0
             company.overview = companyPreloadState['businessProfile']['orgDetails']['organizationDescription']
                 
             try:

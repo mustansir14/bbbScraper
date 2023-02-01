@@ -307,8 +307,16 @@ class DB:
                 logging.info("Review inserted to database")
             except Exception:
                 logging.error(traceback.format_exc())
+          
+        if reviews:
+            review = reviews[0]
             
-                
+            try:
+                sql = 'update company set number_of_reviews = (select count(*) from review where company_id = ?) where company_id = ?'
+                self.execSQL(sql,(review.company_id, review.company_id, ))
+            except Exception:
+                logging.error(traceback.format_exc())    
+            
         logging.info("Reviews added/updated to DB successfully!")
 
     def insert_or_update_complaints(self, complaints : List[Complaint], page=None):
@@ -360,7 +368,15 @@ class DB:
             except Exception:
                 logging.error(traceback.format_exc())
             
+        if complaints:
+            complaint = complaints[0]
             
+            try:
+                sql = 'update company set number_of_complaints = (select count(*) from complaint where company_id = ?) where company_id = ?'
+                self.execSQL(sql,(complaint.company_id, complaint.company_id, ))
+            except Exception:
+                logging.error(traceback.format_exc())  
+                
         logging.info("Complaints added/updated to DB successfully!")
 
 
