@@ -302,6 +302,8 @@ class DB:
                     review.status, review.log)
                     
                 logging.info(review)
+                logging.info('\n')
+                
                 self.execSQL(sql,args)
                 
                 logging.info("Review inserted to database")
@@ -362,6 +364,8 @@ class DB:
                     complaint.status, complaint.log)
                     
                 logging.info(complaint)
+                logging.info('\n')
+                
                 self.execSQL(sql,args)
                 
                 logging.info("Complaint inserted to database")

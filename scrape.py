@@ -508,8 +508,8 @@ class BBBScraper():
         
         if scrape_specific_review:
             review_results = self.db.queryArray("SELECT username, review_date from review where review_id = %s", (scrape_specific_review))
-
-        reviews = []
+        
+        page = 1
         while True:
             found = False
             try:
@@ -521,16 +521,20 @@ class BBBScraper():
                         break
                 if not found:
                     break
+                page = page + 1
+                logging.info("Reviews pages: " + str(page))
                 time.sleep(2)
-            except:
+            except Exception as e:
                 break
-
+                
         try:
             review_tags = self.driver.find_elements(By.XPATH, '//*[contains(@class,"dtm-review")]/ancestor::*[contains(@class,"MuiCardContent-root")]')
         except:
             logging.info("No reviews for company: " + company_url)
             return []
-            
+          
+        reviews = []
+        
         for review_tag in review_tags:
             review = Review()
             
@@ -565,8 +569,13 @@ class BBBScraper():
                     dates = review_tag.find_elements(By.XPATH, './/*[contains(@class,"dtm-review")]/following-sibling::*//*[contains(@class,"text-gray-70")]')
                     
                     review.review_text = texts.pop(0).text.strip()
-                    review.company_response_text = texts[0].text.strip()
-                    review.company_response_date = self.convertDateToOurFormat(dates[0].text.strip())
+                    
+                    # Fix: https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-1216-100113835/customer-reviews
+                    # Review begins with in last page: Customer service SUCKS. You can't get in touch with anyone. 
+                    # Structure like company response but without it
+                    if len(texts):
+                        review.company_response_text = texts[0].text.strip()
+                        review.company_response_date = self.convertDateToOurFormat(dates[0].text.strip())
                     
                 #if review.status == "error":
                     #send_message("Error scraping review for company on BBB: " + company_url + "\n" + review.log, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS)
@@ -622,8 +631,18 @@ class BBBScraper():
 
         page = 1
         while True:
-            logging.info("Scraping Page " + str(page))
-            self.driver.get(complaint_url + "?page=" + str(page))
+            logging.info("Scraping Page:  " + str(page))
+            
+            # Fix: for complaints?page=N has different url https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835/complaints
+            # to find correct url, need only click on pagination
+            if page == 1:
+                self.driver.get(complaint_url)
+            else:
+                try:
+                    element = self.driver.find_element(By.CSS_SELECTOR, 'a[href*="/complaints?page=' + str(page) + '"]')
+                    self.driver.execute_script("arguments[0].click();", element)
+                except Exception as e:
+                    break
             
             try:
                 complaint_tags = self.driver.find_elements(By.XPATH, "//li[@id]")
