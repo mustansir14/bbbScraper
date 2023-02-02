@@ -61,7 +61,11 @@ class DB:
                 lastExceptionStr = str(e)
                 
                 if "mysql server has gone away" not in str(e):
-                    raise Exception( sql + "\n" + args + "\n" + str(e))
+                    string = sql + "\n"
+                    if args:
+                        string = string + "\n".join([str(v) for v in args]) + "\n"
+                    string = string + str(e)
+                    raise Exception(string)
                 
                 if not self.tryReconnect():
                     raise Exception(e)
@@ -297,12 +301,12 @@ class DB:
                     review.company_response_date, review.source_code, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
                     review.status, review.log)
                     
-                logging.info(review)
-                logging.info('\n')
+                #logging.info(review)
+                #logging.info('\n')
                 
                 self.execSQL(sql,args)
                 
-                logging.info("Review inserted to database")
+                #logging.info("Review inserted to database")
             except Exception:
                 logging.error(traceback.format_exc())
           
@@ -359,12 +363,12 @@ class DB:
                     complaint.company_response_date, complaint.source_code, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
                     complaint.status, complaint.log)
                     
-                logging.info(complaint)
-                logging.info('\n')
+                #logging.info(complaint)
+                #logging.info('\n')
                 
                 self.execSQL(sql,args)
                 
-                logging.info("Complaint inserted to database")
+                #logging.info("Complaint inserted to database")
             except Exception:
                 logging.error(traceback.format_exc())
             

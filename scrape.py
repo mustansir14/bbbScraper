@@ -522,7 +522,7 @@ class BBBScraper():
                 if not found:
                     break
                 page = page + 1
-                logging.info("Reviews pages: " + str(page))
+                logging.info("Reviews pages: " + str(page) + ", url: " + company_url)
                 time.sleep(2)
             except Exception as e:
                 break
@@ -631,15 +631,15 @@ class BBBScraper():
 
         page = 1
         while True:
-            logging.info("Scraping Page:  " + str(page))
-            
             # Fix: for complaints?page=N has different url https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835/complaints
             # to find correct url, need only click on pagination
             if page == 1:
+                logging.info("Scraping Page:  " + complaint_url)
                 self.driver.get(complaint_url)
             else:
                 try:
                     element = self.driver.find_element(By.CSS_SELECTOR, 'a[href*="/complaints?page=' + str(page) + '"]')
+                    logging.info("Scraping Page:  " + element.get_attribute('href'))
                     self.driver.execute_script("arguments[0].click();", element)
                 except Exception as e:
                     break
