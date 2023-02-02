@@ -7,10 +7,7 @@
 from typing import List
 from includes.models import *
 import datetime, os, traceback
-if os.getenv('USE_MARIA_DB') is not None:
-    import mariadb
-else:
-    import pymysql
+import mariadb
 import logging
 import time
 
@@ -30,12 +27,13 @@ class DB:
             logging.info("Closing DB old connection")
             self.con.close()
         
-        logging.info("DB Reconnect")
+        logging.info("DB Reconnect with:")
+        logging.info("Host: " + self.host)
+        logging.info("User: " + self.user)
+        logging.info("Pass: ********")
+        logging.info("Name: " + self.db)
         
-        if os.getenv('USE_MARIA_DB') is not None:
-            self.con = mariadb.connect(host=self.host, user=self.user, password=self.password, db=self.db, autocommit=True)
-        else:
-            self.con = pymysql.connect(host=self.host, user=self.user, password=self.password, db=self.db, cursorclass=pymysql.cursors.DictCursor)
+        self.con = mariadb.connect(host=self.host, user=self.user, password=self.password, db=self.db, autocommit=True)
         
     def tryReconnect(self,times = 3):
         for i in range(times):
@@ -61,8 +59,9 @@ class DB:
                 return True
             except Exception as e:
                 lastExceptionStr = str(e)
-                if "mysql server has gone away" not in str(e) and "Unknown prepared statement handler" not in str(e):
-                    raise Exception(e)
+                
+                if "mysql server has gone away" not in str(e):
+                    raise Exception( sql + "\n" + args + "\n" + str(e))
                 
                 if not self.tryReconnect():
                     raise Exception(e)
@@ -73,10 +72,7 @@ class DB:
         raise Exception(lastExceptionStr)
         
     def getDbCursor(self):
-        if os.getenv('USE_MARIA_DB') is not None:
-            return self.con.cursor(dictionary=True)
-            
-        return self.con.cursor()
+        return self.con.cursor(dictionary=True)
     
     def queryArray(self,sql,args = ()):
         cur = self.getDbCursor()
@@ -398,4 +394,5 @@ class DB:
     
 
     def __del__(self):
-        self.con.close()
+        if self.con:
+            self.con.close()

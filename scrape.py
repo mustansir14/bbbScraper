@@ -480,17 +480,17 @@ class BBBScraper():
     def scrape_company_reviews(self, company_url=None, company_id = None, save_to_db=True, scrape_specific_review=None) -> List[Review]:
 
         if company_url:
-            row = self.db.queryRow("Select company_id from company where url = %s;", (company_url, ))
+            row = self.db.queryRow("select company_id from company where url = ?", (company_url, ))
             if row is None:
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
-                row = self.db.queryRow("Select company_id from company where url = %s;", (company_url, ))
+                row = self.db.queryRow("select company_id from company where url = ?", (company_url, ))
             if row is None:
                 return []
                 
             company_id = row['company_id']
 
         elif company_id:
-            row = self.db.queryRow("Select url from company where company_id = %s;", (company_id, ))
+            row = self.db.queryRow("select url from company where company_id = ?", (company_id, ))
             if row:
                 company_url = row['company_url']
             else:
