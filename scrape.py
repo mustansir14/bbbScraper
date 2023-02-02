@@ -626,9 +626,7 @@ class BBBScraper():
         
         if scrape_specific_complaint:
             complaint_results = self.db.queryArray("SELECT username, complaint_date from complaint where complaint_id = %s", (scrape_specific_complaint))
-
-        complaints = []
-
+        
         page = 1
         while True:
             # Fix: for complaints?page=N has different url https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835/complaints
@@ -643,6 +641,8 @@ class BBBScraper():
                     self.driver.execute_script("arguments[0].click();", element)
                 except Exception as e:
                     break
+                    
+            complaints = []
             
             try:
                 complaint_tags = self.driver.find_elements(By.XPATH, "//li[@id]")
@@ -684,11 +684,11 @@ class BBBScraper():
                 
                 if scrape_specific_complaint:
                     break
+                    
+            if save_to_db and complaints:
+                self.db.insert_or_update_complaints(complaints)
             
             page += 1
-
-        if save_to_db and complaints:
-            self.db.insert_or_update_complaints(complaints)
         
         return complaints
 
@@ -826,7 +826,7 @@ if __name__ == '__main__':
             if company.status == "success":
                 company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
                 company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
-                logging.info("%s complaints and %s reviews scraped successfully.\n" % (len(company.complaints), len(company.reviews), ))
+                logging.info("Complaints and reviews scraped successfully.\n")
 
 
     scraper.kill_chrome()

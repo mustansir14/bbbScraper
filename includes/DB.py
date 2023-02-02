@@ -37,6 +37,7 @@ class DB:
         
     def tryReconnect(self,times = 3):
         for i in range(times):
+            logging.info(str(i) + ") Try reconnecting...")
             try:
                 self.reconnect()
                 return True
@@ -60,6 +61,9 @@ class DB:
             except Exception as e:
                 lastExceptionStr = str(e)
                 
+                if "Duplicate entry" in str(e):
+                    return True
+                
                 if "mysql server has gone away" not in str(e):
                     string = sql + "\n"
                     if args:
@@ -79,14 +83,27 @@ class DB:
         return self.con.cursor(dictionary=True)
     
     def queryArray(self,sql,args = ()):
-        cur = self.getDbCursor()
-        
-        cur.execute( sql,args )
-        rows = cur.fetchall()
+        for i in range(3):
+            cur = self.getDbCursor()
+            
+            try:
+                cur.execute(sql, args)
+                
+                return cur.fetchall()
+            except mariadb.InterfaceError as e:
+                logging.info(e)
+                if not self.tryReconnect():
+                    raise Exception(e)
+            except mariadb.ProgrammingError as e:
+                logging.info(e)
+                
+                if not self.tryReconnect():
+                    raise Exception(e)
+            finally:
+                if not cur.closed:
+                    cur.close()
 
-        cur.close()
-
-        return rows
+        raise Exception("Can not do queryArray")
         
     def queryRow(self,sql,args = ()):
         rows = self.queryArray(sql,args)
@@ -259,6 +276,8 @@ class DB:
 
 
     def insert_or_update_reviews(self, reviews : List[Review]):
+        counter = 0
+        
         for review in reviews:
             try:
                 review = self.trim_object(review)
@@ -307,6 +326,7 @@ class DB:
                 self.execSQL(sql,args)
                 
                 #logging.info("Review inserted to database")
+                counter = counter + 1
             except Exception:
                 logging.error(traceback.format_exc())
           
@@ -319,9 +339,10 @@ class DB:
             except Exception:
                 logging.error(traceback.format_exc())    
             
-        logging.info("Reviews added/updated to DB successfully!")
+        logging.info(str(counter) + " reviews added/updated to DB successfully!")
 
     def insert_or_update_complaints(self, complaints : List[Complaint], page=None):
+        counter = 0
         for complaint in complaints:
             try:
                 complaint = self.trim_object(complaint)
@@ -369,6 +390,7 @@ class DB:
                 self.execSQL(sql,args)
                 
                 #logging.info("Complaint inserted to database")
+                counter = counter + 1
             except Exception:
                 logging.error(traceback.format_exc())
             
@@ -381,7 +403,7 @@ class DB:
             except Exception:
                 logging.error(traceback.format_exc())  
                 
-        logging.info("Complaints added/updated to DB successfully!")
+        logging.info(str(counter) + " complaints added/updated to DB successfully!")
 
 
     def trim_object(self, obj):
