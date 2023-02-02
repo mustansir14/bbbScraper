@@ -790,6 +790,7 @@ if __name__ == '__main__':
     parser.add_argument("--log_file", nargs='?', type=str, default=None, help="Path for log file. If not given, output will be printed on stdout.")
     parser.add_argument("--urls_from_file", nargs='?', type=str, default=None, help="Load urls from file")
     parser.add_argument("--grabber-bbb-mustansir", nargs='?', type=bool, default=False, help="Only mark to kill all")
+    parser.add_argument("--proxy", nargs='?', type=str, default=None, help="Set proxy for scan")
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
@@ -801,7 +802,7 @@ if __name__ == '__main__':
         logging.StreamHandler()
     ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         
-    proxy = getProxy()
+    proxy = getProxy(args.proxy)
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])  
         
     if str2bool(args.bulk_scrape):

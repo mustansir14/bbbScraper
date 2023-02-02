@@ -68,18 +68,21 @@ def checkSocks5Proxy(proxy):
 
 
 
-def getProxy():
+def getProxy(useProxy=None):
     global proxyListNextDownload
     
     get_proxy_list()
-        
-    proxy = None
-    while len(proxyList) > 0:
-        get_proxy_list()
-        proxy = choice(proxyList)
-        if checkSocks5Proxy(proxy):
-            break
-        proxyList.remove(proxy)
+    
+    if not useProxy:
+        proxy = None
+        while len(proxyList) > 0:
+            get_proxy_list()
+            proxy = choice(proxyList)
+            if checkSocks5Proxy(proxy):
+                break
+            proxyList.remove(proxy)
+    else:
+        proxy = useProxy
         
     parts = proxy.split(":")
     
