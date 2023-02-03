@@ -714,10 +714,13 @@ class BBBScraper():
     def loadUrl(self,url):
         for i in range(3):
             try:
+                logging.info("Load: " + url)
                 self.driver.get(url)
+                logging.info("Loaded: SUCCESS")
                 return True
             except Exception as e:
                 logging.error(e)
+                logging.info("Create new browser")
                 proxy = getProxy()
                 self.createBrowser(None, proxy['proxy'], roxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
         
