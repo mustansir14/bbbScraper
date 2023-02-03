@@ -24,13 +24,12 @@ if __name__ == "__main__":
             logging.StreamHandler()
         ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         
-    sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
     proxy = getProxy()
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
     count = 0
     while True:
 
-        companies = scraper.db.queryArray(f"SELECT company_id, url from company where source_code is null LIMIT {count*5000}, 5000;")
+        companies = scraper.db.queryArray(f"SELECT company_id, url from company order by date_updated LIMIT {count*5000}, 5000;")
         if not companies:
             break
         
