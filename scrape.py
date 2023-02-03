@@ -705,6 +705,48 @@ class BBBScraper():
         
         return complaints
 
+    def addNewUrls(self):
+        sitemap_urls = [
+            "https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", 
+            "https://www.bbb.org/sitemap-business-profiles-index.xml"
+        ]
+        
+        for sitemap_url in sitemap_urls:
+            logging.info("Download root url: " + sitemap_url)
+            self.driver.get(sitemap_url)
+            
+            rootXml = ET.fromstring(self.driver.page_source)
+            for child in rootXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                childUrl = child.text.strip()
+                
+                logging.info("Download child url: " + childUrl)
+                self.driver.get(childUrl)
+                
+                stats = {'new': 0, 'passed': 0, 'total': 10000}
+                statsTime = time.time() + 10
+                
+                childXml = ET.fromstring(self.driver.page_source)
+                for child in childXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                    url = child.text.strip()
+                
+                    if "/profile/" in url:
+                        row = self.db.queryRow('select company_id from company where url = ?', (url,))
+                        if row is None:
+                            company = Company()
+                            company.url = url
+                            company.name = "no name, need scrape"
+                            company.status = "new"
+                        
+                            self.db.insert_or_update_company(company)
+                            
+                            stats['new'] = stats['new'] + 1
+                            
+                    stats['passed'] = stats['passed'] + 1
+                    
+                    if statsTime < time.time():
+                        statsTime = time.time() + 10
+                        
+                        logging.info(stats)
 
     def bulk_scrape(self, no_of_threads=1, scrape_reviews_and_complaints=True):
 

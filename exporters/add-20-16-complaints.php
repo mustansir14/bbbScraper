@@ -7,7 +7,10 @@
  * @var Db $srcDb
  * @var Db $destDb
  */
-if ( !$addComplaints ) return;
+if ( !$addComplaints ) {
+    echo "Skip add complaints...\n";
+    return;
+}
 
 use DataExport\Helpers\AddRecords;
 
@@ -15,7 +18,11 @@ $afterDate = $srcDb->selectColumn(
     'complaint_date',
     'complaint',
     "company_id = {$sourceCompanyRow["company_id"]}", false,"complaint_date desc", "14,1");
-if ( !$afterDate ) die( $srcDb->getError());
+if ( $afterDate === false ) throw new Exception($srcDb->getError());
+if ( !$afterDate ) {
+    echo "Info: no complaint, may be review count < 14, skip\n";
+    return;
+}
 
 echo "After data: {$afterDate}\n";
 

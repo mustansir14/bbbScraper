@@ -15,6 +15,10 @@
         {
             "type": "git",
             "url": "git@bitbucket.org:srgteam/scrape-web.git"
+        },
+        {
+            "type": "git",
+            "url": "git@bitbucket.org:srgteam/is-text-unique.git"
         }
     ],
     "minimum-stability": "stable",
@@ -23,7 +27,8 @@
         "fakerphp/faker": "^1.20",
         "guzzlehttp/guzzle": "^7.5",
         "srgteam/klazify": "^1.0",
-        "srgteam/scrape-web": "^1.0"
+        "srgteam/scrape-web": "^1.0",
+        "srgteam/is-text-unique": "dev-master"
     },
     "autoload": {
         "psr-4": { "DataExport\\": "DataExport" },

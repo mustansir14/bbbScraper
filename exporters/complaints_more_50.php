@@ -12,18 +12,19 @@ $config = require __DIR__."/config.php";
 ##################################################################################
 
 $profileName = "local";
-#$profileName = "cb";
+$profileName = "cb";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
-$complaintType = "all"; # "review", "complaint", "all"
-$removeBN = $profileName === "local"; # remove bn before try create new
+$complaintType = "complaint"; # "review", "complaint", "all"
+$addComplaintsToPublicBN = true;
+$removeBN = false; #$profileName === "local"; # remove bn before try create new
 $debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
 $removeAllPosts = true; # before insert remove all old
 $addComplaints = true; # without that no complaints or reviews will be added
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
-$makeSpamComplaints = true; # may create not spamed complaints for fast insert
+$makeSpamComplaints = false; # may create not spamed complaints for fast insert
 $makeScreenshot = true; # if no logo and website url exists and makeScreenshot == True try create screenshot
-$checkTextInGoogle = false; #$profileName !== "local";
+$checkTextInGoogle = $profileName !== "local";
 
 $checkUniqueViaCSV = new CheckUniqueTextViaCSV('check_texts.csv', 'check_texts_results.csv');
 $checkUniqueViaCSV->setDisabledMode();
@@ -32,8 +33,8 @@ $importInfoScraper = "BBB Mustansir";
 # Sergey posted this URL do not change
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
-    "https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835"
-    /*"https://www.bbb.org/us/wa/yarrow-point/profile/pet-insurance/healthy-paws-pet-insurance-llc-1296-22528158",
+    /*"https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835",
+    "https://www.bbb.org/us/wa/yarrow-point/profile/pet-insurance/healthy-paws-pet-insurance-llc-1296-22528158",*/
     "https://www.bbb.org/us/ga/atlanta/profile/auto-diagnosis/fixd-automotive-inc-0443-27709950",
     "https://www.bbb.org/us/ca/san-francisco/profile/computer-software/discord-inc-1116-918699",
     "https://www.bbb.org/us/fl/orlando/profile/information-bureaus/checkpeople-llc-0733-90442795",
@@ -132,7 +133,7 @@ $companyUrls = [
     "https://www.bbb.org/us/az/tempe/profile/loan-broker/freedomplus-1126-1000053878",
     "https://www.bbb.org/us/nj/hoboken/profile/manufactured-home-supplies/snow-joe-llc-0221-90100213",
     "https://www.bbb.org/us/fl/mary-esther/profile/major-appliance-parts/genuine-replacement-parts-0683-90040196",
-    "https://www.bbb.org/us/ca/thousand-oaks/profile/cell-phone-supplies/red-pocket-mobile-1236-92011052",*/
+    "https://www.bbb.org/us/ca/thousand-oaks/profile/cell-phone-supplies/red-pocket-mobile-1236-92011052",
 ];
 $websiteUrls = [];
 $websiteInstagramMedia = [];
@@ -226,7 +227,7 @@ foreach( $companies as $companyNbr => $companyId )
 
     [ $destBusinessID, $destCompanyID ] = BusinessData::create( $exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper, $makeScreenshot, $makeSpamComplaints );
 
-    if ( $exporter->isBusinessActive( $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]) ) ) {
+    if ( !$addComplaintsToPublicBN && $exporter->isBusinessActive( $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]) ) ) {
         echo "Stop: business profile is active, may be already records changed!\n";
         continue;
     }

@@ -9,7 +9,10 @@
  * @var Db $destDb
  * @var object $checkUniqueViaCSV
  */
-if ( !$addComplaints ) return;
+if ( !$addComplaints ) {
+    echo "Skip add reviews...\n";
+    return;
+}
 
 use DataExport\Helpers\AddRecords;
 
@@ -19,7 +22,7 @@ $afterDate = $srcDb->selectColumn(
     'review_date',
     'review',
     "company_id = {$sourceCompanyRow["company_id"]}", false,"review_date desc", "14,1");
-if ( $afterDate === false ) throw new \Exception( __LINE__ );
+if ( $afterDate === false ) throw new Exception($srcDb->getError());
 if ( !$afterDate ) {
     echo "Info: no reviews, may be review count < 14, skip\n";
     return;

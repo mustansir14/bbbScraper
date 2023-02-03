@@ -5,6 +5,7 @@ namespace DataExport\Helpers;
 use DataExport\Formatters\TextFormatter;
 use DataExport\Helpers\Functions;
 use DataExport\Helpers\GoogleTextChecker;
+use SrgTeam\IsTextUnique\Checker;
 
 class AddRecords
 {
@@ -40,15 +41,13 @@ class AddRecords
 
             if( $this->vars['checkTextInGoogle'] )
             {
-                echo "Checking in google...\n";
-                $checker = new GoogleTextChecker();
-                $response = $checker->test( $complaintText );
-                if ( !$response )
-                {
-                    die( "Google text checker error: ".$checker->getError() );
+                try{
+                    $isUnique = Checker::isUnique($complaintText);
+                }catch (\Exception $e ) {
+                    exit("Unique error: ".$e->getMessage());
                 }
-                echo "Google matched: ".( (string)$response->data )."\n".$response->url."\n";
-                if ( $response->data > 0 )
+
+                if ( !$isUnique )
                 {
                     echo "EXIST IN GOOGLE, skip\n";
 
@@ -121,7 +120,7 @@ class AddRecords
             }
             else
             {
-                $exporter->unspamComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ] ) );
+                $exporter->unspamComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ], $type ) );
             }
 
             return $complaintID;
