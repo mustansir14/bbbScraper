@@ -214,7 +214,7 @@ class BBBScraper():
             else:
                 break
 
-            if counter > 10:
+            if counter > 2:
                 raise Exception("Company page, always 403 error")
                 
         try:
@@ -302,7 +302,7 @@ class BBBScraper():
                 else:
                     break
 
-                if counter > 10:
+                if counter > 2:
                     raise Exception("Details page, always 403 error")
                 
             if os.getenv('GET_SOURCE_CODE', '0') == "1":
