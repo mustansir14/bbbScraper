@@ -725,6 +725,18 @@ class BBBScraper():
                 self.createBrowser(None, proxy['proxy'], proxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
         
         raise Exception("Can not create browser")
+        
+    def getSourceCode(self):
+        for i in range(3):
+            try:
+                return self.driver.page_source
+            except Exception as e:
+                logging.error(e)
+                logging.info("Create new browser")
+                proxy = getProxy()
+                self.createBrowser(None, proxy['proxy'], proxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
+        
+        raise Exception("Can not create browser")
 
     def addNewUrls(self):
         sitemap_urls = [
@@ -736,7 +748,7 @@ class BBBScraper():
             logging.info("Download root url: " + sitemap_url)
             self.loadUrl(sitemap_url)
             
-            rootXml = ET.fromstring(self.driver.page_source)
+            rootXml = ET.fromstring(self.getSourceCode())
             for child in rootXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
                 childUrl = child.text.strip()
                 
@@ -746,7 +758,7 @@ class BBBScraper():
                 stats = {'new': 0, 'passed': 0, 'total': 10000}
                 statsTime = time.time() + 10
                 
-                childXml = ET.fromstring(self.driver.page_source)
+                childXml = ET.fromstring(self.getSourceCode())
                 for child in childXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
                     url = child.text.strip()
                 
