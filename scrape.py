@@ -722,7 +722,7 @@ class BBBScraper():
                 logging.error(e)
                 logging.info("Create new browser")
                 proxy = getProxy()
-                self.createBrowser(None, proxy['proxy'], roxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
+                self.createBrowser(None, proxy['proxy'], proxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
         
         raise Exception("Can not create browser")
 
