@@ -22,12 +22,17 @@ if __name__ == "__main__":
     
     scraper.addNewUrls()
     
-    companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'new' LIMIT 1000")
-    for company in companies:
-        if time.time() - start > scanAgain:
+    while time.time() - start < scanAgain:
+        break
+        companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'new' LIMIT 1000")
+        if not companies:
             break
             
-        self.scrape_url(company_url, scrape_reviews_and_complaints=True)
+        for company in companies:
+            if time.time() - start > scanAgain:
+                break
+                
+            scraper.scrape_url(company['url'], scrape_reviews_and_complaints=True)
     
     if time.time() - start < scanAgain:
         left = scanAgain - (time.time() - start)
