@@ -21,7 +21,7 @@ from includes.models import Company, Complaint, Review
 from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
 import datetime
-import os
+import os, random
 import argparse
 import sys
 import logging, zipfile
@@ -748,13 +748,21 @@ class BBBScraper():
             logging.info("Download root url: " + sitemap_url)
             self.loadUrl(sitemap_url)
             
+            childUrls = []
             rootXml = ET.fromstring(self.getSourceCode())
-            for child in rootXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
-                childUrl = child.text.strip()
-                
+            for rootChild in rootXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                try:
+                    childUrls.append(rootChild.text.strip())
+                except Exception as e:
+                    logging.error(str(e))
+            
+            # need shuffle pages, because may be constant crash on some url, to scrape others do some trick
+            random.shuffle(childUrls)
+            
+            for childUrl in childUrls:
                 logging.info("Download child url: " + childUrl)
                 self.loadUrl(childUrl)
-                
+                    
                 stats = {'new': 0, 'passed': 0, 'total': 10000}
                 statsTime = time.time() + 10
                 
