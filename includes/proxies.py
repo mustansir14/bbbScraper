@@ -53,9 +53,13 @@ def checkSocks5Proxy(proxy):
         logging.info("Check proxy: " + proxy)
         
         response = requests.get(url='https://www.bbb.com/', headers=headers, proxies=proxies, verify=False)
+        
+        logging.info("code: " + str(response.status_code))
+        
         if response.status_code==200:
             return True
-    except:
+    except Exception as e:
+        logging.info(str(e))
         pass
     
     return False

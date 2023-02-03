@@ -207,7 +207,7 @@ class BBBScraper():
         while True:
             self.driver.get(company_url)
 
-            if "403" in self.driver.title:
+            if "403 Forbidden" in self.driver.title:
                 logging.info("403 Forbidden error. Sleeping for 60 seconds....")
                 time.sleep(60)
                 counter = counter + 1
@@ -294,7 +294,7 @@ class BBBScraper():
             while True:
                 self.driver.get(company_url.split("?")[0] + "/details")
 
-                if "403" in self.driver.title:
+                if "403 Forbidden" in self.driver.title:
                     logging.info("403 Forbidden error. Sleeping for 60 seconds....")
                     time.sleep(60)
 
