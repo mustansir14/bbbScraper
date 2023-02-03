@@ -203,13 +203,19 @@ class BBBScraper():
             #send_message("Company %s does not have valid country in url!!" % company.url)
             company.country = None
             
+        counter = 0
         while True:
             self.driver.get(company_url)
+
             if "403" in self.driver.title:
                 logging.info("403 Forbidden error. Sleeping for 60 seconds....")
                 time.sleep(60)
+                counter = counter + 1
             else:
                 break
+
+            if counter > 10:
+                raise Exception("Company page, always 403 error")
                 
         try:
             if os.getenv('GET_SOURCE_CODE', '0') == "1":
@@ -284,13 +290,20 @@ class BBBScraper():
             except:
                 pass
                 
+            counter = 0
             while True:
                 self.driver.get(company_url.split("?")[0] + "/details")
+
                 if "403" in self.driver.title:
                     logging.info("403 Forbidden error. Sleeping for 60 seconds....")
                     time.sleep(60)
+
+                    counter = counter + 1
                 else:
                     break
+
+                if counter > 10:
+                    raise Exception("Details page, always 403 error")
                 
             if os.getenv('GET_SOURCE_CODE', '0') == "1":
                 company.source_code_details = self.driver.page_source
