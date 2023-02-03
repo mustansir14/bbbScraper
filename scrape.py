@@ -36,7 +36,18 @@ import re
 class BBBScraper():
 
     def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http") -> None:
+        self.driver = None
+        self.createBrowser(chromedriver_path, proxy, proxy_port, proxy_user, proxy_pass, proxy_type)
+            
+        if not os.path.exists("file/logo/"):
+            os.makedirs("file/logo")
+            
+        self.db = DB()
         
+    def createBrowser(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http"):
+        if self.driver:
+            self.kill_chrome()
+            
         self.session = requests.session()
         headers = {
             "authority": "www.bbb.org",
@@ -139,11 +150,6 @@ class BBBScraper():
             self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
         else:
             self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
-            
-        if not os.path.exists("file/logo/"):
-            os.makedirs("file/logo")
-            
-        self.db = DB()
 
 
     def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True) -> Company:
@@ -704,6 +710,18 @@ class BBBScraper():
             page += 1
         
         return complaints
+        
+    def loadUrl(self,url):
+        for i in range(3):
+            try:
+                self.driver.get(url)
+                return True
+            except Exception as e:
+                logging.error(e)
+                proxy = getProxy()
+                self.createBrowser(None, proxy['proxy'], roxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
+        
+        raise Exception("Can not create browser")
 
     def addNewUrls(self):
         sitemap_urls = [
@@ -713,14 +731,14 @@ class BBBScraper():
         
         for sitemap_url in sitemap_urls:
             logging.info("Download root url: " + sitemap_url)
-            self.driver.get(sitemap_url)
+            self.loadUrl(sitemap_url)
             
             rootXml = ET.fromstring(self.driver.page_source)
             for child in rootXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
                 childUrl = child.text.strip()
                 
                 logging.info("Download child url: " + childUrl)
-                self.driver.get(childUrl)
+                self.loadUrl(childUrl)
                 
                 stats = {'new': 0, 'passed': 0, 'total': 10000}
                 statsTime = time.time() + 10
@@ -807,6 +825,7 @@ class BBBScraper():
             
         except:
             pass
+            
         try:
             scraper.kill_chrome()
         except:

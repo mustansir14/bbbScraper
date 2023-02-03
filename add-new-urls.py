@@ -23,7 +23,6 @@ if __name__ == "__main__":
     scraper.addNewUrls()
     
     while time.time() - start < scanAgain:
-        break
         companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'new' LIMIT 1000")
         if not companies:
             break
