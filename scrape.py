@@ -763,12 +763,14 @@ class BBBScraper():
             for childUrl in childUrls:
                 logging.info(str(counter) + "/" + str(len(childUrls)) + ") Download child url: " + childUrl)
                 self.loadUrl(childUrl)
-                    
-                stats = {'new': 0, 'passed': 0, 'total': 10000}
-                statsTime = time.time() + 10
                 
                 childXml = ET.fromstring(self.getSourceCode())
-                for child in childXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                locs = childXml.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url/{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
+                    
+                stats = {'new': 0, 'passed': 0, 'total': len(locs)}
+                statsTime = time.time() + 10
+                
+                for child in locs:
                     try:
                         url = child.text.strip()
                     except Exception as e:
