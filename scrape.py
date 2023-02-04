@@ -795,7 +795,8 @@ class BBBScraper():
                         statsTime = time.time() + 10
                         
                         logging.info(stats)
-                        
+                
+                logging.info(stats)
                 counter = counter + 1
 
     def bulk_scrape(self, no_of_threads=1, scrape_reviews_and_complaints=True):
