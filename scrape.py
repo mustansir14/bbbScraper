@@ -769,7 +769,13 @@ class BBBScraper():
                 
                 childXml = ET.fromstring(self.getSourceCode())
                 for child in childXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
-                    url = child.text.strip()
+                    try:
+                        url = child.text.strip()
+                    except Exception as e:
+                        logging.error(e)
+                        logging.info(child)
+                        
+                        continue
                 
                     if "/profile/" in url:
                         row = self.db.queryRow('select company_id from company where url = ?', (url,))
