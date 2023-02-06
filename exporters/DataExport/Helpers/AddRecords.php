@@ -84,6 +84,18 @@ class AddRecords
 
             $useDate = Functions::getPostDate( $row[ "{$type}_date" ] );
 
+            # https://www.wrike.com/open.htm?id=993758008
+            # При расчете рейтинга все отвеченные саппортом жалобы помечать 5* и ставить Resolved
+            if($type === "complaint")
+            {
+                if ($row["company_response_text"] && TextFormatter::fixText($row["company_response_text"], 'complaintsboard.com')) {
+                    $row["{$type}_rating"] = 5;
+                    if(!$resolvedDate) {
+                        $resolvedDate = date("Y-m-d", strtotime($useDate) - 30);
+                    }
+                }
+            }
+
             $fakeUserName = substr( $this->faker->firstName(), 0, 1 ).". ".$this->faker->lastName();
             $complaintID = $exporter->addComplaint( $exporter->getComplaintImportID( $row[ "{$type}_id" ], $type ), [
                 "company_id"  => $this->vars['destCompanyID'],
@@ -158,10 +170,13 @@ class AddRecords
                         "version"      => 1,
                     ],
                 ] );
+
                 if ( !$commentID )
                 {
                     die( $exporter->getErrorsAsString() );
                 }
+
+
             }
         }
     }
