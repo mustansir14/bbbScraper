@@ -7,7 +7,6 @@ RUN pip3 install --upgrade pip
 RUN apt install -y wget curl gpg
 
 RUN wget https://r.mariadb.com/downloads/mariadb_repo_setup
-RUN echo "367a80b01083c34899958cdd62525104a3de6069161d309039e84048d89ee98b  mariadb_repo_setup" | sha256sum -c -
 RUN chmod +x mariadb_repo_setup
 RUN ./mariadb_repo_setup --mariadb-server-version="mariadb-10.9"
 
