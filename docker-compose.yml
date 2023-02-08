@@ -37,6 +37,7 @@ services:
               memory: 2G
         volumes:
           - ./logs/:/www/logs/
+          - ./file/:/www/file/
         
     bbb_mustansir_api:
         restart: always
