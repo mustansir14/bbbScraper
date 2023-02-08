@@ -9,10 +9,10 @@ from multiprocessing import Process
 import time, re
 import requests, os
 from scrape import BBBScraper
+from includes.proxies import getProxy
 from sys import platform
 from os.path import exists
 from includes.DB import DB
-from config import *
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
@@ -29,7 +29,8 @@ def grab_company():
     def scrape_company(company_id, webhook_url, is_sync):
 
         try:
-            scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS, proxy_type=PROXY_TYPE)
+            proxy = getProxy()
+            scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
             if "http" in company_id:
                 company = scraper.scrape_company_details(company_url=company_id)
                 company.reviews = scraper.scrape_company_reviews(company_url=company_id)
@@ -100,7 +101,9 @@ def grab_company():
 def grab_review():
 
     def scrape_review(review_id, webhook_url):
-        scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
+        proxy = getProxy()
+        scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+            
         scraper.db.cur.execute("SELECT company_id from review where review_id = %s;", (review_id,))
         company_id = scraper.db.cur.fetchall()[0]["company_id"]
         if "http" in company_id:
@@ -135,7 +138,9 @@ def grab_review():
 def grab_complaint():
 
     def scrape_complaint(complaint_id, webhook_url):
-        scraper = BBBScraper(proxy=PROXY, proxy_port=PROXY_PORT, proxy_user=PROXY_USER, proxy_pass=PROXY_PASS)
+        proxy = getProxy()
+        scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+        
         scraper.db.cur.execute("SELECT company_id from complaint where complaint_id = %s;", (complaint_id,))
         company_id = scraper.db.cur.fetchall()[0]["company_id"]
         if "http" in company_id:

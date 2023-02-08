@@ -22,4 +22,4 @@ RUN pip3 install -r ./install/requirements.txt
 
 COPY . /www
 
-CMD python "${APP_TARGET}"
+CMD python "${APP_TARGET}" --no_of_threads ${APP_NO_OF_THREADS}

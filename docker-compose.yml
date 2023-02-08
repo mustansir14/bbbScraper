@@ -11,6 +11,7 @@ services:
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
           - APP_TARGET=add-new-urls.py
+          - APP_NO_OF_THREADS=1
         deploy:
           resources:
             limits:
@@ -30,6 +31,7 @@ services:
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
           - APP_TARGET=rescrape_all_from_db.py
+          - APP_NO_OF_THREADS=5
         deploy:
           resources:
             limits:
@@ -52,6 +54,7 @@ services:
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
           - APP_TARGET=api.py
+          - APP_NO_OF_THREADS=1
         deploy:
           resources:
             limits:
