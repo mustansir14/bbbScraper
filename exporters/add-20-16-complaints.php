@@ -34,7 +34,7 @@ $complaints20 = $srcDb->queryArray("SELECT p.* FROM
     order by complaint_date desc 
 ) p 
 order by char_length(complaint_text) DESC 
-limit 20");
+limit 16");
 
 $skipIDs = [];
 $insertedComplaints = [];
