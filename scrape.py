@@ -338,7 +338,7 @@ class BBBScraper():
             if detailRoot is None:
                 raise Exception("Can not find detailRoot")
                 
-            fields_headers = ["Service Type","Menu Type","Number of Employees","Years in Business","Type of Entity","Accredited Since","BBB File Opened","Business Incorporated","Business Started","Business Started Locally","Headquarters","Location of This Business","Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Related Businesses", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
+            fields_headers = ["Licensing Information","Service Type","Menu Type","Number of Employees","Years in Business","Type of Entity","Accredited Since","BBB File Opened","Business Incorporated","Business Started","Business Started Locally","Headquarters","Location of This Business","Hours of Operation", "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name", "Related Businesses", "Email Addresses", "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods", "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
             fields_dict = {}
                 
             elements = detailRoot.find_elements(By.CSS_SELECTOR,'dt, dd')

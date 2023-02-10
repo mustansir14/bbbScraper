@@ -32,13 +32,23 @@ class BusinessData
             null
         );
         if ($businessID) {
-            foreach ($exporter->getAllImportedComments($businessID, $type) as $comment) {
-                #echo $comment[ 'import_id' ]."\n";
-                $exporter->removeCommentByImportID($comment[ 'import_id' ]);
+            $types = [];
+            if($type == "all") {
+                $types[] = "review";
+                $types[] = "complaint";
+            }else{
+                $types[] = $type;
             }
-            foreach ($exporter->getAllImportedComplaints($businessID, $type) as $complaint) {
-                #echo $complaint[ 'import_id' ]."\n";
-                $exporter->removeComplaintByImportID($complaint[ 'import_id' ]);
+
+            foreach($types as $type) {
+                foreach ($exporter->getAllImportedComments($businessID, $type) as $comment) {
+                    #echo $comment[ 'import_id' ]."\n";
+                    $exporter->removeCommentByImportID($comment['import_id']);
+                }
+                foreach ($exporter->getAllImportedComplaints($businessID, $type) as $complaint) {
+                    #echo $complaint[ 'import_id' ]."\n";
+                    $exporter->removeComplaintByImportID($complaint['import_id']);
+                }
             }
         }
     }
@@ -110,7 +120,7 @@ class BusinessData
                 }
 
                 if (!$isSkip) {
-                    die("ScrapeWeb::getSocials() error: ".$scraper->getError());
+                    echo "ScrapeWeb::getSocials() error: ".$scraper->getError()."\n";
                 }
             }
 

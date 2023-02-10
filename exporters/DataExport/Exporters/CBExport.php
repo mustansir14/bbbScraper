@@ -906,7 +906,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         $rs = $this->db->insert( "compl_posts", [
             "compl_id" => $fields["complaint_id"],
-            "post_text" => $fields["text"],
+            "post_text" => TextFormatter::removeUtf8FourByteChars($fields["text"]),
             "post_time" => $fields["date"],
             "is_updated" => $fields["is_update"] ? 1 : 0,
             "uid" => $userID,

@@ -3,7 +3,7 @@ from sys import platform
 from includes.proxies import getProxy
 from multiprocessing import Queue, Process
 import argparse
-import logging
+import logging, sys
 
 
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
         logging.basicConfig(filename=args.logfile, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     else:
         logging.basicConfig(handlers=[
-            logging.FileHandler("logs/rescrape_all_from_db.py.log"),
+            logging.FileHandler("logs/scrape_with_errors.py.log"),
             logging.StreamHandler()
         ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
         
@@ -54,7 +54,10 @@ if __name__ == "__main__":
                 processes[i].join()
         else:
             for company_url in urls_to_scrape:
-                scraper.scrape_url(company_url, scrape_reviews_and_complaints=True)
+                company = scraper.scrape_url(company_url, scrape_reviews_and_complaints=True)
+                if company.status != "success":
+                    logging.info("Not success exit")
+                    sys.exit(1);
 
         count += 1
 
