@@ -20,6 +20,9 @@ class DB:
         self.db = os.getenv('DB_NAME')
         self.con = None
         
+        if self.host is None or self.user is None or self.db is None:
+            raise Exception("No .env, can not connect to db") 
+        
         self.reconnect()
         
     def reconnect(self):

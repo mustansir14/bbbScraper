@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `company` (
   `company_id` int(11) NOT NULL,
   `version` int(11) DEFAULT 1,
-  `company_name` varchar(255) NOT NULL,
+  `company_name` varchar(255) DEFAULT NULL,
   `alternate_business_name` varchar(500) DEFAULT NULL,
   `url` varchar(500) NOT NULL,
   `logo` varchar(255) DEFAULT NULL,
