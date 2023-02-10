@@ -152,6 +152,11 @@ class AddRecords
             {
                 echo "Update: ".substr( $updateText, 0, 60 )."\n";
 
+                $supportEmail = $this->faker->email();
+                # Fix: some times email may already exists
+                [$before, $after] = explode("@", $supportEmail);
+                $supportEmail = $before.rand(1, 0xFFFF).'@'.$after;
+
                 $commentID = $exporter->addComment( $exporter->getCommentImportID( $row[ "{$type}_id" ], $type ), [
                     "complaint_id" => $complaintID,
                     "text"         => $updateText,
@@ -159,7 +164,7 @@ class AddRecords
                     "date"         => $row[ "company_response_date" ],
                     "user_name"    => $userName,
                     "user_date"    => date( "Y-m-d", strtotime( $row[ "company_response_date" ] ) - 1 * 365 * 24 * 3600 ),
-                    "user_email"   => $this->faker->email(),
+                    "user_email"   => $supportEmail,
                     "user_support" => $this->vars['destBusinessID'],
                     "import_data"  => [
                         "company_id"   => $this->vars['sourceCompanyRow'][ "company_id" ],

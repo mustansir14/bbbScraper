@@ -476,7 +476,7 @@ class CBExport implements ExportInterface, ErrorsAsStringInterface
 
         if ( isset( $fields["category"] ) )
         {
-            $categoryID = $this->isCategoryExists( $fields["category"] );
+            $categoryID = $this->isCategoryExists( $fields["category"][0], $fields["category"][1] ?? null);
             if ( $categoryID )
             {
                 $insertFields["bname_category_id"] = $categoryID;

@@ -736,11 +736,11 @@
         },
         {
             "name": "srgteam/scrape-web",
-            "version": "1.2",
+            "version": "1.4",
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/scrape-web.git",
-                "reference": "f4165cebff26b70c0bc9f6d79c78bd9b93cd665b"
+                "reference": "f7a3b510dbf93b565088da9cc7307e5937d09f51"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.5",
@@ -766,7 +766,7 @@
                     "email": "systema.working@gmail.com"
                 }
             ],
-            "time": "2023-01-30T08:55:11+00:00"
+            "time": "2023-02-10T14:48:27+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",

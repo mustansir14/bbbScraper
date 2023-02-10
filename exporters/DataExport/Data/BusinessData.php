@@ -19,6 +19,7 @@ class BusinessData
     private static function removeFAQ(object $exporter, array $sourceCompanyRow, string $companyNameWithoutAbbr)
     {
         echo "Remove business FAQ: ".$sourceCompanyRow[ "company_id" ]."\n";
+
         $faqList = FAQData::prepare($sourceCompanyRow, $companyNameWithoutAbbr);
         if ($faqList) {
             FAQData::removeFAQFromBusiness($exporter, $sourceCompanyRow[ "company_id" ], $faqList);
@@ -144,53 +145,76 @@ class BusinessData
         }
     }
 
-    private static function addSocialsToBNFromKlazify(array $sourceCompanyRow, array &$bnameFields)
+    private static function addKlazifySocials(array $result, array &$bnameFields)
+    {
+        $socialMedia = $result['domain']['social_media'] ?? false;
+        if ($socialMedia) {
+            # {
+            #   "facebook_url":"https:\/\/www.facebook.com\/CBSNews",
+            #   "twitter_url":"https:\/\/twitter.com\/CBSNews",
+            #   "instagram_url":"https:\/\/instagram.com\/cbsnews",
+            #   "medium_url":null,
+            #   "youtube_url":"http:\/\/www.youtube.com\/user\/CBSNewsOnline",
+            #   "pinterest_url":null,
+            #   "linkedin_url":null,
+            #   "github_url":null
+            #}
+            $fields = [
+                "facebook_url"  => "facebook",
+                "twitter_url"   => "twitter",
+                "instagram_url" => "instagram",
+                "youtube_url"   => "youtube",
+                "linkedin_url"  => "linkedin",
+                "pinterest_url" => "pinterest",
+            ];
+            foreach ($fields as $klazifyFieldName => $cbFieldName) {
+                if ($socialMedia[$klazifyFieldName] ?? false) {
+                    if (!isset($bnameFields[$cbFieldName]) || empty($bnameFields[$cbFieldName])) {
+                        $bnameFields[$cbFieldName] = $socialMedia[$klazifyFieldName];
+
+                        echo "Klazify {$cbFieldName}: {$bnameFields[$cbFieldName]}\n";
+                    }
+                }
+            }
+        }
+    }
+
+    private static function getKlazifyData(array $sourceCompanyRow)
     {
         if ($sourceCompanyRow["website"] && filter_var(
                 $sourceCompanyRow["website"],
                 FILTER_VALIDATE_URL
             )
         ) {
-            echo "Get socials from klazify...\n";
+            echo "Get data from klazify...\n";
 
-            $scraper = new KlazifyScraper(TokenManager::get());
+            $scraper = new KlazifyScraper('auto');
             #$scraper->verbose();
-
             $result = $scraper->getWebInformation($sourceCompanyRow["website"]);
             if ($result) {
-                $socialMedia = $result['domain']['social_media'] ?? false;
-                if ($socialMedia) {
-                    # {
-                    #   "facebook_url":"https:\/\/www.facebook.com\/CBSNews",
-                    #   "twitter_url":"https:\/\/twitter.com\/CBSNews",
-                    #   "instagram_url":"https:\/\/instagram.com\/cbsnews",
-                    #   "medium_url":null,
-                    #   "youtube_url":"http:\/\/www.youtube.com\/user\/CBSNewsOnline",
-                    #   "pinterest_url":null,
-                    #   "linkedin_url":null,
-                    #   "github_url":null
-                    #}
-
-                    $fields = [
-                        "facebook_url"  => "facebook",
-                        "twitter_url"   => "twitter",
-                        "instagram_url" => "instagram",
-                        "youtube_url"   => "youtube",
-                        "linkedin_url"  => "linkedin",
-                        "pinterest_url" => "pinterest",
-                    ];
-                    foreach ($fields as $klazifyFieldName => $cbFieldName) {
-                        if ($socialMedia[$klazifyFieldName] ?? false) {
-                            if (!isset($bnameFields[$cbFieldName]) || empty($bnameFields[$cbFieldName])) {
-                                $bnameFields[$cbFieldName] = $socialMedia[$klazifyFieldName];
-
-                                echo "Klazify {$cbFieldName}: {$bnameFields[$cbFieldName]}\n";
-                            }
-                        }
-                    }
-                }
+                return $result;
+            }else{
+                echo "Klazify error: ".$scraper->getError()."\n";
             }
         }
+        return false;
+    }
+
+    private static function addKlazifyCategories(array $klazifyData, int $destBusinessID)
+    {
+        $categories = $klazifyData['domain']['categories'] ?? [];
+        if($categories) {
+            foreach($categories as $category) {
+                if($category['confidence'] < 0.8) continue;
+
+                # /Finance/Credit & Lending/Credit Reporting & Monitoring
+                $parts = explode("/", ltrim($category['name'],'/ '));
+                print_r($parts);
+            }
+        }else{
+            echo "Info: no klazify categories\n";
+        }
+        exit;
     }
 
     public static function createDbRecord(
@@ -224,7 +248,7 @@ class BusinessData
             "phone"       => PhoneFormatter::fromString($sourceCompanyRow[ "phone" ]),
             "fax"         => PhoneFormatter::fromString($sourceCompanyRow[ "fax_numbers" ]),
             "website"     => WebFormatter::fromString($sourceCompanyRow[ "website" ]),
-            "category"    => "Other",
+            "category"    => ["Business Services", "Other"],
             "import_data" => [
                 "company_id"   => $sourceCompanyRow[ "company_id" ],
                 "company_name" => $sourceCompanyRow[ "company_name" ],
@@ -235,17 +259,24 @@ class BusinessData
         ];
 
         static::addSocialsToBNFromScrapeWeb($sourceCompanyRow, $bnameFields);
-        static::addSocialsToBNFromKlazify($sourceCompanyRow,$bnameFields);
+
+        $klazifyData = static::getKlazifyData($sourceCompanyRow);
+        if($klazifyData) {
+            static::addKlazifySocials($klazifyData,$bnameFields);
+        }
 
         #print_r($bnameFields);
 
         $destBusinessID = $exporter->addBusiness($businessImportID, $bnameFields);
-
         if (!$destBusinessID) {
             die($exporter->getErrorsAsString());
         }
 
         echo "New business id: {$destBusinessID}\n";
+
+        if($klazifyData) {
+            static::addKlazifyCategories($klazifyData, $destBusinessID);
+        }
 
         return $destBusinessID;
     }
@@ -278,7 +309,7 @@ class BusinessData
         ) {
             echo "Get klazify information...\n";
 
-            $scraper = new KlazifyScraper(TokenManager::get());
+            $scraper = new KlazifyScraper('auto');
             $result = $scraper->getWebInformation($sourceCompanyRow[ "website" ]);
             if (!$result) {
                 echo "Klazify error: ".$scraper->getError()."\n";
@@ -372,12 +403,12 @@ class BusinessData
         }
     }
 
-    public static function toggleProfile(object $exporter, array $sourceCompanyRow, bool $makeSpamComplaints)
+    public static function toggleProfile(object $exporter, array $sourceCompanyRow, bool $isDisableBusiness)
     {
         $businessImportID = $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]);
         $businessRow = $exporter->getBusiness($businessImportID);
         if ($businessRow) {
-            if ($makeSpamComplaints) {
+            if ($isDisableBusiness) {
                 $exporter->disableBusiness($businessImportID);
             } else {
                 $exporter->enableBusiness($businessImportID);
@@ -422,7 +453,7 @@ class BusinessData
         string $companyNameWithoutAbbr,
         string $importInfoScraper,
         bool $makeScreenshot,
-        bool $makeSpamComplaints
+        bool $isDisableBusiness
     ) {
         $destCompanyID = CompanyData::create($exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper);
         if (!$destCompanyID) {
@@ -436,7 +467,7 @@ class BusinessData
                 $companyNameWithoutAbbr,
                 $importInfoScraper
             );
-            static::toggleProfile($exporter, $sourceCompanyRow, $makeSpamComplaints);
+            static::toggleProfile($exporter, $sourceCompanyRow, $isDisableBusiness);
             static::uploadLogo($exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $makeScreenshot);
         } else {
             echo "Use BN id: {$destBusinessID}\n";

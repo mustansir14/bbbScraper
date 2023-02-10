@@ -16,7 +16,8 @@ $profileName = "local";
 $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.complaintsboard.com";
 $complaintType = "all"; # "review", "complaint", "all"
 $addComplaintsToPublicBN = true;
-$removeBN = false; #$profileName === "local"; # remove bn before try create new
+$isDisableBusiness = true;
+$removeBN = $profileName === "local"; # remove bn before try create new
 $debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
 $removeAllPosts = true; # before insert remove all old
 $addComplaints = true; # without that no complaints or reviews will be added
@@ -34,7 +35,7 @@ $importInfoScraper = "BBB Mustansir";
 #$companyUrl = "https://www.bbb.org/us/az/scottsdale/profile/online-shopping/moonmandycom-1126-1000073935";
 $companyUrls = [
     "https://www.bbb.org/us/il/chicago/profile/credit-reporting-agencies/trans-union-llc-0654-2713",
-    "https://www.bbb.org/us/ca/san-jose/profile/payment-processing-services/venmo-1216-634567",
+    /*"https://www.bbb.org/us/ca/san-jose/profile/payment-processing-services/venmo-1216-634567",
     "https://www.bbb.org/us/ca/manhattan-beach/profile/internet-service/prodege-llc-1216-100088742",
     "https://www.bbb.org/us/mo/saint-peters/profile/auto-service-contract-companies/carshield-0734-310030296",
     "https://www.bbb.org/us/in/indianapolis/profile/contractor-referral/angi-0382-3041007",
@@ -131,7 +132,7 @@ $companyUrls = [
     "https://www.bbb.org/us/il/chicago/profile/parking-facilities/spothero-0654-88576696",
     "https://www.bbb.org/us/nj/mahwah/profile/auto-manufacturers/volvo-cars-north-america-llc-0221-29002860",
     "https://www.bbb.org/us/al/fairhope/profile/insurance-companies/trawick-international-inc-0463-235958510",
-    "https://www.bbb.org/us/ca/los-angeles/profile/business-consultant/seek-capital-llc-1216-356029",
+    "https://www.bbb.org/us/ca/los-angeles/profile/business-consultant/seek-capital-llc-1216-356029",*/
 ];
 $websiteUrls = [];
 $websiteInstagramMedia = [];
@@ -149,6 +150,31 @@ echo "Creating dest db...\n";
 $destDb = new Db();
 $destDb->connectOrDie(  $profile["db"]["host"], $profile["db"]["user"], $profile["db"]["pass"], $profile["db"]["name"] );
 
+##################################################################################
+/*
+$cb = new CBExport($destDb, "");
+var_dump($cb->isCategoryExists("parent 111"));
+var_dump($cb->isCategoryExists("parent 222"));
+var_dump($cb->isCategoryExists("parent 222", "child 222"));
+var_dump($cb->isCategoryExists("parent 222", "child 333"));
+exit;
+var_dump($cb->addCategory([
+   'name' => 'parent 111',
+   "import_data" => [
+       "version"      => 1,
+   ],
+]),$cb->getErrorsAsString());
+
+var_dump($cb->addCategory([
+    'name' => 'parent 222',
+    'child_name' => 'child 222',
+    "import_data" => [
+        "version"      => 1,
+    ],
+]),$cb->getErrorsAsString());
+
+exit;
+*/
 ##################################################################################
 
 $companies = $srcDb->queryColumnArray("select company_id, count(*) cnt from complaint group by company_id having cnt > 50", "company_id" );
@@ -178,7 +204,7 @@ echo "Starting export...\n";
 
 foreach( $companies as $companyNbr => $companyId )
 {
-    echo "Company: {$companyId}\n";
+    echo "{$companyNbr}/".count($companies).") Company: {$companyId}\n";
 
     if( $maxCompanies > 0 && $companyNbr >= $maxCompanies )
     {
@@ -192,7 +218,7 @@ foreach( $companies as $companyNbr => $companyId )
     #####################################################################
 
     if (isset($companyID2Url[$companyId])) {
-        echo "Url: ".$companyID2Url[$companyId]."\n";
+        echo "{$companyNbr}/".count($companies).") Url: ".$companyID2Url[$companyId]."\n";
     }
 
     #####################################################################
@@ -223,7 +249,7 @@ foreach( $companies as $companyNbr => $companyId )
         BusinessData::removeAllPosts( $exporter, $sourceCompanyRow, $complaintType );
     }
 
-    [ $destBusinessID, $destCompanyID ] = BusinessData::create( $exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper, $makeScreenshot, $makeSpamComplaints );
+    [ $destBusinessID, $destCompanyID ] = BusinessData::create( $exporter, $sourceCompanyRow, $companyNameWithoutAbbr, $importInfoScraper, $makeScreenshot, $isDisableBusiness );
 
     if ( !$addComplaintsToPublicBN && $exporter->isBusinessActive( $exporter->getBusinessImportID($sourceCompanyRow[ "company_id" ]) ) ) {
         echo "Stop: business profile is active, may be already records changed!\n";
