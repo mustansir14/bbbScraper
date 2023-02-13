@@ -338,7 +338,7 @@ class BBBScraper():
             if detailRoot is None:
                 raise Exception("Can not find detailRoot")
                 
-            fields_headers = ["Location of This Business","BBB File Opened", "Licensing Information","Service Type","Menu Type",
+            fields_headers = ["Date of New Ownership","Location of This Business","BBB File Opened", "Licensing Information","Service Type","Menu Type",
             "Number of Employees","Years in Business","Type of Entity","Accredited Since","BBB File Opened","Business Incorporated",
             "Business Started","Business Started Locally","Headquarters","Location of This Business","Hours of Operation", 
             "Business Management", "Contact Information", "Customer Contact", "Additional Contact Information", "Fax Numbers", 
@@ -367,16 +367,16 @@ class BBBScraper():
             #print(fields_dict)
             #sys.exit(1)
             if "business started" in fields_dict:
-                company.business_started = self.convertDateToOurFormat(fields_dict["business started"].split()[0])
+                company.business_started = self.convertDateToOurFormat(fields_dict["business started"])
             
             if "business incorporated" in fields_dict:
-                company.business_incorporated = self.convertDateToOurFormat(fields_dict["business incorporated"].split()[0])
+                company.business_incorporated = self.convertDateToOurFormat(fields_dict["business incorporated"])
             
             if "bbb file opened" in fields_dict:
-                company.bbb_file_opened = self.convertDateToOurFormat(fields_dict["bbb file opened"].split()[0])
+                company.bbb_file_opened = self.convertDateToOurFormat(fields_dict["bbb file opened"])
                 
             if "accredited since" in fields_dict:
-                company.accredited_since = self.convertDateToOurFormat(fields_dict["accredited since"].split()[0])
+                company.accredited_since = self.convertDateToOurFormat(fields_dict["accredited since"])
                 
             if "type of entity" in fields_dict:
                 company.type_of_entity = fields_dict["type of entity"]
@@ -529,10 +529,11 @@ class BBBScraper():
         # 15/09/2020
         # that's why %m/%d/%Y not work
         try:
+            text = text.strip()
             return datetime.datetime.strptime(text, "%m/%d/%Y").strftime('%Y-%m-%d')
-        except:
+        except Exception as e:
             pass
-        
+            
         return datetime.datetime.strptime(text, "%d/%m/%Y").strftime('%Y-%m-%d')
 
 
