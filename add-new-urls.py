@@ -18,9 +18,7 @@ if __name__ == "__main__":
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
     
     start = time.time();
-    scanAgain = 7200 # every 2 hours
-    
-    scraper.addNewUrls()
+    scanAgain = 24*3600
     
     while time.time() - start < scanAgain:
         companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'new' LIMIT 1000")
@@ -32,11 +30,6 @@ if __name__ == "__main__":
                 break
                 
             scraper.scrape_url(company['url'], scrape_reviews_and_complaints=True)
+            
+    scraper.addNewUrls()
     
-    if time.time() - start < scanAgain:
-        left = scanAgain - (time.time() - start)
-        if left < 0:
-            left = 0
-    
-        logging.info("Sleep " + str(left) + " seconds, to get urls again")
-        time.sleep(left)

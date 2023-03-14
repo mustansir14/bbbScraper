@@ -52,7 +52,7 @@ foreach( $complaints20 as $complaintNbr => $complaint )
         'destBusinessID' => $destBusinessID,
         'sourceCompanyRow' => $sourceCompanyRow,
         'importInfoScraper' => $importInfoScraper,
-        'makeSpamComplaints' => $makeSpamComplaints,
+        'isDisableComplaints' => $isDisableComplaints,
         'ifResponseMakeResolved' => true,
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
@@ -108,7 +108,7 @@ foreach( $division as $complaintNbr => $divisionRow )
         'destBusinessID' => $destBusinessID,
         'sourceCompanyRow' => $sourceCompanyRow,
         'importInfoScraper' => $importInfoScraper,
-        'makeSpamComplaints' => $makeSpamComplaints,
+        'isDisableComplaints' => $isDisableComplaints,
         'checkTextInGoogle' => $checkTextInGoogle,
     ]);
 

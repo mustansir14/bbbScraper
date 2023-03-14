@@ -17,7 +17,7 @@ class AddRecords
         $this->vars = $vars;
         $this->faker = \Faker\Factory::create();
 
-        foreach( ['companyNameWithoutAbbr','exporter','isInsert','destCompanyID','destBusinessID','sourceCompanyRow','importInfoScraper','makeSpamComplaints','counter','checkTextInGoogle'] as $name ) {
+        foreach( ['companyNameWithoutAbbr','exporter','isInsert','destCompanyID','destBusinessID','sourceCompanyRow','importInfoScraper','isDisableComplaints','counter','checkTextInGoogle'] as $name ) {
             if ( !array_key_exists( $name, $this->vars )
                 || ( is_string( $this->vars[$name] ) && empty( $this->vars[$name]) )
                 || ( is_int( $this->vars[$name] ) && $this->vars[$name] < 1 )
@@ -123,7 +123,7 @@ class AddRecords
                 die( $exporter->getErrorsAsString() );
             }
 
-            if ( $this->vars['makeSpamComplaints'] )
+            if ( $this->vars['isDisableComplaints'] )
             {
                 $exporter->spamComplaint(
                     $exporter->getComplaintImportID( $row[ "{$type}_id" ], $type ),

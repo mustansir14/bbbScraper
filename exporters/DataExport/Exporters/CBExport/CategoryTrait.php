@@ -35,7 +35,7 @@ trait CategoryTrait
 
     public function getCategoryImportID(string $parentCategory, ?string $childCategory = null): string
     {
-        return "scraper:/{$parentCategory}".($childCategory ? "/".$childCategory : "");
+        return "bbb-mustansir-scraper:/{$parentCategory}".($childCategory ? "/".$childCategory : "");
     }
 
     public function removeCategory(string $parentCategory, ?string $childCategory = null)
@@ -43,17 +43,26 @@ trait CategoryTrait
         $this->inputChecker->reset();
 
         if($childCategory) {
-            if(!$this->removeRecordByImportID( "categories", $this->getCategoryImportID($parentCategory, $childCategory) )) {
-                return false;
-            }
-            if(!$this->removeRecordByImportID( "categories", $this->getCategoryImportID($parentCategory) )) {
-                return false;
-            }
-
-            return true;
+            # remove only child category, because on parent may be many categories
+            return $this->removeRecordByImportID("categories", $this->getCategoryImportID($parentCategory, $childCategory));
         }
 
         return $this->removeRecordByImportID( "categories", $this->getCategoryImportID($parentCategory) );
+    }
+
+    public function linkBusinessToAdditionalCategory(int $businessID, int $categoryID)
+    {
+        if($this->db->countRows('bname_categories', ['bname_id' => $businessID, 'category_id' => $categoryID]) == 0)
+        {
+            $rs = $this->db->insert( "bname_categories", [
+                'bname_id' => $businessID,
+                'category_id' => $categoryID
+            ]);
+
+            $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+        }
+
+        return true;
     }
 
     public function addCategory(array $fields)
@@ -117,19 +126,27 @@ trait CategoryTrait
 
         if( isset( $fields['child_name'] ) )
         {
-            $insertFields = [
-                "parentID" => $parentID,
-                "name"     => $fields["child_name"],
-                "link"     => $childRip,
-            ];
+            $childID = $this->isCategoryExists( $fields["name"],$fields["child_name"] );
+            if($childID == 0) {
+                $insertFields = [
+                    "parentID" => $parentID,
+                    "name"     => $fields["child_name"],
+                    "link"     => $childRip,
+                ];
 
-            $rs = $this->db->insert( "categories", $insertFields );
-            $this->throwExceptionIf( !$rs, $this->db->getExtendedError() );
+                $rs = $this->db->insert("categories", $insertFields);
+                $this->throwExceptionIf(!$rs, $this->db->getExtendedError());
 
-            $childID = $this->db->insertID();
-            $this->throwExceptionIf( $childID < 1, "No id" );
+                $childID = $this->db->insertID();
+                $this->throwExceptionIf($childID < 1, "No id");
 
-            $this->addImport( "categories", $childID, $this->getCategoryImportID($fields['name'], $fields['child_name']), $fields["import_data"] );
+                $this->addImport(
+                    "categories",
+                    $childID,
+                    $this->getCategoryImportID($fields['name'], $fields['child_name']),
+                    $fields["import_data"]
+                );
+            }
 
             return $childID;
         }

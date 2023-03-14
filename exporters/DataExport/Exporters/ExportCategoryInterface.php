@@ -7,4 +7,5 @@ interface ExportCategoryInterface
     public function getCategoryImportID(string $parentCategory, ?string $childCategory = null): string;
     public function removeCategory(string $parentCategory, ?string $childCategory = null);
     public function addCategory(array $fields);
+    public function linkBusinessToAdditionalCategory(int $businessID, int $categoryID);
 }

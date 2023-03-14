@@ -698,11 +698,11 @@
         },
         {
             "name": "srgteam/klazify",
-            "version": "1.7",
+            "version": "1.10",
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:srgteam/klazify-scraper.git",
-                "reference": "a3fb88ada3ecd233cacbe7b7a5f1250f2d2e51dc"
+                "reference": "39be5f3dcf96680bac223f51494a70c938796171"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.5",
@@ -721,6 +721,9 @@
                 "test": [
                     "%cd%/vendor/bin/phpunit --testdox --stop-on-failure tests"
                 ],
+                "release": [
+                    "php %cd%/release.php"
+                ],
                 "php-stan": [
                     "%cd%/vendor/bin/phpstan analyse --memory-limit 1G src tests"
                 ]
@@ -732,7 +735,7 @@
                 }
             ],
             "description": "Scrape information by url from klazify.",
-            "time": "2023-01-19T13:53:29+00:00"
+            "time": "2023-02-13T14:49:14+00:00"
         },
         {
             "name": "srgteam/scrape-web",

@@ -200,7 +200,7 @@ class BusinessData
         return false;
     }
 
-    private static function addKlazifyCategories(array $klazifyData, int $destBusinessID)
+    private static function addKlazifyCategories(array $klazifyData, object $exporter, int $destBusinessID, string $importInfoScraper, array $sourceCompanyRow)
     {
         $categories = $klazifyData['domain']['categories'] ?? [];
         if($categories) {
@@ -209,12 +209,34 @@ class BusinessData
 
                 # /Finance/Credit & Lending/Credit Reporting & Monitoring
                 $parts = explode("/", ltrim($category['name'],'/ '));
-                print_r($parts);
+                $parent = $parts[0];
+                $child = count($parts) > 1 ? $parts[count($parts) - 1] : null;
+
+                if($parent) {
+                    echo "Add klazify category: /".$parent.($child ? "/{$child}" : "")."\n";
+
+                    $categoryID = $exporter->addCategory([
+                        'name' => $parent,
+                        'child_name' => $child,
+                        'import_data' => [
+                            "company_id"   => $sourceCompanyRow[ "company_id" ],
+                            "company_name" => $sourceCompanyRow[ "company_name" ],
+                            "company_url"  => $sourceCompanyRow[ "url" ],
+                            "scraper"      => $importInfoScraper,
+                            "version"      => 1,
+                        ]
+                    ]);
+                    if(!$categoryID) throw new Exception($exporter->getError());
+
+                    if(!$exporter->linkBusinessToAdditionalCategory($destBusinessID, $categoryID))
+                    {
+                        throw new Exception($exporter->getError());
+                    }
+                }
             }
         }else{
             echo "Info: no klazify categories\n";
         }
-        exit;
     }
 
     public static function createDbRecord(
@@ -275,7 +297,7 @@ class BusinessData
         echo "New business id: {$destBusinessID}\n";
 
         if($klazifyData) {
-            static::addKlazifyCategories($klazifyData, $destBusinessID);
+            static::addKlazifyCategories($klazifyData, $exporter, $destBusinessID, $importInfoScraper, $sourceCompanyRow);
         }
 
         return $destBusinessID;

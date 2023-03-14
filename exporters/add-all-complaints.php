@@ -46,7 +46,7 @@ while ( $addComplaints )
             'destBusinessID' => $destBusinessID,
             'sourceCompanyRow' => $sourceCompanyRow,
             'importInfoScraper' => $importInfoScraper,
-            'makeSpamComplaints' => $makeSpamComplaints,
+            'isDisableComplaints' => $isDisableComplaints,
         ]);
         $helper->insertComplaint($complaint);
 

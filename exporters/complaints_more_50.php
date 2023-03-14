@@ -17,13 +17,13 @@ $profileAPI = $profileName === "local" ? "http://www.cb.local" : "https://www.co
 $complaintType = "all"; # "review", "complaint", "all"
 $addComplaintsToPublicBN = true;
 $isDisableBusiness = true;
+$isDisableComplaints = true;
 $removeBN = $profileName === "local"; # remove bn before try create new
 $debugComplaintsAndReviews = false; # will remove all reviews & complaints and exit
 $removeAllPosts = true; # before insert remove all old
 $addComplaints = true; # without that no complaints or reviews will be added
 $addOnly = 0; # if createAll and addOnly == country then create record or zero to always add
 $maxCompanies = false;
-$makeSpamComplaints = false; # may create not spamed complaints for fast insert
 $makeScreenshot = true; # if no logo and website url exists and makeScreenshot == True try create screenshot
 $checkTextInGoogle = $profileName !== "local";
 
