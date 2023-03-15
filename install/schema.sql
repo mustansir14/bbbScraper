@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 65.109.70.91
--- Время создания: Янв 05 2023 г., 14:55
+-- Время создания: Мар 15 2023 г., 13:38
 -- Версия сервера: 10.9.4-MariaDB
 -- Версия PHP: 8.1.1
 
@@ -28,7 +28,7 @@ CREATE TABLE `company` (
   `alternate_business_name` varchar(500) DEFAULT NULL,
   `url` varchar(500) NOT NULL,
   `logo` varchar(255) DEFAULT NULL,
-  `categories` varchar(255) DEFAULT NULL,
+  `categories` text DEFAULT NULL,
   `phone` text DEFAULT NULL,
   `address` varchar(255) DEFAULT NULL,
   `street_address` varchar(256) DEFAULT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE `company` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` LONGTEXT DEFAULT NULL,
+  `log` longtext DEFAULT NULL,
   `half_scraped` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -92,8 +92,10 @@ CREATE TABLE `company` (
 CREATE TABLE `complaint` (
   `complaint_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
+  `company_half_scraped` int(11) DEFAULT NULL,
   `complaint_type` varchar(255) DEFAULT NULL,
   `complaint_date` date DEFAULT NULL,
+  `complaint_date_year` int(11) DEFAULT NULL,
   `complaint_text` text DEFAULT NULL,
   `complaint_text_hash` varchar(32) DEFAULT NULL,
   `company_response_text` text DEFAULT NULL,
@@ -102,7 +104,7 @@ CREATE TABLE `complaint` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` LONGTEXT DEFAULT NULL
+  `log` longtext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -110,13 +112,17 @@ CREATE TABLE `complaint` (
 --
 DELIMITER $$
 CREATE TRIGGER `complaint_before_insert` BEFORE INSERT ON `complaint` FOR EACH ROW BEGIN
-	set new.complaint_text_hash = md5(concat(new.company_id, new.complaint_text));
+	set new.complaint_text_hash = md5(concat(new.company_id,new.complaint_text));
+    set new.complaint_date_year = year(new.complaint_date);
+    set new.company_half_scraped =(select half_scraped from company where company.company_id = new.company_id);
 end
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `complaint_before_update` BEFORE UPDATE ON `complaint` FOR EACH ROW BEGIN
-	set new.complaint_text_hash = md5(concat(new.company_id, new.complaint_text));
+	set new.complaint_text_hash = md5(concat(new.company_id,new.complaint_text));
+    set new.complaint_date_year = year(new.complaint_date);
+    set new.company_half_scraped =(select half_scraped from company where company.company_id = new.company_id);
 end
 $$
 DELIMITER ;
@@ -141,7 +147,7 @@ CREATE TABLE `review` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` LONGTEXT DEFAULT NULL
+  `log` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -149,13 +155,13 @@ CREATE TABLE `review` (
 --
 DELIMITER $$
 CREATE TRIGGER `review_before_insert` BEFORE INSERT ON `review` FOR EACH ROW BEGIN
-	SET new.review_text_hash = md5(concat(new.company_id, new.review_text));
+	SET NEW.review_text_hash = md5(concat(new.company_id,NEW.review_text));
 END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `review_before_update` BEFORE UPDATE ON `review` FOR EACH ROW BEGIN
-	SET new.review_text_hash = md5(concat(new.company_id, new.review_text));
+	SET NEW.review_text_hash = md5(concat(new.company_id,NEW.review_text));
 END
 $$
 DELIMITER ;
@@ -169,17 +175,22 @@ DELIMITER ;
 --
 ALTER TABLE `company`
   ADD PRIMARY KEY (`company_id`),
+  ADD UNIQUE KEY `url` (`url`) USING BTREE,
   ADD KEY `company_name` (`company_name`),
-  ADD KEY `url` (`url`);
+  ADD KEY `date_updated` (`date_updated`),
+  ADD KEY `for_stats` (`date_updated`,`status`) USING BTREE,
+  ADD KEY `half_scraped` (`half_scraped`);
 
-ALTER TABLE `company` ADD INDEX(`date_updated`); 
 --
 -- Индексы таблицы `complaint`
 --
 ALTER TABLE `complaint`
   ADD PRIMARY KEY (`complaint_id`),
   ADD UNIQUE KEY `complaint_text_hash` (`complaint_text_hash`),
-  ADD KEY `company_id` (`company_id`);
+  ADD KEY `company_id` (`company_id`),
+  ADD KEY `for_stats` (`date_updated`,`status`),
+  ADD KEY `complaint_date_year` (`complaint_date_year`),
+  ADD KEY `company_half_scraped` (`company_half_scraped`,`complaint_date_year`);
 
 --
 -- Индексы таблицы `review`
@@ -187,7 +198,8 @@ ALTER TABLE `complaint`
 ALTER TABLE `review`
   ADD PRIMARY KEY (`review_id`),
   ADD UNIQUE KEY `review_text_hash` (`review_text_hash`) USING BTREE,
-  ADD KEY `company_id` (`company_id`);
+  ADD KEY `company_id` (`company_id`),
+  ADD KEY `for_stats` (`date_updated`,`status`);
 
 --
 -- AUTO_INCREMENT для сохранённых таблиц
