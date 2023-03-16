@@ -3,7 +3,7 @@ from sys import platform
 from includes.proxies import getProxy
 from multiprocessing import Queue, Process
 import argparse
-import logging, sys
+import logging, sys, time, re
 
 
 
@@ -31,6 +31,8 @@ if __name__ == "__main__":
 
         companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'error' limit 5000")
         if not companies:
+            logging.info('No companies wait hour')
+            time.sleep(3600)
             break
         
         if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):

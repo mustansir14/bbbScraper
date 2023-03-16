@@ -530,6 +530,7 @@ class BBBScraper():
         # that's why %m/%d/%Y not work
         try:
             text = text.strip()
+            text = re.sub(r'[^0-9/]', '', text)
             return datetime.datetime.strptime(text, "%m/%d/%Y").strftime('%Y-%m-%d')
         except Exception as e:
             pass
