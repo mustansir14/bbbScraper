@@ -16,7 +16,7 @@ services:
           resources:
             limits:
               cpus: "1"
-              memory: 1G
+              memory: 3G
         volumes:
           - ./logs/:/www/logs/
           
@@ -36,7 +36,7 @@ services:
           resources:
             limits:
               cpus: "1"
-              memory: 1G
+              memory: 3G
         volumes:
           - ./logs/:/www/logs/
     
@@ -56,7 +56,7 @@ services:
           resources:
             limits:
               cpus: "4"
-              memory: 2G
+              memory: 10G
         volumes:
           - ./logs/:/www/logs/
           - ./file/:/www/file/
