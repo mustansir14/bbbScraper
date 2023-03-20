@@ -38,7 +38,6 @@ class BBBScraper():
     def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http") -> None:
         self.driver = None
         self.lastValidProxy = None
-        self.createBrowser(chromedriver_path, proxy, proxy_port, proxy_user, proxy_pass, proxy_type)
             
         if not os.path.exists("file/logo/"):
             os.makedirs("file/logo")
@@ -153,7 +152,6 @@ class BBBScraper():
         else:
             self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
 
-
     def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True) -> Company:
         
         if "https://www.bbb.org/" not in url and "profile" not in url:
@@ -161,13 +159,17 @@ class BBBScraper():
             
         url_split = url.split("/")
         if url_split[-1] in ["details", "customer-reviews", "complaints"]:
-            url = "/".join(url_split[:-1]) 
+            url = "/".join(url_split[:-1])
+            
+        self.reloadBrowser()
             
         company = self.scrape_company_details(company_url=url, save_to_db=save_to_db, half_scraped= not scrape_reviews_and_complaints)
         if company.status == "success":
             if scrape_reviews_and_complaints:
                 company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
                 company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
+                
+        self.kill_chrome()
                 
         return company
         
@@ -232,6 +234,17 @@ class BBBScraper():
         counter = 0
         while True:
             self.driver.get(company_url)
+            
+            # BugFix: original url https://www.bbb.org/us/al/huntsville/profile/business-associations/the-catalyst-center-for-business-entrepreneurship-0513-900075144
+            # redirect to: https://www.bbb.org/us/al/huntsville/charity-review/charity-community-development-civic-organizations/the-catalyst-center-for-business-entrepreneurship-0513-900075144
+            if "/charity-review/" in self.driver.current_url:
+                logging.info("Charity review detected, removing from database")
+                self.db.removeCompanyByUrl(company_url)
+                
+                company.status = "error"
+                company.log = "Charity review"
+                
+                return company
 
             if "403 Forbidden" in self.driver.title:
                 logging.info("403 Forbidden error. Reload browser....")
@@ -313,8 +326,9 @@ class BBBScraper():
             company.number_of_reviews = 0
             company.number_of_complaints = 0
             company.overview = companyPreloadState['businessProfile']['orgDetails']['organizationDescription']
-            company.overview = re.sub('</?[^<]+?>', '', company.overview)
-            company.overview = re.sub('(\r?\n){2,}', '\n\n', company.overview)
+            if company.overview:
+                company.overview = re.sub('</?[^<]+?>', '', company.overview)
+                company.overview = re.sub('(\r?\n){2,}', '\n\n', company.overview)
                 
             try:
                 company.products_and_services = self.driver.find_element(By.CSS_SELECTOR, ".dtm-products-services").text
@@ -566,7 +580,6 @@ class BBBScraper():
             
         return datetime.datetime.strptime(text, "%d/%m/%Y").strftime('%Y-%m-%d')
 
-
     def scrape_company_reviews(self, company_url=None, company_id = None, save_to_db=True, scrape_specific_review=None) -> List[Review]:
 
         if company_url:
@@ -686,7 +699,6 @@ class BBBScraper():
         
         return reviews
 
-    
     def scrape_company_complaints(self, company_url=None, company_id = None, save_to_db=True, scrape_specific_complaint=None) -> List[Complaint]:
 
         if company_url:
@@ -913,7 +925,6 @@ class BBBScraper():
                     for company_url in urls_to_scrape:
                         self.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints)
 
-
     def scrape_urls_from_queue(self, q, scrape_reviews_and_complaints=True):
 
         try:
@@ -948,6 +959,8 @@ class BBBScraper():
                 self.display.stop()
         except:
             pass
+        finally:
+            self.driver = None
 
 
 def str2bool(v):

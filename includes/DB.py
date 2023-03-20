@@ -52,6 +52,10 @@ class DB:
         
         return False
         
+    def removeCompanyByUrl(self, url):
+        sql = 'delete from company where url = ?';
+        self.execSQL(sql, (url,))
+        
     def execSQL(self,sql,args):
         lastExceptionStr = None
         
@@ -278,7 +282,7 @@ class DB:
             logging.error(traceback.format_exc())
             raise e
             
-
+    
 
     def insert_or_update_reviews(self, reviews : List[Review]):
         counter = 0
