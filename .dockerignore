@@ -1,2 +1,5 @@
-/file/
-/temp/
+file/
+temp/
+__pycache__
+logs/
+.git
