@@ -269,7 +269,7 @@ class DB:
                 
                 success_statement = "Company " + company.url + " details added to DB successfully!"
                 
-            logging.info(company)
+            #logging.info(company)
             self.execSQL(sql,args)
             
             logging.info(success_statement)

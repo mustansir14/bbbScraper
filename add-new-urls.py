@@ -14,8 +14,7 @@ if __name__ == "__main__":
     
     sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
     
-    proxy = getProxy()
-    scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+    scraper = BBBScraper()
     
     start = time.time();
     scanAgain = 24*3600

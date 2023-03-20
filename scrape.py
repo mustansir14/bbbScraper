@@ -37,6 +37,7 @@ class BBBScraper():
 
     def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http") -> None:
         self.driver = None
+        self.lastValidProxy = None
         self.createBrowser(chromedriver_path, proxy, proxy_port, proxy_user, proxy_pass, proxy_type)
             
         if not os.path.exists("file/logo/"):
@@ -140,7 +141,8 @@ class BBBScraper():
                 self.session.proxies.update({proxy_type: proxy_type + "://" + proxy + ":" + proxy_port})
                 options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
         
-        self.usedProxy = proxy_type + "://" + proxy + ":" + proxy_port
+        
+        self.usedProxy = proxy_type + "://" + proxy + ":" + proxy_port if proxy else ""
                 
         if os.name != "nt":
             self.display = Display(visible=0, size=(1920, 1080))
@@ -401,9 +403,11 @@ class BBBScraper():
                 fields_dict["hours of operation"] = fields_dict["hours of operation"].replace(":\n", ": ")
                 for line in fields_dict["hours of operation"].strip().split("\n"):
                     first_word = line.split()[0]
+                    #print("Line: " + line + ", first_word: " + first_word)
                     if first_word not in days_mapping:
                         continue
                     time_data = "".join(line.split()[1:]).lower()
+                    #print("time_data: " + time_data)
                     if time_data == "open24hours":
                         time_data = "open24"
                     elif "-" in time_data:
@@ -418,7 +422,12 @@ class BBBScraper():
                                         times[time_index] = str(int(colon_split[0])+12)
                                 times[time_index] = times[time_index].replace("am", "")
                         time_data = "-".join(times)
+                        
                     working_hours_dict[days_mapping[first_word]] = time_data.replace(".", "")
+                    
+                    #may be many hours tables > 1, use only first
+                    if len(working_hours_dict) >=7:
+                        break
                 company.working_hours = json.dumps(working_hours_dict)
                 company.original_working_hours = fields_dict['hours of operation']
                 
@@ -755,28 +764,23 @@ class BBBScraper():
         
     def loadUrl(self,url):
         for i in range(3):
+            if not self.lastValidProxy:
+                logging.info("Find proxy...")
+                self.lastValidProxy = getProxy()
+                
+            logging.info("Create browser")
+            self.createBrowser(None, self.lastValidProxy['proxy'], self.lastValidProxy['proxy_port'], self.lastValidProxy['proxy_user'], self.lastValidProxy['proxy_pass'], self.lastValidProxy['proxy_type'])
+                
             try:
                 logging.info("Load: " + url)
                 self.driver.get(url)
                 logging.info("Loaded: SUCCESS")
-                return True
-            except Exception as e:
-                logging.error(e)
-                logging.info("Create new browser")
-                proxy = getProxy()
-                self.createBrowser(None, proxy['proxy'], proxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
-        
-        raise Exception("Can not create browser")
-        
-    def getSourceCode(self):
-        for i in range(3):
-            try:
                 return self.driver.page_source
             except Exception as e:
+                self.lastValidProxy = None
                 logging.error(e)
-                logging.info("Create new browser")
-                proxy = getProxy()
-                self.createBrowser(None, proxy['proxy'], proxy['proxy_port'], proxy['proxy_user'], proxy['proxy_pass'], proxy['proxy_type'])
+            finally:
+                self.driver.quit()
         
         raise Exception("Can not create browser")
 
@@ -788,10 +792,10 @@ class BBBScraper():
         
         for sitemap_url in sitemap_urls:
             logging.info("Download root url: " + sitemap_url)
-            self.loadUrl(sitemap_url)
+            pageSourceCode = self.loadUrl(sitemap_url)
             
             childUrls = []
-            rootXml = ET.fromstring(self.getSourceCode())
+            rootXml = ET.fromstring(pageSourceCode)
             for rootChild in rootXml.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
                 try:
                     childUrls.append(rootChild.text.strip())
@@ -804,9 +808,9 @@ class BBBScraper():
             counter = 0
             for childUrl in childUrls:
                 logging.info(str(counter) + "/" + str(len(childUrls)) + ") Download child url: " + childUrl)
-                self.loadUrl(childUrl)
+                pageSourceCode = self.loadUrl(childUrl)
                 
-                childXml = ET.fromstring(self.getSourceCode())
+                childXml = ET.fromstring(pageSourceCode)
                 locs = childXml.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url/{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
                     
                 stats = {'new': 0, 'passed': 0, 'total': len(locs)}
