@@ -158,14 +158,17 @@ class BBBScraper():
         
         if "https://www.bbb.org/" not in url and "profile" not in url:
             raise Exception("Invalid URL")
+            
         url_split = url.split("/")
         if url_split[-1] in ["details", "customer-reviews", "complaints"]:
             url = "/".join(url_split[:-1]) 
+            
         company = self.scrape_company_details(company_url=url, save_to_db=save_to_db, half_scraped= not scrape_reviews_and_complaints)
         if company.status == "success":
             if scrape_reviews_and_complaints:
                 company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
                 company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
+                
         return company
         
     def getSchemaOrgByType(self, type):
@@ -189,6 +192,21 @@ class BBBScraper():
         code = self.driver.find_element(By.XPATH, '//script[contains(text(),"__PRELOADED_STATE__")]').get_attribute('innerHTML').strip("\r\n\t ;")
         code = re.sub('^[^\{]+?{', '{', code)
         return json.loads(code)
+        
+    def reloadBrowser(self): 
+        logging.info("Close old browser, creating new...")
+        
+        self.lastValidProxy = getProxy()
+        
+        self.kill_chrome()
+        self.createBrowser(
+            None, 
+            self.lastValidProxy['proxy'], 
+            self.lastValidProxy['proxy_port'], 
+            self.lastValidProxy['proxy_user'], 
+            self.lastValidProxy['proxy_pass'], 
+            self.lastValidProxy['proxy_type']
+        )
 
     def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True, half_scraped=False) -> Company:
 
@@ -216,13 +234,13 @@ class BBBScraper():
             self.driver.get(company_url)
 
             if "403 Forbidden" in self.driver.title:
-                logging.info("403 Forbidden error. Sleeping for 60 seconds....")
-                time.sleep(60)
+                logging.info("403 Forbidden error. Reload browser....")
+                self.reloadBrowser()
                 counter = counter + 1
             else:
                 break
 
-            if counter > 2:
+            if counter > 5:
                 raise Exception("Company page, always 403 error")
                 
         statusMustBeSuccess = False
@@ -295,6 +313,8 @@ class BBBScraper():
             company.number_of_reviews = 0
             company.number_of_complaints = 0
             company.overview = companyPreloadState['businessProfile']['orgDetails']['organizationDescription']
+            company.overview = re.sub('</?[^<]+?>', '', company.overview)
+            company.overview = re.sub('(\r?\n){2,}', '\n\n', company.overview)
                 
             try:
                 company.products_and_services = self.driver.find_element(By.CSS_SELECTOR, ".dtm-products-services").text
@@ -780,7 +800,7 @@ class BBBScraper():
                 self.lastValidProxy = None
                 logging.error(e)
             finally:
-                self.driver.quit()
+                self.kill_chrome()
         
         raise Exception("Can not create browser")
 

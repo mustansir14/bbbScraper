@@ -68,11 +68,12 @@ class DB:
                     return True
                 
                 if "mysql server has gone away" not in str(e):
-                    string = sql + "\n"
-                    if args:
-                        string = string + "\n".join([str(v) for v in args]) + "\n"
-                    string = string + str(e)
-                    raise Exception(string)
+                    # on insert company sourceCode may be too large
+                    #string = sql + "\n"
+                    #if args:
+                    #    string = string + "\n".join([str(v) for v in args]) + "\n"
+                    #string = string + str(e)
+                    raise Exception(e)
                 
                 if not self.tryReconnect():
                     raise Exception(e)
@@ -273,8 +274,9 @@ class DB:
             self.execSQL(sql,args)
             
             logging.info(success_statement)
-        except Exception:
+        except Exception as e:
             logging.error(traceback.format_exc())
+            raise e
             
 
 
