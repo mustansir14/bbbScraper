@@ -4,13 +4,24 @@ from includes.proxies import getProxy
 from multiprocessing import Queue, Process
 import argparse, time
 import logging
+from logging.handlers import RotatingFileHandler
+
+rfh = RotatingFileHandler(
+    filename="logs/add-new-urls.py.log", 
+    mode='a',
+    maxBytes=20*1024*1024,
+    backupCount=1,
+    delay=0,
+    encoding=None
+)
+rfh.setFormatter(logging.Formatter('%(asctime)s Process ID %(process)d: %(message)s'))
+rfh.setLevel(level=logging.DEBUG)
+
+root = logging.getLogger('root')
+root.setLevel(logging.INFO)
+root.addHandler(rfh)
 
 if __name__ == "__main__":
-    
-    logging.basicConfig(handlers=[
-        logging.FileHandler("logs/add-new-urls.py.log"),
-        logging.StreamHandler()
-    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
     
     sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml", "https://www.bbb.org/sitemap-business-profiles-index.xml"]
     
