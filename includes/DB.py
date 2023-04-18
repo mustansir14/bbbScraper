@@ -170,10 +170,10 @@ class DB:
         # company not in database, do not do anything
         if fromCompanyId:
             try:
-                self.execSQL("update complaint set company_id = ? where company_id = ?",(to_company_url, from_company_url,))
+                self.execSQL("update complaint set company_id = ? where company_id = ?",(toCompanyId, fromCompanyId,))
                 logging.info("Complants moved to " + str(toCompanyId))
                 
-                self.execSQL("update review set company_id = ? where company_id = ?",(to_company_url, from_company_url,))
+                self.execSQL("update review set company_id = ? where company_id = ?",(toCompanyId, fromCompanyId,))
                 logging.info("Reviews moved to " + str(toCompanyId))
                 
                 self.execSQL("delete from company where company_id = ?", (fromCompanyId,))
