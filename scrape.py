@@ -166,8 +166,8 @@ class BBBScraper():
         company = self.scrape_company_details(company_url=url, save_to_db=save_to_db, half_scraped= not scrape_reviews_and_complaints)
         if company.status == "success":
             if scrape_reviews_and_complaints:
-                company.reviews = self.scrape_company_reviews(company_url=url, save_to_db=save_to_db)
-                company.complaints = self.scrape_company_complaints(company_url=url, save_to_db=save_to_db)
+                company.reviews = self.scrape_company_reviews(company_url=company.url, save_to_db=save_to_db)
+                company.complaints = self.scrape_company_complaints(company_url=company.url, save_to_db=save_to_db)
                 
         self.kill_chrome()
                 
@@ -233,6 +233,7 @@ class BBBScraper():
             
         counter = 0
         while True:
+            logging.info("Driver get: " + company_url)
             self.driver.get(company_url)
             
             # BugFix: original url https://www.bbb.org/us/al/huntsville/profile/business-associations/the-catalyst-center-for-business-entrepreneurship-0513-900075144
@@ -270,6 +271,21 @@ class BBBScraper():
             companyPreloadState = self.getCompanyPreloadState()
             
             company.name = companyLdJson['name']
+            
+            if company_url != self.driver.current_url:
+                # old url: https://www.bbb.org/us/nd/fargo/profile/bank/bell-bank-0704-96381846
+                # new url: https://www.bbb.org/us/mn/saint-louis-park/profile/real-estate-loans/bell-mortgage-0704-96148267
+                
+                newUrl = self.driver.current_url.split("?")[0]
+                
+                logging.info("Company url changed, move data to new url")
+                logging.info("Old url: " + company_url)
+                logging.info("New url: " + newUrl)
+                 
+                self.db.move_company_to_other_company(company_url, newUrl)
+                
+                company.url = newUrl
+                company_url = newUrl
             
             try:
                 logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR, "img").get_attribute("src")
@@ -337,7 +353,8 @@ class BBBScraper():
                 
             counter = 0
             while True:
-                self.driver.get(company_url.split("?")[0] + "/details")
+                logging.info("Driver get: " + company.url + "/details")
+                self.driver.get(company.url + "/details")
 
                 if "403 Forbidden" in self.driver.title:
                     logging.info("403 Forbidden error. Sleeping for 60 seconds....")
@@ -1007,13 +1024,16 @@ if __name__ == '__main__':
             for line in lines:
                 args.urls.append(line)
         
+        scraper.reloadBrowser()
+        
         for url in args.urls:
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
             
             if company.status == "success":
-                company.reviews = scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
-                company.complaints = scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
+                # need use company.url because url may be changed
+                company.reviews = scraper.scrape_company_reviews(company_url=company.url, save_to_db=str2bool(args.save_to_db))
+                company.complaints = scraper.scrape_company_complaints(company_url=company.url, save_to_db=str2bool(args.save_to_db))
                 logging.info("Complaints and reviews scraped successfully.\n")
 
 

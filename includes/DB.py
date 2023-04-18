@@ -119,6 +119,54 @@ class DB:
             return rows[0]
         
         return None
+        
+    def getCompanyIdByUrl(self, company_url):
+        companyRow = self.queryRow('select company_id from company where url = ?', (company_url,))
+        if not companyRow:
+            raise Exception("Can not find company with url: " + company_url)
+            
+        return companyRow['company_id']
+        
+    def move_company_to_other_company(self, from_company_url, to_company_url):
+        try:
+            fromCompanyId = self.getCompanyIdByUrl(from_company_url)
+        except Exception as e:
+            if str(e).find("Can not find company") == -1:
+                raise e
+                
+            # may be company not in database
+            fromCompanyId = 0
+        
+        try:
+            toCompanyId = self.getCompanyIdByUrl(to_company_url)
+        except Exception as e:
+            if str(e).find("Can not find company") == -1:
+                raise e
+                
+            # create company if not exists
+            company = Company()
+            company.url = to_company_url
+            company.name = "no name, need scrape"
+            company.status = "new"
+        
+            self.insert_or_update_company(company)
+            
+            toCompanyId = self.getCompanyIdByUrl(to_company_url)
+        
+        # company not in database, do not do anything
+        if fromCompanyId:
+            try:
+                self.execSQL("update complaint set company_id = ? where company_id = ?",(to_company_url, from_company_url,))
+                logging.info("Complants moved to " + str(toCompanyId))
+                
+                self.execSQL("update review set company_id = ? where company_id = ?",(to_company_url, from_company_url,))
+                logging.info("Reviews moved to " + str(toCompanyId))
+                
+                self.execSQL("delete from company where company_id = ?", (fromCompanyId,))
+                logging.info("Company removed: " + str(fromCompanyId))
+            except Exception as e:
+                logging.error(traceback.format_exc())
+                raise e
 
     def insert_or_update_company(self, company : Company):
         try:
@@ -281,8 +329,6 @@ class DB:
         except Exception as e:
             logging.error(traceback.format_exc())
             raise e
-            
-    
 
     def insert_or_update_reviews(self, reviews : List[Review]):
         counter = 0

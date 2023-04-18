@@ -52,7 +52,7 @@ def checkSocks5Proxy(proxy):
 
         logging.info("Check proxy: " + proxy)
         
-        response = requests.get(url='https://www.bbb.com/', headers=headers, proxies=proxies, verify=False)
+        response = requests.get(url='https://www.bbb.com/', timeout = (15, 30),headers=headers, proxies=proxies, verify=False)
         
         logging.info("code: " + str(response.status_code))
         
