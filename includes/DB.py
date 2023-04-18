@@ -120,6 +120,20 @@ class DB:
         
         return None
         
+    def setSetting(self, name, value):
+        self.execSQL('insert into `settings` set `name` = ?, `value` = ? ON DUPLICATE KEY UPDATE `value` = ?', (name, value, value, ))
+        
+    def getSetting(self, name, default):
+        settingsRow = self.queryRow('select * from settings where name = ?',(name,))
+        if settingsRow:
+            return settingsRow['value']
+            
+        return default
+        
+    def getSettingInt(self, name, default):
+        value = self.getSetting(name, default)
+        return int(value)
+        
     def getCompanyIdByUrl(self, company_url):
         companyRow = self.queryRow('select company_id from company where url = ?', (company_url,))
         if not companyRow:
