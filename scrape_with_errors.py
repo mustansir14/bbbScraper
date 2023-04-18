@@ -35,7 +35,7 @@ if __name__ == "__main__":
     count = 0
     while True:
 
-        companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'error' limit 5000")
+        companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'error' order by date_updated desc limit 5000")
         if not companies:
             logging.info('No companies wait hour')
             time.sleep(3600)
