@@ -202,10 +202,10 @@ class BBBScraper():
         code = re.sub('^[^\{]+?{', '{', code)
         return json.loads(code)
         
-    def reloadBrowser(self): 
+    def reloadBrowser(self, useProxy = None): 
         logging.info("Close old browser, creating new...")
         
-        self.lastValidProxy = getProxy()
+        self.lastValidProxy = getProxy(useProxy)
         
         self.kill_chrome()
         self.createBrowser(
@@ -1013,9 +1013,11 @@ if __name__ == '__main__':
         logging.FileHandler("logs/scrape.py.log"),
         logging.StreamHandler()
     ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+    
+    if args.proxy:
+        logging.info("Try use proxy: " + args.proxy)
         
-    proxy = getProxy(args.proxy)
-    scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])  
+    scraper = BBBScraper()  
         
     if str2bool(args.bulk_scrape):
         scraper.bulk_scrape(no_of_threads=args.no_of_threads)
@@ -1031,7 +1033,7 @@ if __name__ == '__main__':
             for line in lines:
                 args.urls.append(line)
         
-        scraper.reloadBrowser()
+        scraper.reloadBrowser(args.proxy)
         
         for url in args.urls:
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))

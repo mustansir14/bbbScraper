@@ -75,9 +75,9 @@ def checkSocks5Proxy(proxy):
 def getProxy(useProxy=None):
     global proxyListNextDownload
     
-    get_proxy_list()
-    
     if not useProxy:
+        get_proxy_list()
+        
         proxy = None
         while len(proxyList) > 0:
             get_proxy_list()
