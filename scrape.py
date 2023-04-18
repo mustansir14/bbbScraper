@@ -38,6 +38,7 @@ class BBBScraper():
     def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http") -> None:
         self.driver = None
         self.lastValidProxy = None
+        self.rescrapeSettingKey = "rescrape_all_from_db.from_company_id";
             
         if not os.path.exists("file/logo/"):
             os.makedirs("file/logo")
@@ -152,7 +153,7 @@ class BBBScraper():
         else:
             self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
 
-    def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True) -> Company:
+    def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True, set_rescrape_setting=False) -> Company:
         
         if "https://www.bbb.org/" not in url and "profile" not in url:
             raise Exception("Invalid URL")
@@ -162,7 +163,10 @@ class BBBScraper():
             url = "/".join(url_split[:-1])
             
         self.reloadBrowser()
-            
+        
+        # must check this before, because url may be deleted in scrape_company_details
+        company_id = self.db.getCompanyIdByUrl(url)
+        
         company = self.scrape_company_details(company_url=url, save_to_db=save_to_db, half_scraped= not scrape_reviews_and_complaints)
         if company.status == "success":
             if scrape_reviews_and_complaints:
@@ -170,6 +174,9 @@ class BBBScraper():
                 company.complaints = self.scrape_company_complaints(company_url=company.url, save_to_db=save_to_db)
                 
         self.kill_chrome()
+        
+        if set_rescrape_setting:
+            self.db.execSQL('insert into `settings` set `name` = ?, `value` = ? ON DUPLICATE KEY UPDATE `value` = IF(`value` < ?, ?, `value`)', (self.rescrapeSettingKey, company_id, company_id, company_id, ))
                 
         return company
         
@@ -942,7 +949,7 @@ class BBBScraper():
                     for company_url in urls_to_scrape:
                         self.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints)
 
-    def scrape_urls_from_queue(self, q, scrape_reviews_and_complaints=True):
+    def scrape_urls_from_queue(self, q, scrape_reviews_and_complaints=True, set_rescrape_setting = False):
 
         try:
             proxy = getProxy()
@@ -950,7 +957,7 @@ class BBBScraper():
             
             while q.qsize():
                 company_url = q.get()
-                scraper.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints)
+                scraper.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints, set_rescrape_setting = set_rescrape_setting)
             
         except:
             pass

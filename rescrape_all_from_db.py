@@ -33,19 +33,17 @@ if __name__ == "__main__":
     proxy = getProxy()
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
     
-    settingsName = "rescrape_all_from_db:last_company_id"
-    
-    fromCompanyId = scraper.db.getSettingInt(settingsName, 0)
+    fromCompanyId = scraper.db.getSettingInt(scraper.rescrapeSettingKey, 0)
     row = scraper.db.queryRow('select max(company_id) as max_company_id from company')
     if row and fromCompanyId >= row['max_company_id']:
         logging.info("Start from begining")
         fromCompanyId = 0
-        scraper.db.setSetting(settingsName, fromCompanyId)
+        scraper.db.setSetting(scraper.rescrapeSettingKey, fromCompanyId)
    
     logging.info("fromCompanyId: " + str(fromCompanyId))
     
     while True:
-        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT {no_of_threads};"
+        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT 1000;"
         logging.info(sql)
         
         companies = scraper.db.queryArray(sql)
@@ -58,8 +56,6 @@ if __name__ == "__main__":
             urls_to_scrape = []
             
         for company in companies:
-            fromCompanyId = company['company_id']
-            
             if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 urls_to_scrape.put(company['url'])
             else:
@@ -68,15 +64,14 @@ if __name__ == "__main__":
         if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
             processes = []
             for i in range(no_of_threads):
-                processes.append(Process(target=scraper.scrape_urls_from_queue, args=(urls_to_scrape, True, )))
+                processes.append(Process(target=scraper.scrape_urls_from_queue, args=(urls_to_scrape, True, True, )))
                 processes[i].start()
 
             for i in range(no_of_threads):
                 processes[i].join()
         else:
             for company_url in urls_to_scrape:
-                scraper.scrape_url(company_url, scrape_reviews_and_complaints=True)
+                scraper.scrape_url(company_url, scrape_reviews_and_complaints=True, set_rescrape_setting = True)
 
-        scraper.db.setSetting(settingsName, str(fromCompanyId))
         
     scraper.kill_chrome()
