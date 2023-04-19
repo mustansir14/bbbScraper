@@ -340,7 +340,7 @@ class DB:
             self.execSQL(sql,args)
             
             logging.info(success_statement)
-            logging.info("Company id: " + self.getCompanyIdByUrl(company.url))
+            logging.info("Company id: " + str(self.getCompanyIdByUrl(company.url)))
         except Exception as e:
             logging.error(traceback.format_exc())
             raise e
