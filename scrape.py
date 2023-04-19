@@ -176,7 +176,15 @@ class BBBScraper():
         self.kill_chrome()
         
         if set_rescrape_setting:
-            self.db.execSQL('insert into `settings` set `name` = ?, `value` = ? ON DUPLICATE KEY UPDATE `value` = IF(`value` < ?, ?, `value`)', (self.rescrapeSettingKey, company_id, company_id, company_id, ))
+            sql = 'insert into `settings` set `name` = ?, `value` = ? ON DUPLICATE KEY UPDATE `value` = IF(`value` < ?, ?, `value`)'
+            args = (self.rescrapeSettingKey, company_id, company_id, company_id, )
+            
+            logging.info(sql)
+            logging.info(args)
+            
+            self.db.execSQL(sql, args)
+        else:
+            logging.info("Do not update rescrape settings")
                 
         return company
         
