@@ -27,8 +27,11 @@ class DB:
         
     def reconnect(self):
         if self.con:
-            logging.info("Closing DB old connection")
-            self.con.close()
+            try:
+                logging.info("Closing DB old connection")
+                self.con.close()
+            except:
+                pass
         
         logging.info("DB Reconnect with:")
         logging.info("Host: " + self.host)
