@@ -1,6 +1,6 @@
 version: "3.11"
 services:
-    bbb_mustansir_errors:
+    errors:
         restart: always
         build: .
         environment:
@@ -20,7 +20,7 @@ services:
         volumes:
           - ./logs/:/www/logs/
           
-    bbb_mustansir_sitemap:
+    sitemap:
         restart: always
         build: .
         environment:
@@ -40,7 +40,7 @@ services:
         volumes:
           - ./logs/:/www/logs/
     
-    bbb_mustansir:
+    alldb:
         restart: always
         build: .
         environment:
@@ -61,7 +61,7 @@ services:
           - ./logs/:/www/logs/
           - ./file/:/www/file/
         
-    bbb_mustansir_api:
+    api:
         restart: always
         build: .
         ports:
