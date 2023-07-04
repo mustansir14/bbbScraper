@@ -21,7 +21,7 @@ from includes.models import Company, Complaint, Review
 from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
 import datetime
-import os, random
+import os, random, glob
 import argparse
 import sys
 import logging, zipfile
@@ -45,9 +45,24 @@ class BBBScraper():
             
         self.db = DB()
         
+    def removeCoreDumps(self):
+        try:
+            logging.info("Remove core dumps, to free space...")
+            
+            for file in glob.glob("./core.*"):
+                try:
+                    os.remove(file)
+                except:
+                    pass
+        except Exception as e:
+            logging.error("removeCoreDumps exception: " + str(e))
+        
     def createBrowser(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None, proxy_type="http"):
         if self.driver:
             self.kill_chrome()
+            
+        # on long docker living too much coredumps create big storage usage
+        self.removeCoreDumps()
             
         self.session = requests.session()
         headers = {
