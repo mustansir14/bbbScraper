@@ -37,6 +37,26 @@ def response( errors, data = None):
     isFail = True if isinstance(errors,list) and len(errors) > 0 else False
     errors = errors if isinstance(errors,list) else []
     return json.dumps( { 'success': ( not isFail ), 'errors': errors, 'data': ( None if isFail else data ) }, default=str )
+    
+@api.route('/api/v1/company/rating', methods = ['GET'])
+def getCompanyRating():
+    companyUrl = request.args["url"].strip() if "url" in request.args else ""
+    if not companyUrl:
+        return response(["Url parameter required"])
+        
+    db = DB()
+    
+    companyRow = db.queryRow("select company_id, status, rating from company where url = ?", (companyUrl, ))
+    if not companyRow:
+        return response(["No company in database"])
+        
+    if companyRow['status'] == 'error':
+        return response(["Company not scraped successfully"])
+        
+    if not companyRow['rating']:
+        return response(["No rating data"])
+        
+    return response([], companyRow['rating'])
 
 @api.route('/api/v1/scrape/company', methods=['GET'])
 def grab_company():

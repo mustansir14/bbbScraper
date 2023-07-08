@@ -288,7 +288,7 @@ class BBBScraper():
                 raise Exception("Company page, always 403 error")
                 
         statusMustBeSuccess = False
-        allowSaveToDb = True
+        onlyMarkAsSuccess = False
                 
         try:
             if os.getenv('GET_SOURCE_CODE', '0') == "1":
@@ -296,11 +296,12 @@ class BBBScraper():
                 
             if "<title>Page not found |" in self.driver.page_source:
                 statusMustBeSuccess = True
+                onlyMarkAsSuccess = True
                 raise Exception("On url request returned: 404 - Whoops! Page not found!")
                 
             if "Oops! We'll be right back." in self.driver.page_source:
                 statusMustBeSuccess = True
-                allowSaveToDb = False
+                onlyMarkAsSuccess = True
                 raise Exception("On url request returned: 500 - Whoops! We'll be right back!")
                 
             companyLdJson = self.getCompanyLDJson()
@@ -612,8 +613,12 @@ class BBBScraper():
         if not company.status:
             company.status = "success"
             
-        if save_to_db and allowSaveToDb:
-            self.db.insert_or_update_company(company)
+        if save_to_db:
+            if onlyMarkAsSuccess:
+                # company 404 but must save old data
+                self.db.mark_company_as_success(company.url)
+            else:
+                self.db.insert_or_update_company(company)
             
         return company
         
