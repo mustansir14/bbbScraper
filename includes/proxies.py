@@ -1,5 +1,5 @@
 import requests, logging
-import time
+import time, urllib3
 from random import choice
 
 proxyList = None
@@ -36,6 +36,8 @@ def func_chunk_array(lst, n):
 
 def checkSocks5Proxy(proxy):
     try:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
         headers = {
             'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',

@@ -59,7 +59,13 @@ class DB:
         sql = 'delete from company where url = ?';
         self.execSQL(sql, (url,))
         
-    def execSQL(self,sql,args):
+    def execSQLWithoutIgnoreDuplicates(self, sql, args):
+        return self.execSQLInternal(sql, args, False)
+        
+    def execSQL(self, sql, args):
+        return self.execSQLInternal(sql, args, True)
+        
+    def execSQLInternal(self, sql, args, ignoreDuplicates):
         lastExceptionStr = None
         
         for i in range(3):
@@ -71,15 +77,10 @@ class DB:
             except Exception as e:
                 lastExceptionStr = str(e)
                 
-                if "Duplicate entry" in str(e):
+                if ignoreDuplicates and "Duplicate entry" in str(e):
                     return True
                 
                 if "mysql server has gone away" not in str(e):
-                    # on insert company sourceCode may be too large
-                    #string = sql + "\n"
-                    #if args:
-                    #    string = string + "\n".join([str(v) for v in args]) + "\n"
-                    #string = string + str(e)
                     raise Exception(e)
                 
                 if not self.tryReconnect():
@@ -172,18 +173,41 @@ class DB:
         
         # company not in database, do not do anything
         if fromCompanyId:
-            try:
-                self.execSQL("update complaint set company_id = ? where company_id = ?",(toCompanyId, fromCompanyId,))
-                logging.info("Complants moved to " + str(toCompanyId))
+            self.move_items("complaint", fromCompanyId, toCompanyId)
+            logging.info("Complants moved from " + str(fromCompanyId) + " to " + str(toCompanyId))
+            
+            self.move_items("review", fromCompanyId, toCompanyId)
+            logging.info("Reviews moved from " + str(fromCompanyId) + " to " + str(toCompanyId))
+            
+            self.execSQL("delete from company where company_id = ?", (fromCompanyId,))
+            logging.info("Company removed: " + str(fromCompanyId))
+            
+    # move items and remove duplicates
+    def move_items(self, table, fromCompanyId, toCompanyId):
+        logging.info("Moving " + table + "s from " + str(fromCompanyId) + " to " + str(toCompanyId))
+        
+        while 1:
+            rows = self.queryArray("select " + table + "_id from " + table + " where company_id = ? limit 1000", (fromCompanyId, ))
+            if len(rows) == 0:
+                break
                 
-                self.execSQL("update review set company_id = ? where company_id = ?",(toCompanyId, fromCompanyId,))
-                logging.info("Reviews moved to " + str(toCompanyId))
+            logging.info("Processing rows: " + str(len(rows)))
                 
-                self.execSQL("delete from company where company_id = ?", (fromCompanyId,))
-                logging.info("Company removed: " + str(fromCompanyId))
-            except Exception as e:
-                logging.error(traceback.format_exc())
-                raise e
+            for row in rows:
+                id = row[table + '_id']
+                
+                try:
+                    self.execSQLWithoutIgnoreDuplicates("update " + table + " set company_id = ? where " + table + "_id = ?", (toCompanyId, id, ))
+                except Exception as e:
+                    if str(e).find("Duplicate entry") == -1:
+                        raise e
+                        
+                    # remove duplicate entry
+                    self.execSQL('delete from ' + table + " where " + table + "_id = ?", (id, ))
+                    
+        row = self.queryRow("select count(*) cnt from " + table + " where company_id = ?", (fromCompanyId, ))
+        if row['cnt'] > 0:
+            raise Exception("Exists rows in table: " + table)
 
     def insert_or_update_company(self, company : Company):
         try:
