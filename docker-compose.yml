@@ -65,7 +65,7 @@ services:
         restart: always
         build: .
         ports:
-          - 5000:5000
+          - 3060:3060
         environment:
           - USE_MARIA_DB=1
           - GET_SOURCE_CODE=1
