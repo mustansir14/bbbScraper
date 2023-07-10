@@ -5,6 +5,7 @@ from multiprocessing import Queue, Process
 import argparse
 import logging, sys, time, re
 from logging.handlers import RotatingFileHandler
+from includes.DB import DB
 
 rfh = RotatingFileHandler(
     filename="logs/scrape_with_errors.py.log", 
@@ -21,6 +22,31 @@ root = logging.getLogger('root')
 root.setLevel(logging.INFO)
 root.addHandler(rfh)
 
+def scraperUrlsFromQueueIgnoreExceptions(q, scrape_reviews_and_complaints=True, set_rescrape_setting = False):
+    scraper = None
+    try:
+        proxy = getProxy()
+        scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+        
+        while q.qsize():
+            company_url = q.get()
+            
+            logging.info("Scrape: " + company_url)
+            
+            if "/addressId/" in company_url:
+                scraper.db.removeCompanyByUrl(company_url)
+                continue
+                
+            try:
+                scraper.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints, set_rescrape_setting = set_rescrape_setting)
+            except Exception as e:
+                logging.info(str(e))
+    except:
+        pass
+    finally:
+        if scraper:
+            scraper.kill_chrome()
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
@@ -28,45 +54,32 @@ if __name__ == "__main__":
     parser.add_argument('--logfile', nargs='?', type=str, default=None, help='Path of the file where logs should be written')
 
     args = parser.parse_args()
-    no_of_threads = args.no_of_threads
     
-    proxy = getProxy()
-    scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+    db = DB()
     count = 0
-    while True:
+    while count < 1:
 
-        companies = scraper.db.queryArray(f"SELECT company_id, url from company where status = 'error' order by date_updated desc limit 5000")
+        companies = db.queryArray(f"SELECT company_id, url from company where status = 'error' order by date_updated desc limit 5000")
         if not companies:
             logging.info('No companies wait hour')
             time.sleep(3600)
             break
         
-        if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
-            urls_to_scrape = Queue()
-        else:
-            urls_to_scrape = []
+        urls_to_scrape = Queue()
             
         for company in companies:
-            if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
-                urls_to_scrape.put(company['url'])
-            else:
-                urls_to_scrape.append(company['url'])
+            urls_to_scrape.put(company['url'])
 
-        if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
-            processes = []
-            for i in range(no_of_threads):
-                processes.append(Process(target=scraper.scrape_urls_from_queue, args=(urls_to_scrape, True, )))
-                processes[i].start()
+        processes = []
+        for i in range(args.no_of_threads):
+            processes.append(Process(target=scraperUrlsFromQueueIgnoreExceptions, args=(urls_to_scrape, True, )))
+            processes[i].start()
 
-            for i in range(no_of_threads):
+        try:
+            for i in range(args.no_of_threads):
                 processes[i].join()
-        else:
-            for company_url in urls_to_scrape:
-                company = scraper.scrape_url(company_url, scrape_reviews_and_complaints=True)
-                if company.status != "success":
-                    logging.info("Not success exit")
-                    sys.exit(1);
-
+        except KeyboardInterrupt:
+            logging.info("Close queue")
+            urls_to_scrape.cancel_join_thread()
+            
         count += 1
-
-    scraper.kill_chrome()
