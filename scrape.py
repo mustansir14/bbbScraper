@@ -33,6 +33,8 @@ from slugify import slugify
 import json
 import re
 import tempfile
+from urllib.request import urlretrieve
+import shutil
 
 class BBBScraper():
 
@@ -187,12 +189,18 @@ class BBBScraper():
             packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + version + "/" + platform + "/chromedriver-" + platform + ".zip"
             logging.info(packageUrl)
             
-            fp = urlretrieve(packageUrl)[0]
-            with zipfile.ZipFile(fp, mode="r") as z:
-                with z.open("chromedriver-" + platform + "/chromedriver.exe") as zf, open(original, 'wb') as f:
+            filename, headers = urlretrieve(packageUrl)
+            logging.info(headers)
+            with zipfile.ZipFile(filename, mode="r") as z:
+                chromeDriver = "chromedriver-" + platform + "/chromedriver"
+                
+                if sys.platform.endswith("win32"):
+                    chromeDriver += ".exe"
+                
+                with z.open(chromeDriver) as zf, open(original, 'wb') as f:
                     shutil.copyfileobj(zf, f)
             
-            os.remove(fp)
+            os.remove(filename)
             
             if not os.path.isfile(original):
                 raise Exception("No origin executable")
