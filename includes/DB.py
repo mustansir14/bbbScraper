@@ -210,7 +210,7 @@ class DB:
             raise Exception("Exists rows in table: " + table)
             
     def mark_company_as_success(self, url):
-        self.execSQL('update company set date_updated=now(), status = "success" where url = ?',('success', ))
+        self.execSQL('update company set date_updated=now(), status = "success" where url = ?',(url, ))
 
     def insert_or_update_company(self, company : Company):
         try:

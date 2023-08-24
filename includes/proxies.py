@@ -39,13 +39,19 @@ def checkSocks5Proxy(proxy):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
         headers = {
-            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'}
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'max-age=0',
+            'Sec-Ch-Ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+        }
         
         proxies = {
             'http': f'socks5://{proxy}',
@@ -54,11 +60,14 @@ def checkSocks5Proxy(proxy):
 
         logging.info("Check proxy: " + proxy)
         
-        response = requests.get(url='https://www.bbb.com/', timeout = (15, 30),headers=headers, proxies=proxies, verify=False)
+        response = requests.get(url='https://www.bbb.com/', timeout = (15, 30),headers=headers, proxies=proxies, verify=False, allow_redirects=False)
         
         logging.info("code: " + str(response.status_code))
         
-        if response.status_code==200:
+        if response.status_code >= 300 and response.status_code < 400:
+            logging.info("redirect to: " + response.headers.get('location'))
+        
+        if response.status_code==200 or response.status_code == 302:
             return True
     except Exception as e:
         logging.info(str(e))

@@ -32,6 +32,7 @@ from includes.telegram_reporter import send_message
 from slugify import slugify
 import json
 import re
+import tempfile
 
 class BBBScraper():
 
@@ -166,7 +167,37 @@ class BBBScraper():
         if chromedriver_path:
             self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
         else:
-            self.driver = webdriver.Chrome(options=options, service=Service(ChromeDriverManager().install()))
+            self.driver = webdriver.Chrome(options=options, service=Service(self.getChromeDriver()))
+            
+    def getChromeDriver(self):
+        version = "116.0.5845.96"
+        original = os.path.join(tempfile.gettempdir(), "chrome_" + str(version) + "_origin")
+    
+        if sys.platform.endswith("win32"):
+            original += ".exe"
+            
+        if not os.path.exists(original):
+            logging.info("Download last version of original: " + original)
+        
+            platform = "linux64"
+            
+            if sys.platform.endswith("win32"):
+                platform = "win64"
+            
+            packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + version + "/" + platform + "/chromedriver-" + platform + ".zip"
+            logging.info(packageUrl)
+            
+            fp = urlretrieve(packageUrl)[0]
+            with zipfile.ZipFile(fp, mode="r") as z:
+                with z.open("chromedriver-" + platform + "/chromedriver.exe") as zf, open(original, 'wb') as f:
+                    shutil.copyfileobj(zf, f)
+            
+            os.remove(fp)
+            
+            if not os.path.isfile(original):
+                raise Exception("No origin executable")
+    
+        return original
 
     def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True, set_rescrape_setting=False) -> Company:
         
