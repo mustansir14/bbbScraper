@@ -764,6 +764,9 @@ class BBBScraper():
 
         page = 1
         while True:
+            if page > 1000:
+                break
+
             found = False
             try:
                 buttons = self.driver.find_elements(By.CSS_SELECTOR, ".bds-button")
@@ -888,6 +891,9 @@ class BBBScraper():
 
         page = 1
         while True:
+            if page > 1000:
+                break
+
             # Fix: for complaints?page=N has different url https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835/complaints
             # to find correct url, need only click on pagination
             if page == 1:
