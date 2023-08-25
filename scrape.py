@@ -33,6 +33,7 @@ from slugify import slugify
 import json
 import re
 import tempfile
+import secrets
 from urllib.request import urlretrieve
 import shutil
 
@@ -201,11 +202,35 @@ class BBBScraper():
                     shutil.copyfileobj(zf, f)
             
             os.remove(filename)
+            os.chmod(original, 0o755)
             
             if not os.path.isfile(original):
                 raise Exception("No origin executable")
-    
+                
         return original
+                
+        # Fix: i dont know but sometimes shutil.copy2 do not copy file
+        for i in range(3):
+            target = original.replace(".exe", "") + "_" + secrets.token_hex(16)
+            if sys.platform.endswith("win32"):
+                target += ".exe"
+            
+            shutil.copy2(original, target)
+            
+            # BugFix: may be situation then file not fully copied
+            time.sleep(1);
+            
+            if os.path.isfile(target):
+                break
+        
+        if not os.path.isfile(target):
+            raise Exception("No target executable: " + target + ", origin exists: " + str(os.path.isfile(original)))
+            
+        os.chmod(original, 0o755)
+        
+        logging.info("Return target: " + target)
+    
+        return target
 
     def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True, set_rescrape_setting=False) -> Company:
         
