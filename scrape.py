@@ -134,7 +134,7 @@ class BBBScraper():
             "assets.adobedtm.com",
             "mouseflow.com",
             "hubspot.com",
-            "*.js",
+            #"*.js",
             "*.png",
             "*.svg",
             "*.gif",
@@ -506,19 +506,24 @@ class BBBScraper():
             elements = detailRoot.find_elements(By.CSS_SELECTOR, 'dt, dd')
             lastName = None
             for element in elements:
-                # print(element.tag_name + ") " + element.text.strip())
-                name = element.text.strip().lower().replace(':', '')
-                if element.tag_name == "dt" and name in fields_headers:
+                try:
+                    name = element.text.strip().lower().replace(':', '')
+                    tag  = element.tag_name
+                    text = element.text
+                except:
+                    continue
+
+                if tag == "dt" and name in fields_headers:
                     lastName = name
                     # print("header: " + lastName)
                     if lastName:
                         if lastName not in fields_headers:
                             raise Exception("Unknown field: " + lastName)
 
-                        fields_dict[lastName] = '';
+                        fields_dict[lastName] = ''
                 elif lastName:
                     # print("Append to " + lastName + ": " + element.text)
-                    fields_dict[lastName] += element.text
+                    fields_dict[lastName] += text
 
             # print(fields_dict)
             # sys.exit(1)
