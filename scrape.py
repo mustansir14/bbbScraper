@@ -226,7 +226,7 @@ class BBBScraper():
 
         self.reloadBrowser()
         self.driver.get("https://www.bbb.org/us/ct/berlin/profile/concrete-contractors/nadeau-brothers-0111-22004598")
-        time.sleep(300)
+
         # must check this before, because url may be deleted in scrape_company_details
         company_id = self.db.getCompanyIdByUrl(url)
 
