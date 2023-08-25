@@ -167,7 +167,10 @@ class BBBScraper():
             logging.info(packageUrl)
 
             filename, headers = urlretrieve(packageUrl)
+
             logging.info(headers)
+            logging.info("Unzip...")
+
             with zipfile.ZipFile(filename, mode="r") as z:
                 chromeDriver = "chromedriver-" + platform + "/chromedriver"
 
@@ -177,7 +180,10 @@ class BBBScraper():
                 with z.open(chromeDriver) as zf, open(original, 'wb') as f:
                     shutil.copyfileobj(zf, f)
 
+            logging.info("Remove zip...")
             os.remove(filename)
+
+            logging.info("Set permissions to: " + original)
             os.chmod(original, 0o755)
 
             if not os.path.isfile(original):
