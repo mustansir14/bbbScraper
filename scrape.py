@@ -225,7 +225,6 @@ class BBBScraper():
             url = "/".join(url_split[:-1])
 
         self.reloadBrowser()
-        self.driver.get("https://www.bbb.org/us/ct/berlin/profile/concrete-contractors/nadeau-brothers-0111-22004598")
 
         # must check this before, because url may be deleted in scrape_company_details
         company_id = self.db.getCompanyIdByUrl(url)
@@ -313,6 +312,9 @@ class BBBScraper():
 
         counter = 0
         while True:
+            if counter > 5:
+                raise Exception("Company page, always 403 error")
+
             logging.info("Driver get: " + company_url)
             self.driver.get(company_url)
 
@@ -327,15 +329,19 @@ class BBBScraper():
 
                 return company
 
+            if "Oops! We'll be right back." in self.driver.page_source:
+                logging.info("Oops! We'll be right back. Reload browser....")
+                self.reloadBrowser()
+                counter = counter + 1
+                continue
+
             if "403 Forbidden" in self.driver.title:
                 logging.info("403 Forbidden error. Reload browser....")
                 self.reloadBrowser()
                 counter = counter + 1
-            else:
-                break
+                continue
 
-            if counter > 5:
-                raise Exception("Company page, always 403 error")
+            break
 
         statusMustBeSuccess = False
         onlyMarkAsSuccess = False
@@ -444,19 +450,25 @@ class BBBScraper():
 
             counter = 0
             while True:
+                if counter > 5:
+                    raise Exception("Details page, can not be loaded")
+
                 logging.info("Driver get: " + company.url + "/details")
                 self.driver.get(company.url + "/details")
 
+                if "Oops! We'll be right back." in self.driver.page_source:
+                    logging.info("Oops! We'll be right back. Reload browser....")
+                    self.reloadBrowser()
+                    counter = counter + 1
+                    continue
+
                 if "403 Forbidden" in self.driver.title:
                     logging.info("403 Forbidden error. Sleeping for 60 seconds....")
-                    time.sleep(60)
-
+                    self.reloadBrowser()
                     counter = counter + 1
-                else:
-                    break
+                    continue
 
-                if counter > 2:
-                    raise Exception("Details page, always 403 error")
+                break
 
             if os.getenv('GET_SOURCE_CODE', '0') == "1":
                 company.source_code_details = self.driver.page_source
