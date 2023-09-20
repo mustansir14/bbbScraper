@@ -25,3 +25,4 @@ urllib3
 webdriver-manager
 Werkzeug
 zipp
+undetected-chromedriver

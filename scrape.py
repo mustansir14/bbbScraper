@@ -12,6 +12,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+import undetected_chromedriver as uc
+from undetected_chromedriver import Patcher
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
 import time, traceback
@@ -45,6 +47,7 @@ class BBBScraper():
         self.driver = None
         self.lastValidProxy = None
         self.rescrapeSettingKey = "rescrape_all_from_db.from_company_id";
+        self.chromeVersion = 116
 
         if not os.path.exists("file/logo/"):
             os.makedirs("file/logo")
@@ -111,11 +114,12 @@ class BBBScraper():
         if os.name != "nt":
             self.display = Display(visible=0, size=(1920, 1080))
             self.display.start()
-
-        if chromedriver_path:
-            self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=options)
-        else:
-            self.driver = webdriver.Chrome(options=options, service=Service(self.getChromeDriver()))
+            
+        self.driver = uc.Chrome(
+            options=options, 
+            version_main = self.chromeVersion,
+            driver_executable_path = self.getChromeDriver()
+        )
 
         # Optimization: disable ads and analytics here
         self.driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": [
@@ -397,18 +401,22 @@ class BBBScraper():
             company.categories = "\n".join(
                 [x['title'] for x in companyPreloadState['businessProfile']['categories']['links']])
             company.phone = companyLdJson['telephone'] if 'telephone' in companyLdJson else None
-            company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
             company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"))
             if company.website and company.website.lower().strip() == "visit website":
-                company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"),
-                                                            get_href=True)
-            lines = company.address.split("\n")
+                company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"),get_href=True)
+            
+            try:
+                company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
+                
+                lines = company.address.split("\n")
 
-            company.street_address = companyLdJson['address']['streetAddress']
-            company.address_locality = companyLdJson['address']['addressLocality']
-            company.address_region = companyLdJson['address']['addressRegion']
-            company.postal_code = companyLdJson['address']['postalCode']
-            company.street_address = companyLdJson['address']['streetAddress']
+                company.street_address = companyLdJson['address']['streetAddress']
+                company.address_locality = companyLdJson['address']['addressLocality']
+                company.address_region = companyLdJson['address']['addressRegion']
+                company.postal_code = companyLdJson['address']['postalCode']
+                company.street_address = companyLdJson['address']['streetAddress']
+            except Exception as e:
+                pass
 
             icons = self.driver.find_elements(By.CSS_SELECTOR, ".find_elementwith-icon")
             company.hq = False
