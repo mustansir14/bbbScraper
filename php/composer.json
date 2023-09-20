@@ -1,0 +1,11 @@
+{
+    "name": "root/php",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Konstantin K",
+            "email": "systema.working@gmail.com"
+        }
+    ],
+    "require": {}
+}
