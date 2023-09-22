@@ -10,8 +10,9 @@ use OpenSwoole\Core\Coroutine\WaitGroup;
 
 co::run(function()
 {
-    $data = get('http://94.140.123.40:25000/');
-    $proxies = explode("\n", $data->body);
+    #$data = get('http://94.140.123.40:25000/')->body;
+    $data = file_get_contents(__DIR__."/fineproxy-us-list.txt");
+    $proxies = explode("\n", $data);
     $proxies = array_map("trim", $proxies);
     $proxies = array_filter($proxies, "strlen");
     $proxies = array_values($proxies);
@@ -110,7 +111,7 @@ function get(string $url, ?string $proxy = null): object
     $parsedUrl = parseUrlMy($url);
     
     $settings = [
-        'reconnect'          => 1, # do not set zero, or no connection
+        'reconnect'          => 3, # do not set zero, or no connection
         'connect_timeout'    => 15,
         'timeout'            => 60,
         'http_compression'   => true,
@@ -123,6 +124,8 @@ function get(string $url, ?string $proxy = null): object
         $settings['socks5_host'] = $host;
         $settings['socks5_port'] = $port;
     }
+    
+    #var_dump($parsedUrl);
 
     $client = new Client($parsedUrl->host, $parsedUrl->port, $parsedUrl->ssl);
     $client->set($settings);

@@ -12,7 +12,7 @@ def get_proxy_list():
     global proxyList, proxyListNextDownload
 
     if proxyList is None or proxyListNextDownload < time.time():
-        url = 'http://94.140.123.40:25000/'
+        url = 'http://proxy-gateway.complaintsboard.net:25000/'
 
         logging.info("Download proxy list: " + url)
 
