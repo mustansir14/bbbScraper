@@ -77,7 +77,7 @@ class Company:
         if self.logo:
                 return_string += '\nLogo: ' + self.logo
         if self.categories:
-                return_string += '\nCategories: ' + self.categories
+                return_string += '\nCategories: ' + ", ".join(self.categories.split("\n"))
         if self.phone:
                 return_string += '\nPhone: ' + self.phone
         if self.address:

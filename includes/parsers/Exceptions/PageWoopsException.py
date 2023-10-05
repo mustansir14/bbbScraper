@@ -1,0 +1,2 @@
+class PageWoopsException(Exception):
+    pass

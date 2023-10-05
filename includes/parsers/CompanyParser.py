@@ -1,5 +1,7 @@
 from includes.parsers.ParserInterface import ParserInterface
 from includes.parsers.ScriptTagParser import ScriptTagParser
+from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
+from includes.parsers.Exceptions.PageWoopsException import PageWoopsException
 from includes.models import Company
 import re
 
@@ -17,6 +19,8 @@ class CompanyParser(ParserInterface):
 
         if not self.company:
             raise Exception("No company record")
+
+        self.checkErrorsPage(html)
 
         localBusiness = ScriptTagParser.getSchemaOrgByType(html, 'LocalBusiness')
         if not localBusiness:
@@ -67,3 +71,10 @@ class CompanyParser(ParserInterface):
 
         self.company.products_and_services = companyPreloadState['businessProfile']['display']['prodSrvcsSummary']
         self.company.source_code = html
+
+    def checkErrorsPage(self, html: str):
+        if "<title>Page not found |" in html:
+            raise PageNotFoundException("On url request returned: 404 - Whoops! Page not found!")
+
+        if "Oops! We'll be right back." in html:
+            raise PageWoopsException("On url request returned: 500 - Whoops! We'll be right back!")

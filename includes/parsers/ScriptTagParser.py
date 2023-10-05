@@ -15,7 +15,7 @@ class ScriptTagParser:
         soup = BeautifulSoup(html, 'html.parser')
 
         for scriptTag in soup.find_all("script", type="application/ld+json"):
-            schemaOrgArray = json.loads(scriptTag.string)
+            schemaOrgArray = json.loads(scriptTag.string.rstrip(';'))
             for schemaOrg in schemaOrgArray:
                 if schemaOrg['@type'] == type:
                     return schemaOrg
