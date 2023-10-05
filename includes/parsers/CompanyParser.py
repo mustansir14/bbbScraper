@@ -1,7 +1,6 @@
 from includes.parsers.ParserInterface import ParserInterface
 from includes.parsers.ScriptTagParser import ScriptTagParser
 from includes.models import Company
-from bs4 import BeautifulSoup
 import re
 
 
@@ -26,8 +25,6 @@ class CompanyParser(ParserInterface):
         companyPreloadState = ScriptTagParser.getScriptVar(html, '__PRELOADED_STATE__')
         if not companyPreloadState:
             raise Exception("No preload state")
-
-        soup = BeautifulSoup(html, 'html.parser')
 
         self.company.name = localBusiness['name']
         self.company.categories = "\n".join(
