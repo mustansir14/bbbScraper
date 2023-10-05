@@ -38,6 +38,7 @@ import tempfile
 import secrets
 from urllib.request import urlretrieve
 import shutil
+from includes.parsers.CompanyParser import CompanyParser
 
 
 class BBBScraper():
@@ -99,7 +100,7 @@ class BBBScraper():
         options.add_argument('--no-zygote')  # disable zygote process
         options.add_argument('--disable-crashpad')
         options.add_argument('--grabber-bbb-mustansir')
-        #options.add_argument("--auto-open-devtools-for-tabs")
+        # options.add_argument("--auto-open-devtools-for-tabs")
         options.add_argument(
             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36")
         if proxy:
@@ -114,11 +115,11 @@ class BBBScraper():
         if os.name != "nt":
             self.display = Display(visible=0, size=(1920, 1080))
             self.display.start()
-            
+
         self.driver = uc.Chrome(
-            options=options, 
-            version_main = self.chromeVersion,
-            driver_executable_path = self.getChromeDriver()
+            options=options,
+            version_main=self.chromeVersion,
+            driver_executable_path=self.getChromeDriver()
         )
 
         # Optimization: disable ads and analytics here
@@ -133,12 +134,12 @@ class BBBScraper():
             "googletagmanager.com",
             "livechatinc.com",
             "gstatic.com",
-            "facebook.net", # recaptcha
-            "google.com", # recaptcha
+            "facebook.net",  # recaptcha
+            "google.com",  # recaptcha
             "assets.adobedtm.com",
             "mouseflow.com",
             "hubspot.com",
-            #"*.js",
+            # "*.js",
             "*.png",
             "*.svg",
             "*.gif",
@@ -364,10 +365,9 @@ class BBBScraper():
                 onlyMarkAsSuccess = True
                 raise Exception("On url request returned: 500 - Whoops! We'll be right back!")
 
-            companyLdJson = self.getCompanyLDJson()
-            companyPreloadState = self.getCompanyPreloadState()
-
-            company.name = companyLdJson['name']
+            c = CompanyParser()
+            c.setCompany(company)
+            c.parse(self.driver.page_source)
 
             if company_url != self.driver.current_url:
                 # old url: https://www.bbb.org/us/nd/fargo/profile/bank/bell-bank-0704-96381846
@@ -397,64 +397,6 @@ class BBBScraper():
                     self.driver.switch_to.window(self.driver.window_handles[0])
             except Exception as e:
                 company.logo = ""
-
-            company.categories = "\n".join(
-                [x['title'] for x in companyPreloadState['businessProfile']['categories']['links']])
-            company.phone = companyLdJson['telephone'] if 'telephone' in companyLdJson else None
-            company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"))
-            if company.website and company.website.lower().strip() == "visit website":
-                company.website = self._get_first_with_text(self.driver.find_elements(By.CSS_SELECTOR, ".dtm-url"),get_href=True)
-            
-            try:
-                company.address = self.driver.find_element(By.CSS_SELECTOR, "address").text
-                
-                lines = company.address.split("\n")
-
-                company.street_address = companyLdJson['address']['streetAddress']
-                company.address_locality = companyLdJson['address']['addressLocality']
-                company.address_region = companyLdJson['address']['addressRegion']
-                company.postal_code = companyLdJson['address']['postalCode']
-                company.street_address = companyLdJson['address']['streetAddress']
-            except Exception as e:
-                pass
-
-            icons = self.driver.find_elements(By.CSS_SELECTOR, ".find_elementwith-icon")
-            company.hq = False
-            for icon in icons:
-                if "Headquarters" in icon.text:
-                    company.hq = True
-                    break
-
-            try:
-                self.driver.find_element(By.CSS_SELECTOR, ".dtm-accreditation-badge")
-                company.is_accredited = True
-            except:
-                company.is_accredited = False
-
-            try:
-                company.rating = self.driver.find_elements(By.CSS_SELECTOR, ".dtm-rating")[-1].text.strip().split()[0][
-                                 :2]
-            except:
-                company.rating = None
-
-            try:
-                element = self.driver.find_element(By.XPATH, '//*[contains(@class,"dtm-stars")]/following-sibling::*')
-                company.number_of_stars = round(float(element.text.strip().split("/")[0]), 2)
-            except:
-                company.number_of_stars = None
-
-            # these to fields updated in DB class, to write how much reviews/complaints scraped
-            company.number_of_reviews = 0
-            company.number_of_complaints = 0
-            company.overview = companyPreloadState['businessProfile']['orgDetails']['organizationDescription']
-            if company.overview:
-                company.overview = re.sub('</?[^<]+?>', '', company.overview)
-                company.overview = re.sub('(\r?\n){2,}', '\n\n', company.overview)
-
-            try:
-                company.products_and_services = self.driver.find_element(By.CSS_SELECTOR, ".dtm-products-services").text
-            except:
-                pass
 
             counter = 0
             while True:
@@ -528,7 +470,7 @@ class BBBScraper():
             for element in elements:
                 try:
                     name = element.text.strip().lower().replace(':', '')
-                    tag  = element.tag_name
+                    tag = element.tag_name
                     text = element.text
                 except:
                     continue

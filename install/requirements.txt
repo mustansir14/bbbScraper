@@ -26,3 +26,4 @@ webdriver-manager
 Werkzeug
 zipp
 undetected-chromedriver
+beautifulsoup4
