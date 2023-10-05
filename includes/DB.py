@@ -116,6 +116,26 @@ class DB:
                     cur.close()
 
         raise Exception("Can not do queryArray")
+
+    def update(self, table: str, fields: dict, where: str):
+        sql = 'update ' + table + ' set '
+        vals = []
+
+        counter = 0
+        for name, value in fields.items():
+            if counter > 0:
+                sql += ', '
+
+            sql += name + ' = ?'
+            vals.append(value)
+            counter += 1
+
+        sql += ' where ' + where if where else ''
+
+        #print(sql)
+        #print(vals)
+
+        self.execSQL(sql, tuple(vals))
         
     def queryRow(self,sql,args = ()):
         rows = self.queryArray(sql,args)
