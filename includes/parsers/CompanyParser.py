@@ -2,6 +2,7 @@ from includes.parsers.ParserInterface import ParserInterface
 from includes.parsers.ScriptTagParser import ScriptTagParser
 from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
 from includes.parsers.Exceptions.PageWoopsException import PageWoopsException
+from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedException
 from includes.models import Company
 import re
 
@@ -75,6 +76,9 @@ class CompanyParser(ParserInterface):
     def checkErrorsPage(self, html: str):
         if "<title>Page not found |" in html:
             raise PageNotFoundException("On url request returned: 404 - Whoops! Page not found!")
+
+        if "<title>502 Bad Gateway" in html:
+            raise PageNotLoadedException("502 Bad Gateway")
 
         if "Oops! We'll be right back." in html:
             raise PageWoopsException("On url request returned: 500 - Whoops! We'll be right back!")
