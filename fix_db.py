@@ -1,7 +1,7 @@
 from includes.DB import DB
 import json
 from datetime import datetime
-import re, sys
+import re, sys, traceback
 from includes.parsers.CompanyParser import CompanyParser
 from includes.models import Company
 from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
@@ -12,7 +12,7 @@ db = DB()
 if "--cb" in sys.argv:
     fromId = 148371
 else:
-    fromId = 56597
+    fromId = 90286
 
 url = None #"https://www.bbb.org/us/il/marion/profile/roofing-contractors/reynolds-roofing-exteriors-0734-310618929"
 
@@ -46,6 +46,10 @@ while True:
             c.parse(row['source_code'])
         except (PageNotFoundException, PageWoopsException, PageNotLoadedException):
             continue
+        except Exception as e:
+            print(row['url'])
+            print(traceback.format_exc())
+            sys.exit(1)
 
         fields = {
             'company_name': company.name,
