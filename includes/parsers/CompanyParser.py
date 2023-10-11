@@ -86,5 +86,8 @@ class CompanyParser(ParserInterface):
         if "<body></body>" in html:
             raise PageNotLoadedException("Tag body empty")
 
+        if ">This site can’t be reached<" in html:
+            raise PageNotLoadedException("This site can’t be reached")
+
         if "Oops! We'll be right back." in html:
             raise PageWoopsException("On url request returned: 500 - Whoops! We'll be right back!")
