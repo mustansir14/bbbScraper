@@ -86,6 +86,9 @@ class CompanyParser(ParserInterface):
         if "<body></body>" in html:
             raise PageNotLoadedException("Tag body empty")
 
+        if "<title>Page not found" in html:
+            raise PageNotLoadedException("Page not found")
+
         if ">This site can’t be reached<" in html:
             raise PageNotLoadedException("This site can’t be reached")
 
