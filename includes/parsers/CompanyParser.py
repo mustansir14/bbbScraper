@@ -83,5 +83,8 @@ class CompanyParser(ParserInterface):
         if "<title>504 Gateway Time" in html:
             raise PageNotLoadedException("502 Gateway Timeout")
 
+        if "<body></body>" in html:
+            raise PageNotLoadedException("Tag body empty")
+
         if "Oops! We'll be right back." in html:
             raise PageWoopsException("On url request returned: 500 - Whoops! We'll be right back!")

@@ -11,10 +11,12 @@ from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedExce
 db = DB()
 if "--cb" in sys.argv:
     fromId = 148371
+    skipIds = []
 else:
-    fromId = 90286
+    fromId = 586459
+    skipIds = [151581]
 
-url = None #"https://www.bbb.org/us/il/marion/profile/roofing-contractors/reynolds-roofing-exteriors-0734-310618929"
+url = None #"https://www.bbb.org/us/fl/pompano-beach/profile/general-contractor/hilex-construction-inc-0633-90585911"
 
 while True:
     if url:
@@ -35,6 +37,10 @@ while True:
     for row in rows:
         fromId = row['company_id']
 
+        if row['company_id'] in skipIds:
+            print("company_id marked as skiped, continue")
+            continue
+
         if "--cb" in sys.argv:
             print(row['url'])
 
@@ -47,6 +53,7 @@ while True:
         except (PageNotFoundException, PageWoopsException, PageNotLoadedException):
             continue
         except Exception as e:
+            print('Company id: ' + str(row['company_id']))
             print(row['url'])
             print(traceback.format_exc())
             sys.exit(1)
