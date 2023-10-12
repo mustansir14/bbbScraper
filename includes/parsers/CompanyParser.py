@@ -89,6 +89,9 @@ class CompanyParser(ParserInterface):
         if "<title>Page not found" in html:
             raise PageNotLoadedException("Page not found")
 
+        if "429 Too Many Requests" in html:
+            raise PageNotLoadedException("429 Too Many Requests")
+
         if ">This site can’t be reached<" in html:
             raise PageNotLoadedException("This site can’t be reached")
 
