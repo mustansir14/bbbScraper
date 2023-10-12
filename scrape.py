@@ -20,6 +20,7 @@ import time, traceback
 from typing import List
 from includes.DB import DB
 from includes.models import Company, Complaint, Review
+from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
 from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedException
 from includes.parsers.Exceptions.PageWoopsException import PageWoopsException
 from includes.proxies import getProxy
@@ -345,6 +346,9 @@ class BBBScraper():
                 counter = counter + 1
 
                 continue
+            except PageNotFoundException as e:
+                logging.info("Company page not found")
+                pass
 
             break
 
