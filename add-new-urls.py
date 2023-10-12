@@ -12,10 +12,6 @@ logging.basicConfig(handlers=[
 ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
 if __name__ == "__main__":
-
-    sitemap_urls = ["https://www.bbb.org/sitemap-accredited-business-profiles-index.xml",
-                    "https://www.bbb.org/sitemap-business-profiles-index.xml"]
-
     scraper = BBBScraper()
 
     companies = scraper.db.queryArray(
