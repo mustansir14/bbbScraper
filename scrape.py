@@ -86,8 +86,7 @@ class BBBScraper():
         }
         self.session.headers.update(headers)
         options = Options()
-        # headless does not support extensions
-        # options.add_argument('--headless')
+        options.headless = False
         options.add_argument("window-size=1920,1080")
         options.add_argument("--log-level=3")
         options.add_argument("--no-sandbox")
