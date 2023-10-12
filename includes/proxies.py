@@ -2,7 +2,8 @@ import requests
 import logging
 import time, urllib3
 from random import choice
-import traceback
+
+from includes.parsers.CompanyParser import CompanyParser
 
 proxyList = None
 proxyListNextDownload = None
@@ -71,6 +72,8 @@ def checkSocks5Proxy(proxy):
         logging.info("code: " + str(status_code))
 
         if status_code == 200:
+            c = CompanyParser()
+            c.checkErrorsPage(str(response.content))
             return True
     except Exception as e:
         logging.info(str(e))
