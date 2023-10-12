@@ -18,6 +18,9 @@ if __name__ == "__main__":
         f"SELECT company_id, url from company where status = 'new' order by company_id LIMIT 1000")
     if companies:
         for company in companies:
-            scraper.scrape_url(company['url'], scrape_reviews_and_complaints=True)
+            try:
+                scraper.scrape_url(company['url'], scrape_reviews_and_complaints=True)
+            except Exception as e:
+                logging.error("scrape_url exception: " + str(e))
 
     scraper.addNewUrls()
