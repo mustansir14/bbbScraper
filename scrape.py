@@ -20,6 +20,8 @@ import time, traceback
 from typing import List
 from includes.DB import DB
 from includes.models import Company, Complaint, Review
+from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedException
+from includes.parsers.Exceptions.PageWoopsException import PageWoopsException
 from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
 import datetime
@@ -333,16 +335,15 @@ class BBBScraper():
 
                 return company
 
-            if "Oops! We'll be right back." in self.driver.page_source:
-                logging.info("Oops! We'll be right back. Reload browser....")
-                self.reloadBrowser()
-                counter = counter + 1
-                continue
+            try:
+                c = CompanyParser()
+                c.checkErrorsPage(self.driver.page_source)
+            except (PageWoopsException, PageNotLoadedException) as e:
+                logging.info("Company page exception: " + str(e))
 
-            if "403 Forbidden" in self.driver.title:
-                logging.info("403 Forbidden error. Reload browser....")
                 self.reloadBrowser()
                 counter = counter + 1
+
                 continue
 
             break
@@ -351,8 +352,7 @@ class BBBScraper():
         onlyMarkAsSuccess = False
 
         try:
-            if os.getenv('GET_SOURCE_CODE', '0') == "1":
-                company.source_code = self.driver.page_source
+            company.source_code = self.driver.page_source
 
             if "<title>Page not found |" in self.driver.page_source:
                 statusMustBeSuccess = True
@@ -381,7 +381,6 @@ class BBBScraper():
                 self.db.move_company_to_other_company(company_url, newUrl)
 
                 company.url = newUrl
-                company_url = newUrl
 
             try:
                 logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR,
@@ -405,22 +404,20 @@ class BBBScraper():
                 logging.info("Driver get: " + company.url + "/details")
                 self.driver.get(company.url + "/details")
 
-                if "Oops! We'll be right back." in self.driver.page_source:
-                    logging.info("Oops! We'll be right back. Reload browser....")
-                    self.reloadBrowser()
-                    counter = counter + 1
-                    continue
+                try:
+                    c = CompanyParser()
+                    c.checkErrorsPage(self.driver.page_source)
+                except (PageWoopsException, PageNotLoadedException) as e:
+                    logging.info("Company details page exception: " + str(e))
 
-                if "403 Forbidden" in self.driver.title:
-                    logging.info("403 Forbidden error. Sleeping for 60 seconds....")
                     self.reloadBrowser()
                     counter = counter + 1
+
                     continue
 
                 break
 
-            if os.getenv('GET_SOURCE_CODE', '0') == "1":
-                company.source_code_details = self.driver.page_source
+            company.source_code_details = self.driver.page_source
 
             # some proxies are from Mexico, and output not english, need more patterns
             patterns = [
