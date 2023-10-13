@@ -17,6 +17,12 @@ services:
             limits:
               cpus: "1"
               memory: 3G
+        logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "2"
+
         volumes:
           - ./logs/:/www/logs/
           
@@ -37,6 +43,11 @@ services:
             limits:
               cpus: "1"
               memory: 3G
+        logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "2"
         volumes:
           - ./logs/:/www/logs/
     
@@ -57,6 +68,11 @@ services:
             limits:
               cpus: "4"
               memory: 10G
+        logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "2"
         volumes:
           - ./logs/:/www/logs/
           - ./file/:/www/file/
