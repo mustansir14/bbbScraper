@@ -322,7 +322,7 @@ class BBBScraper():
             if counter > 5:
                 raise Exception("Company page, always 403 error")
 
-            logging.info("Driver get: " + company_url)
+            logging.info(str(counter) + ") Driver get: " + company_url)
             self.driver.get(company_url)
 
             # BugFix: original url https://www.bbb.org/us/al/huntsville/profile/business-associations/the-catalyst-center-for-business-entrepreneurship-0513-900075144
@@ -405,7 +405,7 @@ class BBBScraper():
                 if counter > 5:
                     raise Exception("Details page, can not be loaded")
 
-                logging.info("Driver get: " + company.url + "/details")
+                logging.info(str(counter) + ") Driver get: " + company.url + "/details")
                 self.driver.get(company.url + "/details")
 
                 try:
