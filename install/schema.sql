@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 65.109.70.91
--- Время создания: Сен 27 2023 г., 11:35
+-- Время создания: Окт 27 2023 г., 15:01
 -- Версия сервера: 10.9.7-MariaDB
 -- Версия PHP: 8.1.1
 
@@ -55,7 +55,7 @@ CREATE TABLE `company` (
   `number_of_reviews` int(11) DEFAULT NULL,
   `number_of_complaints` int(11) DEFAULT NULL,
   `overview` text DEFAULT NULL,
-  `products_and_services` text DEFAULT NULL,
+  `products_and_services` longtext DEFAULT NULL,
   `business_started` varchar(255) DEFAULT NULL,
   `business_incorporated` varchar(255) DEFAULT NULL,
   `type_of_entity` varchar(255) DEFAULT NULL,
@@ -90,18 +90,6 @@ CREATE TABLE `company` (
   `exists_on_cb` tinyint(4) NOT NULL DEFAULT 0,
   `exists_on_cb_comment` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Триггеры `company`
---
-DELIMITER $$
-CREATE TRIGGER `company_after_update` BEFORE UPDATE ON `company` FOR EACH ROW begin
-	if old.exists_on_cb <> new.exists_on_cb then
-    	update complaint set company_exists_on_cb = new.exists_on_cb where company_id = new.company_id;
-    end if;
-end
-$$
-DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -159,6 +147,7 @@ CREATE TABLE `review` (
   `review_id` int(11) NOT NULL,
   `company_id` int(11) NOT NULL,
   `review_date` date DEFAULT NULL,
+  `review_date_year` int(11) DEFAULT NULL,
   `username` varchar(255) NOT NULL,
   `review_text` text DEFAULT NULL,
   `review_text_hash` varchar(32) DEFAULT NULL,
@@ -178,12 +167,14 @@ CREATE TABLE `review` (
 DELIMITER $$
 CREATE TRIGGER `review_before_insert` BEFORE INSERT ON `review` FOR EACH ROW BEGIN
 	SET NEW.review_text_hash = md5(concat(new.company_id,NEW.review_text));
+    set new.review_date_year = year(new.review_date);
 END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `review_before_update` BEFORE UPDATE ON `review` FOR EACH ROW BEGIN
 	SET NEW.review_text_hash = md5(concat(new.company_id,NEW.review_text));
+    set new.review_date_year = year(new.review_date);
 END
 $$
 DELIMITER ;
@@ -258,7 +249,8 @@ ALTER TABLE `review`
   ADD PRIMARY KEY (`review_id`),
   ADD UNIQUE KEY `review_text_hash` (`review_text_hash`) USING BTREE,
   ADD KEY `company_id` (`company_id`),
-  ADD KEY `for_stats` (`date_updated`,`status`);
+  ADD KEY `for_stats` (`date_updated`,`status`),
+  ADD KEY `review_date_year` (`review_date_year`);
 
 --
 -- Индексы таблицы `settings`
@@ -322,13 +314,13 @@ ALTER TABLE `urls_sitemap`
 -- Ограничения внешнего ключа таблицы `complaint`
 --
 ALTER TABLE `complaint`
-  ADD CONSTRAINT `complaint_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`);
+  ADD CONSTRAINT `complaint_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
 -- Ограничения внешнего ключа таблицы `review`
 --
 ALTER TABLE `review`
-  ADD CONSTRAINT `review_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`);
+  ADD CONSTRAINT `review_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `company` (`company_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
