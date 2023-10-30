@@ -33,21 +33,16 @@ if __name__ == "__main__":
     proxy = getProxy()
     scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
     
-    fromCompanyId = scraper.db.getSettingInt(scraper.rescrapeSettingKey, 0)
-    row = scraper.db.queryRow('select max(company_id) as max_company_id from company')
-    if row and fromCompanyId >= row['max_company_id']:
-        logging.info("Start from begining")
-        fromCompanyId = 0
-        scraper.db.setSetting(scraper.rescrapeSettingKey, fromCompanyId)
-   
-    logging.info("fromCompanyId: " + str(fromCompanyId))
-    
     while True:
-        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT 1000;"
+        fromCompanyId = scraper.db.getSettingInt(scraper.rescrapeSettingKey, 0)
+
+        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT " + str(no_of_threads) + ";"
         logging.info(sql)
         
         companies = scraper.db.queryArray(sql)
         if not companies:
+            logging.info("No more companies, set from to zero")
+            scraper.db.setSetting(scraper.rescrapeSettingKey, 0)
             break
         
         if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
@@ -56,6 +51,7 @@ if __name__ == "__main__":
             urls_to_scrape = []
             
         for company in companies:
+            logging.info(str(company['company_id']) + ': ' + company['url'])
             if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
                 urls_to_scrape.put(company['url'])
             else:

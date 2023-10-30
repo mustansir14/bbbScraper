@@ -50,7 +50,7 @@ class BBBScraper():
                  proxy_type="http") -> None:
         self.driver = None
         self.lastValidProxy = None
-        self.rescrapeSettingKey = "rescrape_all_from_db.from_company_id";
+        self.rescrapeSettingKey = "rescrape_all_from_db.last_company_id";
         self.chromeVersion = 116
 
         if not os.path.exists("file/logo/"):
@@ -253,6 +253,8 @@ class BBBScraper():
             logging.info(args)
 
             self.db.execSQL(sql, args)
+
+            self.db.execSQL('insert into debug_settings set value = ?', (company_id, ))
         else:
             logging.info("Do not update rescrape settings")
 
