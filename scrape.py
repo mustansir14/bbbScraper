@@ -253,8 +253,6 @@ class BBBScraper():
             logging.info(args)
 
             self.db.execSQL(sql, args)
-
-            self.db.execSQL('insert into debug_settings set value = ?', (company_id, ))
         else:
             logging.info("Do not update rescrape settings")
 
