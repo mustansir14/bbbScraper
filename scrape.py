@@ -53,8 +53,8 @@ class BBBScraper():
         self.rescrapeSettingKey = "rescrape_all_from_db.last_company_id";
         self.chromeVersion = 116
 
-        if not os.path.exists("file/logo/"):
-            os.makedirs("file/logo")
+        #if not os.path.exists("file/logo/"):
+        #    os.makedirs("file/logo")
 
         self.db = DB()
 
@@ -386,19 +386,21 @@ class BBBScraper():
 
                 company.url = newUrl
 
-            try:
-                logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR,
-                                                                                           "img").get_attribute("src")
-                if not "non-ab-icon__300w.png" in logo:
-                    company.logo = "file/logo/" + slugify(company.name) + ".png"
+            company.logo = ""
 
-                    self.driver.execute_script(f'''window.open("{logo}","_blank");''')
-                    self.driver.switch_to.window(self.driver.window_handles[1])
-                    self.driver.save_screenshot(company.logo)
-                    self.driver.close()
-                    self.driver.switch_to.window(self.driver.window_handles[0])
-            except Exception as e:
-                company.logo = ""
+            #try:
+            #    logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR,
+            #                                                                               "img").get_attribute("src")
+            #    if not "non-ab-icon__300w.png" in logo:
+            #        company.logo = "file/logo/" + slugify(company.name) + ".png"
+            #
+            #        self.driver.execute_script(f'''window.open("{logo}","_blank");''')
+            #        self.driver.switch_to.window(self.driver.window_handles[1])
+            #        self.driver.save_screenshot(company.logo)
+            #        self.driver.close()
+            #        self.driver.switch_to.window(self.driver.window_handles[0])
+            #except Exception as e:
+            #    company.logo = ""
 
             counter = 0
             while True:
