@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 65.109.70.91
--- Время создания: Окт 27 2023 г., 15:01
+-- Время создания: Ноя 09 2023 г., 11:54
 -- Версия сервера: 10.9.7-MariaDB
 -- Версия PHP: 8.1.1
 
@@ -20,6 +20,55 @@ SET time_zone = "+00:00";
 --
 -- База данных: `scraper_bbb_mustansir`
 --
+
+DELIMITER $$
+--
+-- Функции
+--
+CREATE DEFINER=`remote`@`%` FUNCTION `getDomain` (`website` TEXT) RETURNS VARCHAR(150) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci  begin
+	declare domain varchar(255) default null;
+    
+	if website is not null then
+    	set domain = sanitize_url(website);
+    	set domain = regexp_replace(domain,concat("https?://(www", char(92), ".)?"), "");
+        set domain = regexp_replace(domain, "/.*", "");
+        if instr(domain, ".") = 0 then
+        	set domain = null;
+        end if;
+    end if;
+    
+    return domain;
+end$$
+
+CREATE DEFINER=`remote`@`%` FUNCTION `sanitize_url` (`url` TEXT) RETURNS TEXT CHARSET ascii COLLATE ascii_general_ci  begin
+	# https://github.com/php/php-src/blob/master/ext/filter/sanitizing_filters.c#L308
+    # LOWALPHA HIALPHA DIGIT SAFE EXTRA NATIONAL PUNCTUATION RESERVED;
+    # SAFE        "$-_.+"
+	# EXTRA       "!*'(),"
+	# NATIONAL    "{}|\\^~[]`"
+	# PUNCTUATION "<>#%\""
+	# RESERVED    ";/?:@&="
+    return regexp_replace(url, concat(
+        "[^",
+        "a-zA-Z0-9",
+        
+        char(92), "$", char(92), "-", "_", char(92), ".", char(92), "+",
+        
+        char(92), "!", char(92), "*", char(92), "'", char(92), "(", char(92), ")", ",",
+        
+        char(92), "{", char(92), "}", char(92), "|", char(92), char(92), "^", char(92), "~", 
+        char(92), "[", char(92), "]", char(92), "`", 
+        
+        char(92), "<", char(92), ">", char(92), "#", char(92), "%", '"', 
+        
+        char(92), ";", char(92), "/", char(92), "?", char(92), ":", char(92), "@", 
+        char(92), "&", char(92), "=", 
+        
+        "]"
+    ), "");
+end$$
+
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -88,8 +137,29 @@ CREATE TABLE `company` (
   `log` longtext DEFAULT NULL,
   `half_scraped` tinyint(1) DEFAULT 0,
   `exists_on_cb` tinyint(4) NOT NULL DEFAULT 0,
-  `exists_on_cb_comment` text DEFAULT NULL
+  `exists_on_cb_comment` text DEFAULT NULL,
+  `domain` varchar(150) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Триггеры `company`
+--
+DELIMITER $$
+CREATE TRIGGER `company_before_insert` BEFORE INSERT ON `company` FOR EACH ROW begin
+	if new.website is not null then
+    	set new.domain = getDomain(new.website);
+    end if;
+end
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `company_before_update` BEFORE UPDATE ON `company` FOR EACH ROW begin
+	if new.website is not null then
+    	set new.domain = getDomain(new.website);
+    end if;
+end
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -229,7 +299,8 @@ ALTER TABLE `company`
   ADD KEY `exists_on_cb` (`exists_on_cb`),
   ADD KEY `status` (`status`),
   ADD KEY `rating` (`rating`),
-  ADD KEY `date_created` (`date_created`);
+  ADD KEY `date_created` (`date_created`),
+  ADD KEY `domain` (`domain`);
 
 --
 -- Индексы таблицы `complaint`
