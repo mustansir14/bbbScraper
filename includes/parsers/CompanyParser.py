@@ -75,7 +75,7 @@ class CompanyParser(ParserInterface):
 
     def checkErrorsPage(self, html: str):
         if "<title>You are being rate limited" in html:
-            raise PageNotFoundException("RateLimit we are banned!")
+            raise PageNotLoadedException("RateLimit we are banned!")
 
         if "<title>Page not found |" in html:
             raise PageNotFoundException("On url request returned: 404 - Whoops! Page not found!")
