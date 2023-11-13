@@ -433,11 +433,11 @@ class BBBScraper():
                 '//*[contains(@class,"dtm-email")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
                 '//*[contains(@class,"dtm-find-location")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
 
-                '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"card")]',
-                '//*[contains(normalize-space(text()),"Business Started")]/ancestor::*[contains(@class,"card")]',
-                '//*[contains(@class,"dtm-address")]/ancestor::*[contains(@class,"card")]',
-                '//*[contains(@class,"dtm-email")]/ancestor::*[contains(@class,"card")]',
-                '//*[contains(@class,"dtm-find-location")]/ancestor::*[contains(@class,"card")]',
+                '//dt[contains(normalize-space(text()),"BBB File Opened")]/ancestor::dl',
+                '//dt[contains(normalize-space(text()),"Business Started")]/ancestor::dl',
+                '//*[contains(@class,"dtm-address")]/ancestor::dl',
+                '//*[contains(@class,"dtm-email")]/ancestor::dl',
+                '//*[contains(@class,"dtm-find-location")]/ancestor::dl',
             ]
 
             detailRoot = None
