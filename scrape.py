@@ -339,7 +339,11 @@ class BBBScraper():
             try:
                 c = CompanyParser()
                 c.checkErrorsPage(self.driver.page_source)
-            except (PageWoopsException, PageNotLoadedException) as e:
+
+                # try parse page, may be no ld+json or other
+                c.setCompany(company)
+                c.parse(self.driver.page_source)
+            except (PageWoopsException, PageNotLoadedException, Exception) as e:
                 logging.info("Company page exception: " + str(e))
 
                 self.reloadBrowser()
