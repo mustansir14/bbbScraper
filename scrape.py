@@ -320,7 +320,7 @@ class BBBScraper():
         counter = 0
         while True:
             if counter > 5:
-                raise Exception("Company page, always 403 error")
+                raise Exception("Company page, load error")
 
             logging.info(str(counter) + ") Driver get: " + company_url)
             self.driver.get(company_url)
