@@ -58,6 +58,14 @@ class DB:
     def removeCompanyByUrl(self, url):
         sql = 'delete from company where url = ?';
         self.execSQL(sql, (url,))
+
+    def countRows(self, table, where, args = ()):
+        sql = 'select count(*) cnt from ' + table
+
+        if where:
+            sql += ' where ' + where
+
+        return self.queryRow(sql, args)['cnt']
         
     def execSQLWithoutIgnoreDuplicates(self, sql, args):
         return self.execSQLInternal(sql, args, False)

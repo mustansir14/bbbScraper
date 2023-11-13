@@ -53,7 +53,7 @@ class BBBScraper():
         self.rescrapeSettingKey = "rescrape_all_from_db.last_company_id";
         self.chromeVersion = 116
 
-        #if not os.path.exists("file/logo/"):
+        # if not os.path.exists("file/logo/"):
         #    os.makedirs("file/logo")
 
         self.db = DB()
@@ -296,6 +296,29 @@ class BBBScraper():
             self.lastValidProxy['proxy_type']
         )
 
+    def removeCompanyIfEmpty(self, companyUrl: str) -> bool:
+        try:
+            companyId = self.db.getCompanyIdByUrl(companyUrl)
+        except Exception as e:
+            logging.info("Try remove company: " + companyUrl + ", skip. Record not exists in db")
+            return False
+
+        logging.info("Try remove company: " + companyUrl + " with id: " + str(companyId) + " if empty")
+
+        if companyId:
+            totalComplaints = self.db.countRows('complaint', 'company_id = ?', (companyId,))
+            totalReviews = self.db.countRows('review', 'company_id = ?', (companyId,))
+
+            logging.info("Total complaints: " + str(totalComplaints) + ", total reviews: " + str(totalReviews))
+
+            if totalComplaints + totalReviews == 0:
+                logging.info("Company empty, removing: " + companyUrl)
+                self.db.removeCompanyByUrl(companyUrl)
+
+                return True
+
+        return False
+
     def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True, half_scraped=False) -> Company:
 
         if not company_url and not company_id:
@@ -318,6 +341,7 @@ class BBBScraper():
             company.country = None
 
         counter = 0
+
         while True:
             if counter > 5:
                 raise Exception("Company page, load error")
@@ -343,6 +367,11 @@ class BBBScraper():
                 # try parse page, may be no ld+json or other
                 c.setCompany(company)
                 c.parse(self.driver.page_source)
+            except PageNotFoundException as e:
+                logging.info("Company page not found")
+
+                self.removeCompanyIfEmpty(company_url)
+                break
             except (PageWoopsException, PageNotLoadedException, Exception) as e:
                 logging.info("Company page exception: " + str(e))
 
@@ -350,9 +379,6 @@ class BBBScraper():
                 counter = counter + 1
 
                 continue
-            except PageNotFoundException as e:
-                logging.info("Company page not found")
-                pass
 
             break
 
@@ -392,7 +418,7 @@ class BBBScraper():
 
             company.logo = ""
 
-            #try:
+            # try:
             #    logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR,
             #                                                                               "img").get_attribute("src")
             #    if not "non-ab-icon__300w.png" in logo:
@@ -403,7 +429,7 @@ class BBBScraper():
             #        self.driver.save_screenshot(company.logo)
             #        self.driver.close()
             #        self.driver.switch_to.window(self.driver.window_handles[0])
-            #except Exception as e:
+            # except Exception as e:
             #    company.logo = ""
 
             counter = 0
@@ -1160,6 +1186,7 @@ if __name__ == '__main__':
         scraper.reloadBrowser(args.proxy)
 
         for url in args.urls:
+            logging.info("Scraping: " + url)
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
 
