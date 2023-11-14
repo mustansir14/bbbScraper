@@ -4,18 +4,8 @@
 # +923333487952
 ##########################################
 
-from dataclasses import field
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-import undetected_chromedriver as uc
-from undetected_chromedriver import Patcher
-from webdriver_manager.chrome import ChromeDriverManager
-import requests
 import time, traceback
 from typing import List
 from includes.DB import DB
@@ -23,25 +13,20 @@ from includes.models import Company, Complaint, Review
 from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
 from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedException
 from includes.parsers.Exceptions.PageWoopsException import PageWoopsException
+from includes.scrapers.ComplaintsScraper import ComplaintsScraper
 from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
 import datetime
-import os, random, glob
+import os, random
 import argparse
 import sys
-import logging, zipfile
-from pyvirtualdisplay import Display
+import logging
 from sys import platform
 from multiprocessing import Process, Queue
-from includes.telegram_reporter import send_message
-from slugify import slugify
 import json
 import re
-import tempfile
-import secrets
-from urllib.request import urlretrieve
-import shutil
 from includes.parsers.CompanyParser import CompanyParser
+from includes.browser.Driver import Driver
 
 
 class BBBScraper():
@@ -49,177 +34,17 @@ class BBBScraper():
     def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None,
                  proxy_type="http") -> None:
         self.driver = None
+        self.browser = None
+        self.driverMaker = Driver()
         self.lastValidProxy = None
         self.rescrapeSettingKey = "rescrape_all_from_db.last_company_id";
-        self.chromeVersion = 116
-
-        # if not os.path.exists("file/logo/"):
-        #    os.makedirs("file/logo")
-
         self.db = DB()
-
-    def removeCoreDumps(self):
-        try:
-            logging.info("Remove core dumps, to free space...")
-
-            for file in glob.glob("./core.*"):
-                try:
-                    os.remove(file)
-                except:
-                    pass
-        except Exception as e:
-            logging.error("removeCoreDumps exception: " + str(e))
 
     def createBrowser(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None,
                       proxy_type="http"):
-        if self.driver:
-            self.kill_chrome()
-
-        # on long docker living too much coredumps create big storage usage
-        self.removeCoreDumps()
-
-        self.session = requests.session()
-        headers = {
-            "authority": "www.bbb.org",
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "accept-language": "en-US,en;q=0.9",
-            "cache-control": "max-age=0",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
-            "sec-ch-ua": "^\^Google"
-        }
-        self.session.headers.update(headers)
-        options = Options()
-        options.headless = False
-        options.add_argument("window-size=1920,1080")
-        options.add_argument("--log-level=3")
-        options.add_argument("--no-sandbox")
-        options.add_argument('--disable-gpu')
-        options.add_argument("--mute-audio")
-        options.add_argument('--disable-dev-shm-usage')
-        # options.add_argument('--single-process'); # one process to take less memory
-        options.add_argument('--renderer-process-limit=1')  # do not allow take more resources
-        options.add_argument('--disable-crash-reporter')  # disable crash reporter process
-        options.add_argument('--no-zygote')  # disable zygote process
-        options.add_argument('--disable-crashpad')
-        options.add_argument('--grabber-bbb-mustansir')
-        # options.add_argument("--auto-open-devtools-for-tabs")
-        options.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36")
-        if proxy:
-            if not proxy_port:
-                raise Exception("Proxy Port missing.")
-
-            self.session.proxies.update({proxy_type: proxy_type + "://" + proxy + ":" + proxy_port})
-            options.add_argument("--proxy-server=%s" % proxy_type + "://" + proxy + ":" + proxy_port)
-
-        self.usedProxy = proxy_type + "://" + proxy + ":" + proxy_port if proxy else ""
-
-        if os.name != "nt":
-            self.display = Display(visible=0, size=(1920, 1080))
-            self.display.start()
-
-        self.driver = uc.Chrome(
-            options=options,
-            version_main=self.chromeVersion,
-            driver_executable_path=self.getChromeDriver()
-        )
-
-        # Optimization: disable ads and analytics here
-        self.driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": [
-            "analytics.google.com",
-            "www.google-analytics.com",
-            "stats.g.doubleclick.net",
-            "js-agent.newrelic.com",
-            "analytics.tiktok.com",
-            "adservice.google.com",
-            "ad.doubleclick.net",
-            "googletagmanager.com",
-            "livechatinc.com",
-            "gstatic.com",
-            "facebook.net",  # recaptcha
-            "google.com",  # recaptcha
-            "assets.adobedtm.com",
-            "mouseflow.com",
-            "hubspot.com",
-            # "*.js",
-            "*.png",
-            "*.svg",
-            "*.gif",
-            "*.jpg",
-            "*.jpeg",
-            "*.bmp",
-            "*.webp",
-            "*.woff2",
-            "*.woff",
-        ]})
-
-        self.driver.execute_cdp_cmd('Network.enable', {})
-
-    def getChromeDriver(self):
-        version = "116.0.5845.96"
-        original = os.path.join(tempfile.gettempdir(), "chrome_" + str(version) + "_origin")
-
-        if sys.platform.endswith("win32"):
-            original += ".exe"
-
-        if not os.path.exists(original):
-            logging.info("Download last version of original: " + original)
-
-            platform = "linux64"
-
-            if sys.platform.endswith("win32"):
-                platform = "win64"
-
-            packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + version + "/" + platform + "/chromedriver-" + platform + ".zip"
-            logging.info(packageUrl)
-
-            filename, headers = urlretrieve(packageUrl)
-
-            logging.info(headers)
-            logging.info("Unzip...")
-
-            with zipfile.ZipFile(filename, mode="r") as z:
-                chromeDriver = "chromedriver-" + platform + "/chromedriver"
-
-                if sys.platform.endswith("win32"):
-                    chromeDriver += ".exe"
-
-                with z.open(chromeDriver) as zf, open(original, 'wb') as f:
-                    shutil.copyfileobj(zf, f)
-
-            logging.info("Remove zip...")
-            os.remove(filename)
-
-            logging.info("Set permissions to: " + original)
-            os.chmod(original, 0o755)
-
-            if not os.path.isfile(original):
-                raise Exception("No origin executable")
-
-        return original
-
-        # Fix: i dont know but sometimes shutil.copy2 do not copy file
-        for i in range(3):
-            target = original.replace(".exe", "") + "_" + secrets.token_hex(16)
-            if sys.platform.endswith("win32"):
-                target += ".exe"
-
-            shutil.copy2(original, target)
-
-            # BugFix: may be situation then file not fully copied
-            time.sleep(1);
-
-            if os.path.isfile(target):
-                break
-
-        if not os.path.isfile(target):
-            raise Exception("No target executable: " + target + ", origin exists: " + str(os.path.isfile(original)))
-
-        os.chmod(original, 0o755)
-
-        logging.info("Return target: " + target)
-
-        return target
+        self.browser = self.driverMaker.createBrowserSingleton()
+        self.driver = self.browser.getDriver()
+        self.usedProxy = self.browser.getProxy()
 
     def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True,
                    set_rescrape_setting=False) -> Company:
@@ -240,8 +65,8 @@ class BBBScraper():
                                               half_scraped=not scrape_reviews_and_complaints)
         if company.status == "success":
             if scrape_reviews_and_complaints:
-                company.reviews = self.scrape_company_reviews(company_url=company.url, save_to_db=save_to_db)
-                company.complaints = self.scrape_company_complaints(company_url=company.url, save_to_db=save_to_db)
+                self.scrape_company_reviews(company_url=company.url, save_to_db=save_to_db)
+                self.scrape_company_complaints(company_url=company.url, save_to_db=save_to_db)
 
         self.kill_chrome()
 
@@ -852,7 +677,7 @@ class BBBScraper():
         return reviews
 
     def scrape_company_complaints(self, company_url=None, company_id=None, save_to_db=True,
-                                  scrape_specific_complaint=None) -> List[Complaint]:
+                                  scrape_specific_complaint=None) -> None:
 
         if company_url:
             row = self.db.queryRow("Select company_id from company where url = %s;", (company_url,))
@@ -860,7 +685,7 @@ class BBBScraper():
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
                 row = self.db.queryRow("Select company_id from company where url = %s;", (company_url,))
             if row is None:
-                return []
+                return
             company_id = row["company_id"]
 
         elif company_id:
@@ -871,6 +696,14 @@ class BBBScraper():
                 raise Exception("Company with ID %s does not exist" % str(company_id))
         else:
             raise Exception("Please provide either company URL or company ID")
+
+        self.kill_chrome()
+
+        sc = ComplaintsScraper()
+        sc.setDatabase(self.db)
+        sc.setCompanyId(company_id)
+        sc.scrape(company_url)
+        return
 
         if scrape_specific_complaint:
             logging.info("Scraping Complaint with id %s for %s" % (scrape_specific_complaint, company_url))
@@ -886,6 +719,7 @@ class BBBScraper():
         page = 1
         while True:
             if page > 1000:
+                logging.info("Page limit reached, break scraping complaints")
                 break
 
             # Fix: for complaints?page=N has different url https://www.bbb.org/us/ca/marina-del-rey/profile/razors/dollar-shave-club-inc-1216-100113835/complaints
@@ -898,17 +732,25 @@ class BBBScraper():
                     element = self.driver.find_element(By.CSS_SELECTOR, 'a[href*="/complaints?page=' + str(page) + '"]')
                     logging.info("Scraping Page:  " + element.get_attribute('href'))
                     self.driver.execute_script("arguments[0].click();", element)
+                except NoSuchElementException:
+                    logging.info("No more pages, break")
+                    break
                 except Exception as e:
+                    logging.error("Exception on clicking page: " + str(e))
                     break
 
             complaints = []
 
             try:
                 complaint_tags = self.driver.find_elements(By.XPATH, "//li[@id]")
-            except:
+            except Exception as e:
+                logging.error("Exception on finding complaint elements: " + str(e))
                 break
 
             if not complaint_tags:
+                logging.info("No tags, break")
+                with open('complaint.htm', 'w') as fd:
+                    fd.write(self.driver.page_source)
                 break
 
             for complaint_tag in complaint_tags:
@@ -919,12 +761,23 @@ class BBBScraper():
                         complaint.source_code = complaint_tag.get_attribute('innerHTML')
 
                     complaint.company_id = company_id
-                    complaint.complaint_type = complaint_tag.find_element(By.XPATH,
-                                                                          './/*[normalize-space(text())="Complaint Type:"]/following-sibling::*').text.strip()
+
+                    complaint.complaint_type = complaint_tag.find_element(
+                        By.XPATH,
+                        './/*[normalize-space(text())="Complaint Type:"]/following-sibling::*'
+                    ).text.strip()
+
                     complaint.complaint_date = self.convertDateToOurFormat(
-                        complaint_tag.find_element(By.XPATH, './/h3/following-sibling::*').text.strip())
-                    complaint.complaint_text = complaint_tag.find_element(By.XPATH,
-                                                                          './/*[@data-body]/div[1]').text.strip()
+                        complaint_tag.find_element(
+                            By.XPATH,
+                            './/h3/following-sibling::*'
+                        ).text.strip()
+                    )
+
+                    complaint.complaint_text = complaint_tag.find_element(
+                        By.XPATH,
+                        './/*[@data-body]/div[1]'
+                    ).text.strip()
 
                     if scrape_specific_complaint and (
                             complaint.complaint_type != complaint_results[0]["complaint_type"] or str(
@@ -936,12 +789,21 @@ class BBBScraper():
                     try:
                         # Googd response hierarchy: https://www.bbb.org/us/ca/monrovia/profile/telecommunications/onesuite-corporation-1216-13050632/complaints
                         complaint.company_response_date = self.convertDateToOurFormat(
-                            complaint_tag.find_element(By.XPATH, './/h4/following-sibling::*').text.strip())
-                        complaint.company_response_text = complaint_tag.find_element(By.XPATH,
-                                                                                     './/*[@data-body]/div[2]//*[@data-body]').text.strip()
-                    except:
+                            complaint_tag.find_element(
+                                By.XPATH,
+                                './/h4/following-sibling::*'
+                            ).text.strip()
+                        )
+                        complaint.company_response_text = complaint_tag.find_element(
+                            By.XPATH,
+                            './/*[@data-body]/div[2]//*[@data-body]'
+                        ).text.strip()
+                    except Exception as e:
+                        logging.error("Complaint response exception: " + str(e))
                         pass
                 except Exception as e:
+                    logging.error("Complaint exception: " + str(e))
+
                     complaint.status = "error"
                     complaint.log = traceback.format_exc()
 
@@ -1125,14 +987,11 @@ class BBBScraper():
         return None
 
     def kill_chrome(self):
-        try:
-            self.driver.quit()
-            if os.name != "nt":
-                self.display.stop()
-        except:
-            pass
-        finally:
-            self.driver = None
+        if self.browser:
+            self.browser.kill()
+
+        self.browser = None
+        self.driver = None
 
 
 def str2bool(v):
@@ -1187,15 +1046,17 @@ if __name__ == '__main__':
 
         for url in args.urls:
             logging.info("Scraping: " + url)
+
+            scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
+            break
+
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
 
             if company.status == "success":
                 # need use company.url because url may be changed
-                company.reviews = scraper.scrape_company_reviews(company_url=company.url,
-                                                                 save_to_db=str2bool(args.save_to_db))
-                company.complaints = scraper.scrape_company_complaints(company_url=company.url,
-                                                                       save_to_db=str2bool(args.save_to_db))
+                scraper.scrape_company_reviews(company_url=company.url, save_to_db=str2bool(args.save_to_db))
+                scraper.scrape_company_complaints(company_url=company.url, save_to_db=str2bool(args.save_to_db))
                 logging.info("Complaints and reviews scraped successfully.\n")
 
     scraper.kill_chrome()
