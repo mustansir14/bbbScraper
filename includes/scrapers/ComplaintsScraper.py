@@ -35,12 +35,14 @@ class ComplaintsScraper(AbstractScraper):
                 logging.info("No browser for url, break")
                 return
 
-            self.scrapeComplaints(browser)
+            if self.scrapeComplaints(browser) == 0:
+                break
 
-    def scrapeComplaints(self, browser: Browser):
+    def scrapeComplaints(self, browser: Browser) -> int:
         tags = browser.getRootElement().findXpathAll("//li[@id]")
         if not tags:
             logging.info("No tags, skip")
+            return 0
 
         complaintsList = []
 
@@ -51,6 +53,8 @@ class ComplaintsScraper(AbstractScraper):
             self.printComplaint(complaint)
 
         self.db.insert_or_update_complaints(complaintsList)
+
+        return len(complaintsList)
 
     def printComplaint(self, complaint: Complaint) -> None:
         if complaint.status == "success":
