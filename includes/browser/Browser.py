@@ -1,4 +1,6 @@
 import logging
+from typing import Any
+
 from undetected_chromedriver import Chrome as ChromeDriver
 from includes.browser.BrowserElement import BrowserElement
 
@@ -40,3 +42,6 @@ class Browser:
 
     def getRootElement(self) -> BrowserElement:
         return BrowserElement(self.driver, self.driver)
+
+    def executeJS(self, javascriptCode: str, *args) -> Any:
+        return self.driver.execute_script(javascriptCode, args)

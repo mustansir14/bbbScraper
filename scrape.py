@@ -27,6 +27,7 @@ import json
 import re
 from includes.parsers.CompanyParser import CompanyParser
 from includes.browser.Driver import Driver
+from includes.scrapers.ReviewsScraper import ReviewsScraper
 
 
 class BBBScraper():
@@ -547,8 +548,8 @@ class BBBScraper():
 
         return datetime.datetime.strptime(text, "%d/%m/%Y").strftime('%Y-%m-%d')
 
-    def scrape_company_reviews(self, company_url=None, company_id=None, save_to_db=True, scrape_specific_review=None) -> \
-            List[Review]:
+    def scrape_company_reviews(self, company_url=None, company_id=None, save_to_db=True,
+                               scrape_specific_review=None) -> None:
 
         if company_url:
             row = self.db.queryRow("select company_id from company where url = ?", (company_url,))
@@ -573,6 +574,12 @@ class BBBScraper():
             logging.info("Scraping Review with id %s for %s" % (scrape_specific_review, company_url))
         else:
             logging.info("Scraping Reviews for " + company_url)
+
+        sc = ReviewsScraper()
+        sc.setDatabase(self.db)
+        sc.setCompanyId(company_id)
+        sc.scrape(company_url)
+        return
 
         review_url = company_url + "/customer-reviews"
         self.driver.get(review_url)
@@ -929,7 +936,7 @@ if __name__ == '__main__':
         for url in args.urls:
             logging.info("Scraping: " + url)
 
-            scraper.scrape_company_complaints(company_url=url, save_to_db=str2bool(args.save_to_db))
+            scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
             break
 
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
