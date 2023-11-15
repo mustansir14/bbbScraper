@@ -11,13 +11,13 @@ class DriverBinary:
     version: int
 
     def __init__(self):
-        self.version = 116
+        self.version = 119
 
     def getVersion(self) -> int:
         return self.version
 
     def getBinary(self):
-        version = "116.0.5845.96"
+        version = "119.0.6045.105"
         original = os.path.join(tempfile.gettempdir(), "chrome_" + str(version) + "_origin")
 
         if sys.platform.endswith("win32"):
