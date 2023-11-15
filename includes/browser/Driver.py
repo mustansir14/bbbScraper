@@ -1,6 +1,4 @@
-import os
 import logging
-from pyvirtualdisplay import Display
 import undetected_chromedriver as uc
 
 from includes.browser.Browser import Browser
@@ -18,12 +16,10 @@ class Driver:
     options: DriverOptions
     dumpsCleaner: DriverDumpsCleaner
     chromeVersion: int
-    display: None
     browser: None
 
     def __init__(self):
         self.browser = None
-        self.display = None
         self.dumpsCleaner = DriverDumpsCleaner()
         self.options = DriverOptions()
         self.urlsBlocker = DriverUrlsBlocker()
