@@ -53,6 +53,8 @@ class ReviewsScraper(AbstractScraper):
                 continue
 
             totalPages = data['totalPages']
+            if totalPages > 1000:
+                totalPages = 1000
 
             if self.scrapeReviews(data['items']) == 0:
                 break
