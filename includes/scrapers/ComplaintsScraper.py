@@ -1,4 +1,5 @@
 import traceback
+from typing import Any
 
 from includes.browser.Browser import Browser
 from includes.browser.BrowserElement import BrowserElement
@@ -17,19 +18,19 @@ class ComplaintsScraper(AbstractScraper):
     def setCompanyId(self, companyId: int) -> None:
         self.companyId = companyId
 
-    def scrapeInternal(self, companyUrl: str) -> None:
+    def scrapeInternal(self, companyUrl: str) -> Any:
         logging.info("Scraping Complaints for " + companyUrl)
 
         if not self.companyId:
             raise Exception("No company id")
 
-        self.browserLoader.setFirstPage(companyUrl + "/complaints")
+        self.getBrowserLoader().setFirstPage(companyUrl + "/complaints")
 
         for page in range(1, 1000):
             if page == 1:
-                browser = self.browserLoader.loadFirstPage()
+                browser = self.getBrowserLoader().loadFirstPage()
             else:
-                browser = self.browserLoader.loadPage(companyUrl + "/complaints?page=" + str(page))
+                browser = self.getBrowserLoader().loadPage(companyUrl + "/complaints?page=" + str(page))
 
             if not browser:
                 logging.info("No browser for url, break")
@@ -37,6 +38,8 @@ class ComplaintsScraper(AbstractScraper):
 
             if self.scrapeComplaints(browser) == 0:
                 break
+
+        return None
 
     def scrapeComplaints(self, browser: Browser) -> int:
         tags = browser.getRootElement().findXpathAll("//li[@id]")

@@ -16,6 +16,9 @@ class BrowserElement:
     def html(self) -> str:
         return self.element.get_attribute('innerHTML')
 
+    def getTag(self) -> str:
+        return self.element.tag_name
+
     def text(self) -> str:
         # do not use self.element.text it may return empty string, don't know why
         return self.element.get_attribute("innerText")

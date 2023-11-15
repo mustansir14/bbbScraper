@@ -4,72 +4,59 @@
 # +923333487952
 ##########################################
 
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.by import By
-import time, traceback
-from typing import List
+import time
 from includes.DB import DB
-from includes.models import Company, Complaint, Review
-from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
-from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedException
-from includes.parsers.Exceptions.PageWoopsException import PageWoopsException
+from includes.loaders.BrowserLoader import BrowserLoader
+from includes.models import Company
+from includes.scrapers.CompanyScraper import CompanyScraper
 from includes.scrapers.ComplaintsScraper import ComplaintsScraper
 from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
-import datetime
-import os, random
+import random
 import argparse
 import sys
 import logging
 from sys import platform
 from multiprocessing import Process, Queue
-import json
-import re
-from includes.parsers.CompanyParser import CompanyParser
-from includes.browser.Driver import Driver
 from includes.scrapers.ReviewsScraper import ReviewsScraper
 
 
-class BBBScraper():
+class BBBScraper:
+    db: DB
+    rescrapeSettingKey: str
 
-    def __init__(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None,
-                 proxy_type="http") -> None:
-        self.driver = None
-        self.browser = None
-        self.driverMaker = Driver()
-        self.lastValidProxy = None
+    def __init__(self) -> None:
         self.rescrapeSettingKey = "rescrape_all_from_db.last_company_id";
         self.db = DB()
 
-    def createBrowser(self, chromedriver_path=None, proxy=None, proxy_port=None, proxy_user=None, proxy_pass=None,
-                      proxy_type="http"):
-        self.browser = self.driverMaker.createBrowserSingleton()
-        self.driver = self.browser.getDriver()
-        self.usedProxy = self.browser.getProxy()
-
-    def scrape_url(self, url, save_to_db=True, scrape_reviews_and_complaints=True,
-                   set_rescrape_setting=False) -> Company:
-
-        if "https://www.bbb.org/" not in url and "profile" not in url:
+    def normalizeCompanyUrl(self, companyUrl: str) -> str:
+        if "https://www.bbb.org/" not in companyUrl and "profile" not in companyUrl:
             raise Exception("Invalid URL")
 
-        url_split = url.split("/")
+        url_split = companyUrl.split("/")
         if url_split[-1] in ["details", "customer-reviews", "complaints"]:
-            url = "/".join(url_split[:-1])
+            companyUrl = "/".join(url_split[:-1])
 
-        self.reloadBrowser()
+        return companyUrl
+
+    def scrape_url(self, companyUrl, save_to_db=True, scrape_reviews_and_complaints=True,
+                   set_rescrape_setting=False) -> Company:
+
+        companyUrl = self.normalizeCompanyUrl(companyUrl)
 
         # must check this before, because url may be deleted in scrape_company_details
-        company_id = self.db.getCompanyIdByUrl(url)
+        company_id = self.db.getCompanyIdByUrl(companyUrl)
 
-        company = self.scrape_company_details(company_url=url, save_to_db=save_to_db,
-                                              half_scraped=not scrape_reviews_and_complaints)
+        company = self.scrape_company_details(
+            company_url=companyUrl,
+            save_to_db=save_to_db,
+            half_scraped=not scrape_reviews_and_complaints
+        )
+
         if company.status == "success":
             if scrape_reviews_and_complaints:
                 self.scrape_company_reviews(company_url=company.url, save_to_db=save_to_db)
                 self.scrape_company_complaints(company_url=company.url, save_to_db=save_to_db)
-
-        self.kill_chrome()
 
         if set_rescrape_setting:
             sql = 'insert into `settings` set `name` = ?, `value` = ? ON DUPLICATE KEY UPDATE `value` = IF(`value` < ?, ?, `value`)'
@@ -84,67 +71,6 @@ class BBBScraper():
 
         return company
 
-    def getSchemaOrgByType(self, type):
-        scriptTags = self.driver.find_elements(By.CSS_SELECTOR, 'script[type*="ld+json"]')
-        for scriptTag in scriptTags:
-            schemaOrgArray = json.loads(scriptTag.get_attribute('innerHTML').strip("\r\n\t ;"))
-            for schemaOrg in schemaOrgArray:
-                if schemaOrg['@type'] == type:
-                    return schemaOrg
-
-        return None
-
-    def getCompanyLDJson(self):
-        localBusiness = self.getSchemaOrgByType('LocalBusiness')
-        if localBusiness is None:
-            raise Exception("Can not get company ld json")
-
-        return localBusiness
-
-    def getCompanyPreloadState(self):
-        code = self.driver.find_element(By.XPATH, '//script[contains(text(),"__PRELOADED_STATE__")]').get_attribute(
-            'innerHTML').strip("\r\n\t ;")
-        code = re.sub('^[^\{]+?{', '{', code)
-        return json.loads(code)
-
-    def reloadBrowser(self, useProxy=None):
-        logging.info("Close old browser, creating new...")
-
-        self.lastValidProxy = getProxy(useProxy)
-
-        self.kill_chrome()
-        self.createBrowser(
-            None,
-            self.lastValidProxy['proxy'],
-            self.lastValidProxy['proxy_port'],
-            self.lastValidProxy['proxy_user'],
-            self.lastValidProxy['proxy_pass'],
-            self.lastValidProxy['proxy_type']
-        )
-
-    def removeCompanyIfEmpty(self, companyUrl: str) -> bool:
-        try:
-            companyId = self.db.getCompanyIdByUrl(companyUrl)
-        except Exception as e:
-            logging.info("Try remove company: " + companyUrl + ", skip. Record not exists in db")
-            return False
-
-        logging.info("Try remove company: " + companyUrl + " with id: " + str(companyId) + " if empty")
-
-        if companyId:
-            totalComplaints = self.db.countRows('complaint', 'company_id = ?', (companyId,))
-            totalReviews = self.db.countRows('review', 'company_id = ?', (companyId,))
-
-            logging.info("Total complaints: " + str(totalComplaints) + ", total reviews: " + str(totalReviews))
-
-            if totalComplaints + totalReviews == 0:
-                logging.info("Company empty, removing: " + companyUrl)
-                self.db.removeCompanyByUrl(companyUrl)
-
-                return True
-
-        return False
-
     def scrape_company_details(self, company_url=None, company_id=None, save_to_db=True, half_scraped=False) -> Company:
 
         if not company_url and not company_id:
@@ -156,383 +82,11 @@ class BBBScraper():
             else:
                 raise Exception("Company with ID %s does not exist" % str(company_id))
 
-        logging.info("Scraping Company Details with proxy " + self.usedProxy + " for " + company_url)
-
-        company = Company()
-        company.url = company_url
-        company.half_scraped = half_scraped
-        company.country = company_url.replace("https://www.bbb.org/", "")[:2]
-        if company.country not in ['us', 'ca']:
-            # send_message("Company %s does not have valid country in url!!" % company.url)
-            company.country = None
-
-        counter = 0
-
-        while True:
-            if counter > 5:
-                raise Exception("Company page, load error")
-
-            logging.info(str(counter) + ") Driver get: " + company_url)
-            self.driver.get(company_url)
-
-            # BugFix: original url https://www.bbb.org/us/al/huntsville/profile/business-associations/the-catalyst-center-for-business-entrepreneurship-0513-900075144
-            # redirect to: https://www.bbb.org/us/al/huntsville/charity-review/charity-community-development-civic-organizations/the-catalyst-center-for-business-entrepreneurship-0513-900075144
-            if "/charity-review/" in self.driver.current_url:
-                logging.info("Charity review detected, removing from database")
-                self.db.removeCompanyByUrl(company_url)
-
-                company.status = "error"
-                company.log = "Charity review"
-
-                return company
-
-            try:
-                c = CompanyParser()
-                c.checkErrorsPage(self.driver.page_source)
-
-                # try parse page, may be no ld+json or other
-                c.setCompany(company)
-                c.parse(self.driver.page_source)
-            except PageNotFoundException as e:
-                logging.info("Company page not found")
-
-                self.removeCompanyIfEmpty(company_url)
-                break
-            except (PageWoopsException, PageNotLoadedException, Exception) as e:
-                logging.info("Company page exception: " + str(e))
-
-                self.reloadBrowser()
-                counter = counter + 1
-
-                continue
-
-            break
-
-        statusMustBeSuccess = False
-        onlyMarkAsSuccess = False
-
-        try:
-            company.source_code = self.driver.page_source
-
-            if "<title>Page not found |" in self.driver.page_source:
-                statusMustBeSuccess = True
-                onlyMarkAsSuccess = True
-                raise Exception("On url request returned: 404 - Whoops! Page not found!")
-
-            if "Oops! We'll be right back." in self.driver.page_source:
-                statusMustBeSuccess = True
-                onlyMarkAsSuccess = True
-                raise Exception("On url request returned: 500 - Whoops! We'll be right back!")
-
-            c = CompanyParser()
-            c.setCompany(company)
-            c.parse(self.driver.page_source)
-
-            if company_url != self.driver.current_url:
-                # old url: https://www.bbb.org/us/nd/fargo/profile/bank/bell-bank-0704-96381846
-                # new url: https://www.bbb.org/us/mn/saint-louis-park/profile/real-estate-loans/bell-mortgage-0704-96148267
-
-                newUrl = self.driver.current_url.split("?")[0]
-
-                logging.info("Company url changed, move data to new url")
-                logging.info("Old url: " + company_url)
-                logging.info("New url: " + newUrl)
-
-                self.db.move_company_to_other_company(company_url, newUrl)
-
-                company.url = newUrl
-
-            company.logo = ""
-
-            counter = 0
-            while True:
-                if counter > 5:
-                    raise Exception("Details page, can not be loaded")
-
-                logging.info(str(counter) + ") Driver get: " + company.url + "/details")
-                self.driver.get(company.url + "/details")
-
-                try:
-                    c = CompanyParser()
-                    c.checkErrorsPage(self.driver.page_source)
-                except (PageWoopsException, PageNotLoadedException) as e:
-                    logging.info("Company details page exception: " + str(e))
-
-                    self.reloadBrowser()
-                    counter = counter + 1
-
-                    continue
-
-                break
-
-            company.source_code_details = self.driver.page_source
-
-            # some proxies are from Mexico, and output not english, need more patterns
-            patterns = [
-                '//*[contains(normalize-space(text()),"BBB File Opened")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
-                '//*[contains(normalize-space(text()),"Business Started")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
-                '//*[contains(@class,"dtm-address")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
-                '//*[contains(@class,"dtm-email")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
-                '//*[contains(@class,"dtm-find-location")]/ancestor::*[contains(@class,"MuiCardContent-root")]',
-
-                '//dt[contains(normalize-space(text()),"BBB File Opened")]/ancestor::dl',
-                '//dt[contains(normalize-space(text()),"Business Started")]/ancestor::dl',
-                '//*[contains(@class,"dtm-address")]/ancestor::dl',
-                '//*[contains(@class,"dtm-email")]/ancestor::dl',
-                '//*[contains(@class,"dtm-find-location")]/ancestor::dl',
-            ]
-
-            detailRoot = None
-
-            for pattern in patterns:
-                try:
-                    detailRoot = self.driver.find_element(By.XPATH, pattern)
-                    break
-                except:
-                    detailRoot = None
-
-            if detailRoot is None:
-                raise Exception("Can not find detailRoot")
-
-            fields_headers = ["Date of New Ownership", "Location of This Business", "BBB File Opened",
-                              "Licensing Information", "Service Type", "Menu Type",
-                              "Number of Employees", "Years in Business", "Type of Entity", "Accredited Since",
-                              "BBB File Opened", "Business Incorporated",
-                              "Business Started", "Business Started Locally", "Headquarters",
-                              "Location of This Business", "Hours of Operation",
-                              "Business Management", "Contact Information", "Customer Contact",
-                              "Additional Contact Information", "Fax Numbers",
-                              "Serving Area", "Products and Services", "Business Categories", "Alternate Business Name",
-                              "Related Businesses", "Email Addresses",
-                              "Phone Numbers", "Social Media", "Website Addresses", "Payment Methods",
-                              "Referral Assistance", "Refund and Exchange Policy", "Additional Business Information"]
-            fields_headers = list(map(lambda x: x.lower(), fields_headers))
-            fields_dict = {}
-
-            elements = detailRoot.find_elements(By.CSS_SELECTOR, 'dt, dd')
-            lastName = None
-            for element in elements:
-                try:
-                    name = element.text.strip().lower().replace(':', '')
-                    tag = element.tag_name
-                    text = element.text
-                except:
-                    continue
-
-                if tag == "dt" and name in fields_headers:
-                    lastName = name
-                    # print("header: " + lastName)
-                    if lastName:
-                        if lastName not in fields_headers:
-                            raise Exception("Unknown field: " + lastName)
-
-                        fields_dict[lastName] = ''
-                elif lastName:
-                    # print("Append to " + lastName + ": " + element.text)
-                    fields_dict[lastName] += text
-
-            # print(fields_dict)
-            # sys.exit(1)
-            if "business started" in fields_dict:
-                company.business_started = self.convertDateToOurFormat(fields_dict["business started"])
-
-            if "business incorporated" in fields_dict:
-                company.business_incorporated = self.convertDateToOurFormat(fields_dict["business incorporated"])
-
-            if "bbb file opened" in fields_dict:
-                company.bbb_file_opened = self.convertDateToOurFormat(fields_dict["bbb file opened"])
-
-            if "accredited since" in fields_dict:
-                company.accredited_since = self.convertDateToOurFormat(fields_dict["accredited since"])
-
-            if "type of entity" in fields_dict:
-                company.type_of_entity = fields_dict["type of entity"]
-
-            if "years in business" in fields_dict:
-                company.years_in_business = fields_dict["years in business"]
-
-            if "number of employees" in fields_dict:
-                company.number_of_employees = fields_dict["number of employees"]
-
-            # print(fields_dict)
-            if "hours of operation" in fields_dict:
-                working_hours_dict = {}
-                days_mapping = {"M:": "monday",
-                                "T:": "tuesday",
-                                "W:": "wednesday",
-                                "Th:": "thursday",
-                                "F:": "friday",
-                                "Sa:": "saturday",
-                                "Su:": "sunday",
-                                }
-                fields_dict["hours of operation"] = fields_dict["hours of operation"].replace(":\n", ": ")
-                for line in fields_dict["hours of operation"].strip().split("\n"):
-                    first_word = line.split()[0]
-                    # print("Line: " + line + ", first_word: " + first_word)
-                    if first_word not in days_mapping:
-                        continue
-                    time_data = "".join(line.split()[1:]).lower()
-                    # print("time_data: " + time_data)
-                    if time_data == "open24hours":
-                        time_data = "open24"
-                    elif "-" in time_data:
-                        times = time_data.split("-")
-                        if len(times) == 2:
-                            for time_index in range(2):
-                                if "pm" in times[time_index]:
-                                    colon_split = times[time_index].split(":")
-                                    if len(colon_split) >= 2:
-                                        times[time_index] = str(int(colon_split[0]) + 12) + ":" + colon_split[
-                                            1].replace("pm", "")
-                                    else:
-                                        times[time_index] = str(int(colon_split[0]) + 12)
-                                times[time_index] = times[time_index].replace("am", "")
-                        time_data = "-".join(times)
-
-                    working_hours_dict[days_mapping[first_word]] = time_data.replace(".", "")
-
-                    # may be many hours tables > 1, use only first
-                    if len(working_hours_dict) >= 7:
-                        break
-                company.working_hours = json.dumps(working_hours_dict)
-                company.original_working_hours = fields_dict['hours of operation']
-
-            if "business management" in fields_dict:
-                company.original_business_management = fields_dict["business management"].strip()
-                company.business_management = []
-                for line in company.original_business_management.split("\n"):
-                    if "," in line:
-                        line_split = line.split(",")
-                        company.business_management.append(
-                            {"type": line_split[1].strip(), "person": line_split[0].strip()})
-                company.business_management = json.dumps(company.business_management)
-
-            if "contact information" in fields_dict:
-                company.original_contact_information = fields_dict["contact information"].strip()
-                company.contact_information = []
-                current_type = None
-                for line in company.original_contact_information.split("\n"):
-                    if "," not in line:
-                        current_type = line
-                    elif current_type:
-                        person = {"name": line.split(",")[0].strip(), "designation": line.split(",")[1].strip()}
-                        if company.contact_information and company.contact_information[-1]["type"] == current_type:
-                            company.contact_information[-1]["persons"].append(person)
-                        else:
-                            company.contact_information.append({"type": current_type, "persons": [person]})
-                company.contact_information = json.dumps(company.contact_information)
-
-            if "customer contact" in fields_dict:
-                company.original_customer_contact = fields_dict["customer contact"].strip()
-                company.customer_contact = []
-                for line in company.original_customer_contact.split("\n"):
-                    if "," in line:
-                        line_split = line.split(",")
-                        company.customer_contact.append(
-                            {"type": line_split[1].strip(), "person": line_split[0].strip()})
-                company.customer_contact = json.dumps(company.customer_contact)
-
-            if "fax numbers" in fields_dict:
-                fax_lines = fields_dict["fax numbers"].replace("Primary Fax", "").replace("Other Fax", "").replace(
-                    "Read More", "").replace("Read Less", "").strip()
-                fax_lines = [line for line in fax_lines.split("\n") if line[-3:].isnumeric()]
-                print(fax_lines)
-                company.fax_numbers = fax_lines[0]
-                if len(fax_lines) > 1:
-                    company.additional_faxes = "\n".join(fax_lines[1:])
-
-            if "serving area" in fields_dict:
-                pattern = r'<.*?>'
-                company.serving_area = re.sub(pattern, '',
-                                              fields_dict["serving area"].replace("Read More", "").replace("Read Less",
-                                                                                                           "").strip()[
-                                              :65535])
-
-            if "phone numbers" in fields_dict:
-                company.additional_phones = fields_dict["phone numbers"].replace("Read More", "").replace("Read Less",
-                                                                                                          "").replace(
-                    "Primary Phone", "").replace("Other Phone", "").strip()
-                company.additional_phones = "\n".join(
-                    [line for line in company.additional_phones.split("\n") if line[-3:].isnumeric()])
-
-            if "website addresses" in fields_dict:
-                company.additional_websites = ""
-                for url in fields_dict["website addresses"].replace("Read More", "").replace("Read Less",
-                                                                                             "").strip().split("\n"):
-                    if ("http" in url or "www" in url or ".com" in url) and " " not in url.strip():
-                        company.additional_websites += url + "\n"
-
-            if "alternate business name" in fields_dict:
-                company.alternate_business_name = fields_dict["alternate business name"].replace("Read More",
-                                                                                                 "").replace(
-                    "Read Less", "").replace("\n\n", "\n")
-
-            social_media_links = self.driver.find_elements(By.CSS_SELECTOR, ".with-icon.css-1csllio.e13hff4y0")
-            for link in social_media_links:
-                link_text = link.text.lower().strip()
-                if link_text == "facebook":
-                    company.facebook = link.get_attribute("href")
-                elif link_text == "instagram":
-                    company.instagram = link.get_attribute("href")
-                elif link_text == "twitter":
-                    company.twitter = link.get_attribute("href")
-                elif link_text == "pinterest":
-                    company.pinterest = link.get_attribute("href")
-                elif link_text == "linkedin":
-                    company.linkedin = link.get_attribute("href")
-
-            if "payment methods" in fields_dict:
-                company.payment_methods = fields_dict["payment methods"].replace("Read More", "").replace("Read Less",
-                                                                                                          "").replace(
-                    "\n\n", "\n")
-
-            if "referral assistance" in fields_dict:
-                company.referral_assistance = fields_dict["referral assistance"].replace("Read More", "").replace(
-                    "Read Less", "").replace("\n\n", "\n")
-
-            if "refund and exchange policy" in fields_dict:
-                company.refund_and_exchange_policy = fields_dict["refund and exchange policy"].replace("Read More",
-                                                                                                       "").replace(
-                    "Read Less", "").replace("\n\n", "\n")
-
-            if "business categories" in fields_dict:
-                company.business_categories = fields_dict["business categories"].replace("Read More", "").replace(
-                    "Read Less", "").replace("\n\n", "\n")
-
-        except Exception as e:
-            company.log = "Proxy: " + self.usedProxy + "\n" + traceback.format_exc()
-
-            if not statusMustBeSuccess:
-                company.status = "error"
-                logging.error(company.log)
-
-        if not company.status:
-            company.status = "success"
-
-        if save_to_db:
-            if onlyMarkAsSuccess:
-                # company 404 but must save old data
-                self.db.mark_company_as_success(company.url)
-            else:
-                self.db.insert_or_update_company(company)
+        sc = CompanyScraper()
+        sc.setDatabase(self.db)
+        company = sc.scrape(company_url)
 
         return company
-
-    def convertDateToOurFormat(self, text):
-        # BBB have date problem:
-        # https://www.bbb.org/us/ca/tracy/profile/mattress-supplies/zinus-inc-1156-90044368/customer-reviews
-        # 02/28/2022
-        # https://www.bbb.org/ca/ab/calgary/profile/insurance-agency/bayside-associates-0017-52776/customer-reviews
-        # 15/09/2020
-        # that's why %m/%d/%Y not work
-        try:
-            text = text.strip()
-            text = re.sub(r'[^0-9/]', '', text)
-            return datetime.datetime.strptime(text, "%m/%d/%Y").strftime('%Y-%m-%d')
-        except Exception as e:
-            pass
-
-        return datetime.datetime.strptime(text, "%d/%m/%Y").strftime('%Y-%m-%d')
 
     def scrape_company_reviews(self, company_url=None, company_id=None, save_to_db=True,
                                scrape_specific_review=None) -> None:
@@ -543,7 +97,7 @@ class BBBScraper():
                 self.scrape_company_details(company_url=company_url, save_to_db=True)
                 row = self.db.queryRow("select company_id from company where url = ?", (company_url,))
             if row is None:
-                return []
+                return
 
             company_id = row['company_id']
 
@@ -555,13 +109,6 @@ class BBBScraper():
                 raise Exception("Company with ID %s does not exist" % str(company_id))
         else:
             raise Exception("Please provide either company URL or company ID")
-
-        if scrape_specific_review:
-            logging.info("Scraping Review with id %s for %s" % (scrape_specific_review, company_url))
-        else:
-            logging.info("Scraping Reviews for " + company_url)
-
-        self.kill_chrome()
 
         sc = ReviewsScraper()
         sc.setDatabase(self.db)
@@ -589,8 +136,6 @@ class BBBScraper():
         else:
             raise Exception("Please provide either company URL or company ID")
 
-        self.kill_chrome()
-
         sc = ComplaintsScraper()
         sc.setDatabase(self.db)
         sc.setCompanyId(company_id)
@@ -615,8 +160,6 @@ class BBBScraper():
             except Exception as e:
                 self.lastValidProxy = None
                 logging.error(e)
-            finally:
-                self.kill_chrome()
 
         raise Exception("Can not create browser")
 
@@ -734,20 +277,13 @@ class BBBScraper():
     def scrape_urls_from_queue(self, q, scrape_reviews_and_complaints=True, set_rescrape_setting=False):
 
         try:
-            proxy = getProxy()
-            scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'],
-                                 proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+            scraper = BBBScraper()
 
             while q.qsize():
                 company_url = q.get()
                 scraper.scrape_url(company_url, scrape_reviews_and_complaints=scrape_reviews_and_complaints,
                                    set_rescrape_setting=set_rescrape_setting)
 
-        except:
-            pass
-
-        try:
-            scraper.kill_chrome()
         except:
             pass
 
@@ -759,13 +295,6 @@ class BBBScraper():
                     return element.get_attribute("href")
                 return elem_text
         return None
-
-    def kill_chrome(self):
-        if self.browser:
-            self.browser.kill()
-
-        self.browser = None
-        self.driver = None
 
 
 def str2bool(v):
@@ -816,18 +345,13 @@ if __name__ == '__main__':
             for line in lines:
                 args.urls.append(line)
 
-        scraper.reloadBrowser(args.proxy)
-
         for url in args.urls:
-            logging.info("Scraping: " + url)
+            logging.info("Scraping url: " + url)
 
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
-            logging.info("Company Details for %s scraped successfully.\n" % company.name)
 
             if company.status == "success":
-                # need use company.url because url may be changed
                 scraper.scrape_company_reviews(company_url=company.url, save_to_db=str2bool(args.save_to_db))
                 scraper.scrape_company_complaints(company_url=company.url, save_to_db=str2bool(args.save_to_db))
-                logging.info("Complaints and reviews scraped successfully.\n")
 
-    scraper.kill_chrome()
+                logging.info("Complaints and reviews scraped successfully.\n")

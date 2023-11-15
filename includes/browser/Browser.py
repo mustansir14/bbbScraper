@@ -14,7 +14,10 @@ class Browser:
         self.proxy = ""
 
     def getId(self) -> str:
-        return self.driver.session_id
+        return self.driver.session_id if self.driver else "[DriverRemoved]"
+
+    def getCurrentUrl(self) -> str:
+        return self.driver.current_url
 
     def setProxy(self, proxy: str) -> None:
         self.proxy = proxy
@@ -24,8 +27,9 @@ class Browser:
 
     def kill(self):
         try:
-            logging.info("Killing browser #" + self.getId())
-            self.driver.quit()
+            if self.driver:
+                logging.info("Killing browser #" + self.getId())
+                self.driver.quit()
         except Exception as e:
             logging.error("Kill browser exception: " + str(e))
         finally:

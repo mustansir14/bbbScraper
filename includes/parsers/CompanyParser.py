@@ -72,6 +72,7 @@ class CompanyParser(ParserInterface):
 
         self.company.products_and_services = companyPreloadState['businessProfile']['display']['prodSrvcsSummary']
         self.company.source_code = html
+        self.company.logo = ""
 
     def checkErrorsPage(self, html: str):
         if "<title>You are being rate limited" in html:

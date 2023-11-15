@@ -54,6 +54,29 @@ class DB:
             time.sleep(10)
         
         return False
+
+    def removeCompanyIfEmpty(self, companyUrl: str) -> bool:
+        try:
+            companyId = self.getCompanyIdByUrl(companyUrl)
+        except Exception as e:
+            logging.info("Try remove company: " + companyUrl + ", skip. Record not exists in db")
+            return False
+
+        logging.info("Try remove company: " + companyUrl + " with id: " + str(companyId) + " if empty")
+
+        if companyId:
+            totalComplaints = self.countRows('complaint', 'company_id = ?', (companyId,))
+            totalReviews = self.countRows('review', 'company_id = ?', (companyId,))
+
+            logging.info("Total complaints: " + str(totalComplaints) + ", total reviews: " + str(totalReviews))
+
+            if totalComplaints + totalReviews == 0:
+                logging.info("Company empty, removing: " + companyUrl)
+                self.removeCompanyByUrl(companyUrl)
+
+                return True
+
+        return False
         
     def removeCompanyByUrl(self, url):
         sql = 'delete from company where url = ?';
@@ -398,7 +421,6 @@ class DB:
             self.execSQL(sql,args)
             
             logging.info(success_statement)
-            logging.info("Company id: " + str(self.getCompanyIdByUrl(company.url)))
         except Exception as e:
             logging.error(traceback.format_exc())
             raise e

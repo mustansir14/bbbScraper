@@ -79,4 +79,3 @@ if __name__ == "__main__":
                 for company_url in urls_to_scrape:
                     scraper.scrape_url(company_url, scrape_reviews_and_complaints=False)
 
-    scraper.kill_chrome()

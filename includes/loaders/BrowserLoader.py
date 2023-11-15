@@ -1,5 +1,6 @@
 from includes.browser.Browser import Browser
 from includes.browser.Driver import Driver
+from includes.models import Company
 from includes.parsers.CompanyParser import CompanyParser
 from includes.parsers.Exceptions.PageNotFoundException import PageNotFoundException
 from includes.parsers.Exceptions.PageNotLoadedException import PageNotLoadedException
@@ -8,6 +9,9 @@ import logging
 
 
 class BrowserLoader:
+    OptionRunCompanyParser = "run_company_parser"
+
+    firstPage: None
     browser: Browser
     driver: Driver
 
@@ -29,7 +33,7 @@ class BrowserLoader:
     def loadFirstPage(self):
         return self.loadPage(self.firstPage)
 
-    def loadPage(self, pageUrl: str) -> Browser | None:
+    def loadPage(self, pageUrl: str, options: dict = {}) -> Browser | int | None:
         if not self.browser:
             self.browser = self.browserCreator.createBrowserSingleton()
 
@@ -44,10 +48,14 @@ class BrowserLoader:
 
                 logging.info(str(tryNbr) + ") No errors for return browser")
 
+                if self.OptionRunCompanyParser in options:
+                    c.setCompany(Company())
+                    c.parse(self.browser.getPageSource())
+
                 return self.browser
             except PageNotFoundException as e:
                 logging.info(str(tryNbr) + ") Page not found (" + pageUrl + "), return None")
-                return None
+                return 404
             except (PageNotLoadedException, PageWoopsException) as e:
                 logging.info(str(tryNbr) + ") Page error: " + str(e) + ", recreate browser")
 

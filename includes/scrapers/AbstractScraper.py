@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import datetime
 import re
+from typing import Any
 
 from includes.DB import DB
 from includes.loaders.BrowserLoader import BrowserLoader
@@ -13,7 +14,16 @@ class AbstractScraper(ABC):
 
     def __init__(self):
         self.db = None
-        self.browserLoader = BrowserLoader()
+        self.browserLoader = None
+
+    def getBrowserLoader(self) -> BrowserLoader:
+        if not self.browserLoader:
+            self.setBrowserLoader(BrowserLoader())
+
+        return self.browserLoader
+
+    def setBrowserLoader(self, browserLoader: BrowserLoader) -> None:
+        self.browserLoader = browserLoader
 
     def setDatabase(self, db: DB) -> None:
         self.db = db
@@ -42,13 +52,14 @@ class AbstractScraper(ABC):
 
         return datetime.datetime.strptime(text, "%d/%m/%Y").strftime('%Y-%m-%d')
 
-    def scrape(self, companyUrl: str) -> None:
+    def scrape(self, companyUrl: str) -> Any:
         try:
-            self.scrapeInternal(companyUrl)
+            return self.scrapeInternal(companyUrl)
         finally:
-            self.browserLoader.kill()
+            if self.browserLoader:
+                self.browserLoader.kill()
 
     @classmethod
     @abstractmethod
-    def scrapeInternal(self, companyUrl: str) -> None:
+    def scrapeInternal(self, companyUrl: str) -> Any:
         pass

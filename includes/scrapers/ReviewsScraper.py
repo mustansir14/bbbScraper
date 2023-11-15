@@ -1,5 +1,6 @@
 import traceback
 import time
+from typing import Any
 
 from includes.browser.Browser import Browser
 from includes.browser.BrowserElement import BrowserElement
@@ -20,13 +21,13 @@ class ReviewsScraper(AbstractScraper):
     def setCompanyId(self, companyId: int) -> None:
         self.companyId = companyId
 
-    def scrapeInternal(self, companyUrl: str) -> None:
+    def scrapeInternal(self, companyUrl: str) -> Any:
         logging.info("Scraping reviews for " + companyUrl)
 
         if not self.companyId:
             raise Exception("No company id")
 
-        browser = self.browserLoader.loadPage(companyUrl + "/customer-reviews")
+        browser = self.getBrowserLoader().loadPage(companyUrl + "/customer-reviews")
         totalPages = 1
 
         page = 0
@@ -55,6 +56,8 @@ class ReviewsScraper(AbstractScraper):
 
             if self.scrapeReviews(data['items']) == 0:
                 break
+
+        return None
 
     def getReviewsApiRequest(self, browser, apiUrl: str) -> dict | None:
         jsCode = '''

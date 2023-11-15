@@ -35,9 +35,6 @@ def scraperUrlsFromQueueIgnoreExceptions(q, scrape_reviews_and_complaints=True, 
                 logging.info(str(e))
     except:
         pass
-    finally:
-        if scraper:
-            scraper.kill_chrome()
 
 
 if __name__ == "__main__":

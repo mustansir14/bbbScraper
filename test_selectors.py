@@ -70,7 +70,7 @@ if company.complaints:
             send_message("ERROR IN TESTING SELECTORS SCRIPT:\n\nComplaint: " + fields_not_in_all[i] + " not found in any of the complaints!")
 
 
-scraper.kill_chrome()
+
         
             
 
