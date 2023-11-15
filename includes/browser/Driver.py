@@ -29,10 +29,6 @@ class Driver:
         self.urlsBlocker = DriverUrlsBlocker()
         self.binary = DriverBinary()
 
-        if os.name != "nt":
-            self.display = Display(visible=0, size=(1920, 1080))
-            self.display.start()
-
     def createBrowser(self) -> Browser:
         self.dumpsCleaner.clean()
 

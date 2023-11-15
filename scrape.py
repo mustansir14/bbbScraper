@@ -6,7 +6,9 @@
 
 import time
 from includes.DB import DB
+from includes.helpers.CLIArgumentsParserHelper import CLIArgumentsParserHelper
 from includes.loaders.BrowserLoader import BrowserLoader
+from includes.loaders.DisplayLoader import DisplayLoader
 from includes.models import Company
 from includes.scrapers.CompanyScraper import CompanyScraper
 from includes.scrapers.ComplaintsScraper import ComplaintsScraper
@@ -301,57 +303,49 @@ def str2bool(v):
     return str(v).lower() in ("yes", "true", "t", "1")
 
 
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
-    parser.add_argument("--bulk_scrape", nargs='?', type=str, default="False",
-                        help="Boolean variable to bulk scrape companies. Default False. If set to True, save_to_db will also be set to True")
-    parser.add_argument("--urls", nargs='*', help="url(s) for scraping. Separate by spaces")
-    parser.add_argument("--save_to_db", nargs='?', type=str, default="False",
-                        help="Boolean variable to save to db. Default False")
-    parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
-    parser.add_argument("--log_file", nargs='?', type=str, default=None,
-                        help="Path for log file. If not given, output will be printed on stdout.")
-    parser.add_argument("--urls_from_file", nargs='?', type=str, default=None, help="Load urls from file")
-    parser.add_argument("--grabber-bbb-mustansir", nargs='?', type=bool, default=False, help="Only mark to kill all")
-    parser.add_argument("--proxy", nargs='?', type=str, default=None, help="Set proxy for scan")
-    if len(sys.argv) == 1:
-        parser.print_help(sys.stderr)
-        sys.exit(1)
-    args = parser.parse_args()
-
+def main(args):
     # setup logging based on arguments
-    logging.basicConfig(handlers=[
-        logging.FileHandler("logs/scrape.py.log"),
-        logging.StreamHandler()
-    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
     if args.proxy:
         logging.info("Try use proxy: " + args.proxy)
 
     scraper = BBBScraper()
 
-    if str2bool(args.bulk_scrape):
-        scraper.bulk_scrape(no_of_threads=args.no_of_threads)
-    else:
-        if args.urls_from_file is not None:
-            lines = open(args.urls_from_file).readlines()
-            lines = map(lambda x: x.strip(), lines)
-            lines = list(filter(None, lines))
+    if args.urls_from_file is not None:
+        lines = open(args.urls_from_file).readlines()
+        lines = map(lambda x: x.strip(), lines)
+        lines = list(filter(None, lines))
 
-            if args.urls is None:
-                args.urls = []
+        if args.urls is None:
+            args.urls = []
 
-            for line in lines:
-                args.urls.append(line)
+        for line in lines:
+            args.urls.append(line)
 
-        for url in args.urls:
-            logging.info("Scraping url: " + url)
+    for url in args.urls:
+        logging.info("Scraping url: " + url)
 
-            company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
+        company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
 
-            if company.status == "success":
-                scraper.scrape_company_reviews(company_url=company.url, save_to_db=str2bool(args.save_to_db))
-                scraper.scrape_company_complaints(company_url=company.url, save_to_db=str2bool(args.save_to_db))
+        if company.status == "success":
+            scraper.scrape_company_reviews(company_url=company.url, save_to_db=str2bool(args.save_to_db))
+            scraper.scrape_company_complaints(company_url=company.url, save_to_db=str2bool(args.save_to_db))
 
-                logging.info("Complaints and reviews scraped successfully.\n")
+            logging.info("Complaints and reviews scraped successfully.\n")
+
+
+if __name__ == '__main__':
+    logging.basicConfig(handlers=[
+        logging.FileHandler("logs/scrape.py.log"),
+        logging.StreamHandler()
+    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+
+    args = CLIArgumentsParserHelper.get()
+    display = DisplayLoader()
+
+    try:
+        display.start()
+
+        main(args)
+    finally:
+        display.stop()
