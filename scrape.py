@@ -244,20 +244,6 @@ class BBBScraper():
 
             company.logo = ""
 
-            # try:
-            #    logo = self.driver.find_element(By.CSS_SELECTOR, ".dtm-logo").find_element(By.CSS_SELECTOR,
-            #                                                                               "img").get_attribute("src")
-            #    if not "non-ab-icon__300w.png" in logo:
-            #        company.logo = "file/logo/" + slugify(company.name) + ".png"
-            #
-            #        self.driver.execute_script(f'''window.open("{logo}","_blank");''')
-            #        self.driver.switch_to.window(self.driver.window_handles[1])
-            #        self.driver.save_screenshot(company.logo)
-            #        self.driver.close()
-            #        self.driver.switch_to.window(self.driver.window_handles[0])
-            # except Exception as e:
-            #    company.logo = ""
-
             counter = 0
             while True:
                 if counter > 5:

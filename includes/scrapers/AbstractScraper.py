@@ -26,7 +26,7 @@ class AbstractScraper(ABC):
 
         return text + "..."
 
-    def convertDateToOurFormat(self, text):
+    def convertDateToDbFormat(self, text):
         # BBB have date problem:
         # https://www.bbb.org/us/ca/tracy/profile/mattress-supplies/zinus-inc-1156-90044368/customer-reviews
         # 02/28/2022

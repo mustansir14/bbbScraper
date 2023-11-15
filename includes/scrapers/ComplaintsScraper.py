@@ -81,7 +81,7 @@ class ComplaintsScraper(AbstractScraper):
             complaint.complaint_type = tag.findXpath(
                 './/*[normalize-space(text())="Complaint Type:"]/following-sibling::*').textStriped()
             complaint.complaint_text = tag.findXpath('.//*[@data-body]/div[1]').textStriped()
-            complaint.complaint_date = self.convertDateToOurFormat(
+            complaint.complaint_date = self.convertDateToDbFormat(
                 tag.findXpath('.//h3/following-sibling::*').textStriped()
             )
 
@@ -109,7 +109,7 @@ class ComplaintsScraper(AbstractScraper):
 
                 if "business response" in type.lower():
                     complaint.company_response_text = text
-                    complaint.company_response_date = self.convertDateToOurFormat(date)
+                    complaint.company_response_date = self.convertDateToDbFormat(date)
 
                     break
 
