@@ -833,9 +833,6 @@ if __name__ == '__main__':
         for url in args.urls:
             logging.info("Scraping: " + url)
 
-            scraper.scrape_company_reviews(company_url=url, save_to_db=str2bool(args.save_to_db))
-            break
-
             company = scraper.scrape_company_details(company_url=url, save_to_db=str2bool(args.save_to_db))
             logging.info("Company Details for %s scraped successfully.\n" % company.name)
 
