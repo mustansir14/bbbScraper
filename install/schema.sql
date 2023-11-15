@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 65.109.70.91
--- Время создания: Ноя 09 2023 г., 11:54
+-- Время создания: Ноя 15 2023 г., 11:31
 -- Версия сервера: 10.9.7-MariaDB
 -- Версия PHP: 8.1.1
 
@@ -228,7 +228,7 @@ CREATE TABLE `review` (
   `date_created` datetime DEFAULT NULL,
   `date_updated` datetime DEFAULT NULL,
   `status` varchar(7) DEFAULT NULL,
-  `log` varchar(255) DEFAULT NULL
+  `log` longtext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
