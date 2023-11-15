@@ -575,6 +575,8 @@ class BBBScraper():
         else:
             logging.info("Scraping Reviews for " + company_url)
 
+        self.kill_chrome()
+
         sc = ReviewsScraper()
         sc.setDatabase(self.db)
         sc.setCompanyId(company_id)
