@@ -20,6 +20,7 @@ rfh.setLevel(level=logging.DEBUG)
 root = logging.getLogger('root')
 root.setLevel(logging.INFO)
 root.addHandler(rfh)
+root.addHandler(logging.StreamHandler())
 
 if __name__ == "__main__":
 
@@ -29,9 +30,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     no_of_threads = args.no_of_threads
-        
-    proxy = getProxy()
-    scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'], proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+
+    scraper = BBBScraper()
     
     while True:
         fromCompanyId = scraper.db.getSettingInt(scraper.rescrapeSettingKey, 0)

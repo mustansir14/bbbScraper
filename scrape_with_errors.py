@@ -5,13 +5,6 @@ from multiprocessing import Queue, Process
 import argparse
 import logging, sys, time, re
 from includes.DB import DB
-
-logging.basicConfig(handlers=[
-    logging.FileHandler("logs/scrape_with_errors.py.log"),
-    logging.StreamHandler()
-], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-
-
 def scraperUrlsFromQueueIgnoreExceptions(q, scrape_reviews_and_complaints=True, set_rescrape_setting=False):
     scraper = None
     try:
@@ -46,6 +39,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    logging.basicConfig(handlers=[
+        logging.FileHandler("logs/scrape_with_errors.py.log"),
+        logging.StreamHandler()
+    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+
     db = DB()
     count = 0
     while count < 1:
@@ -68,9 +66,7 @@ if __name__ == "__main__":
         if args.no_of_threads == 1:
             logging.info("Scrape with 1 treads")
 
-            proxy = getProxy()
-            scraper = BBBScraper(proxy=proxy['proxy'], proxy_port=proxy['proxy_port'], proxy_user=proxy['proxy_user'],
-                                 proxy_pass=proxy['proxy_pass'], proxy_type=proxy['proxy_type'])
+            scraper = BBBScraper()
 
             while urls_to_scrape.qsize():
                 company_url = urls_to_scrape.get()

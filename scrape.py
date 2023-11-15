@@ -7,7 +7,6 @@
 import time
 from includes.DB import DB
 from includes.helpers.CLIArgumentsParserHelper import CLIArgumentsParserHelper
-from includes.loaders.BrowserLoader import BrowserLoader
 from includes.loaders.DisplayLoader import DisplayLoader
 from includes.models import Company
 from includes.scrapers.CompanyScraper import CompanyScraper
@@ -15,8 +14,6 @@ from includes.scrapers.ComplaintsScraper import ComplaintsScraper
 from includes.proxies import getProxy
 import xml.etree.ElementTree as ET
 import random
-import argparse
-import sys
 import logging
 from sys import platform
 from multiprocessing import Process, Queue
