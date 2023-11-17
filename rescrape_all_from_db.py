@@ -1,3 +1,4 @@
+from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from sys import platform
 from includes.proxies import getProxy
@@ -7,9 +8,9 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 rfh = RotatingFileHandler(
-    filename="logs/rescrape_all_from_db.py.log", 
+    filename="logs/rescrape_all_from_db.py.log",
     mode='a',
-    maxBytes=20*1024*1024,
+    maxBytes=20 * 1024 * 1024,
     backupCount=1,
     delay=0,
     encoding=None
@@ -22,34 +23,30 @@ root.setLevel(logging.INFO)
 root.addHandler(rfh)
 root.addHandler(logging.StreamHandler())
 
-if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
-    parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
-    parser.add_argument('--logfile', nargs='?', type=str, default=None, help='Path of the file where logs should be written')
-
-    args = parser.parse_args()
+def main(args):
     no_of_threads = args.no_of_threads
 
     scraper = BBBScraper()
-    
+
     while True:
         fromCompanyId = scraper.db.getSettingInt(scraper.rescrapeSettingKey, 0)
 
-        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT " + str(no_of_threads) + ";"
+        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT " + str(
+            no_of_threads) + ";"
         logging.info(sql)
-        
+
         companies = scraper.db.queryArray(sql)
         if not companies:
             logging.info("No more companies, set from to zero")
             scraper.db.setSetting(scraper.rescrapeSettingKey, 0)
             break
-        
+
         if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
             urls_to_scrape = Queue()
         else:
             urls_to_scrape = []
-            
+
         for company in companies:
             logging.info(str(company['company_id']) + ': ' + company['url'])
             if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
@@ -60,11 +57,30 @@ if __name__ == "__main__":
         if no_of_threads > 1 and (platform == "linux" or platform == "linux2"):
             processes = []
             for i in range(no_of_threads):
-                processes.append(Process(target=scraper.scrape_urls_from_queue, args=(urls_to_scrape, True, True, )))
+                processes.append(Process(target=scraper.scrape_urls_from_queue, args=(urls_to_scrape, True, True,)))
                 processes[i].start()
 
             for i in range(no_of_threads):
                 processes[i].join()
         else:
             for company_url in urls_to_scrape:
-                scraper.scrape_url(company_url, scrape_reviews_and_complaints=True, set_rescrape_setting = True)
+                scraper.scrape_url(company_url, scrape_reviews_and_complaints=True, set_rescrape_setting=True)
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
+    parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
+    parser.add_argument('--logfile', nargs='?', type=str, default=None,
+                        help='Path of the file where logs should be written')
+
+    args = parser.parse_args()
+
+    display = DisplayLoader()
+
+    try:
+        display.start()
+
+        main(args)
+    finally:
+        display.stop()
