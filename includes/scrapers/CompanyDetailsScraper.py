@@ -49,9 +49,6 @@ class CompanyDetailsScraper(AbstractScraper):
 
         businessProfile = companyPreloadState['businessProfile']
 
-        # pprint.pprint(businessProfile)
-        # sys.exit(1)
-
         fields_headers = ["Date of New Ownership", "Location of This Business", "BBB File Opened",
                           "Licensing Information", "Service Type", "Menu Type",
                           "Number of Employees", "Years in Business", "Type of Entity", "Accredited Since",
@@ -89,8 +86,6 @@ class CompanyDetailsScraper(AbstractScraper):
                 # print("Append to " + lastName + ": " + element.text)
                 fields_dict[lastName] += text
 
-        # print(fields_dict)
-        # sys.exit(1)
         if "business started" in fields_dict:
             self.company.business_started = DateHelper.bbbDate2mariadb(fields_dict["business started"])
 
@@ -319,6 +314,9 @@ class CompanyDetailsScraper(AbstractScraper):
     def getProfileItem(self, businessProfile, path):
         current = businessProfile
         for part in path.split("."):
+            if type(current) is not dict:
+                return None
+
             if part not in current:
                 return None
 
