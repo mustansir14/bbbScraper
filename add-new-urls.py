@@ -1,3 +1,4 @@
+from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from sys import platform
 from includes.proxies import getProxy
@@ -11,7 +12,8 @@ logging.basicConfig(handlers=[
     logging.StreamHandler()
 ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
-if __name__ == "__main__":
+def main():
+
     scraper = BBBScraper()
 
     companies = scraper.db.queryArray(
@@ -24,3 +26,13 @@ if __name__ == "__main__":
                 logging.error("scrape_url exception: " + str(e))
 
     scraper.addNewUrls()
+
+if __name__ == "__main__":
+    display = DisplayLoader()
+
+    try:
+        display.start()
+
+        main()
+    finally:
+        display.stop()

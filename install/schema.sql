@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 65.109.70.91
--- Время создания: Ноя 15 2023 г., 11:31
+-- Время создания: Ноя 17 2023 г., 10:40
 -- Версия сервера: 10.9.7-MariaDB
 -- Версия PHP: 8.1.1
 
@@ -25,8 +25,8 @@ DELIMITER $$
 --
 -- Функции
 --
-CREATE DEFINER=`remote`@`%` FUNCTION `getDomain` (`website` TEXT) RETURNS VARCHAR(150) CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci  begin
-	declare domain varchar(255) default null;
+CREATE DEFINER=`remote`@`%` FUNCTION `getDomain` (`website` TEXT) RETURNS TEXT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci  begin
+	declare domain text default null;
     
 	if website is not null then
     	set domain = sanitize_url(website);
