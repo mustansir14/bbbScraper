@@ -1,3 +1,4 @@
+from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from sys import platform
 from includes.proxies import getProxy
@@ -5,6 +6,8 @@ from multiprocessing import Queue, Process
 import argparse
 import logging, sys, time, re
 from includes.DB import DB
+
+
 def scraperUrlsFromQueueIgnoreExceptions(q, scrape_reviews_and_complaints=True, set_rescrape_setting=False):
     scraper = None
     try:
@@ -30,20 +33,7 @@ def scraperUrlsFromQueueIgnoreExceptions(q, scrape_reviews_and_complaints=True, 
         pass
 
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
-    parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
-    parser.add_argument('--logfile', nargs='?', type=str, default=None,
-                        help='Path of the file where logs should be written')
-
-    args = parser.parse_args()
-
-    logging.basicConfig(handlers=[
-        logging.FileHandler("logs/scrape_with_errors.py.log"),
-        logging.StreamHandler()
-    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
-
+def main(args):
     db = DB()
     count = 0
     while count < 1:
@@ -94,3 +84,27 @@ if __name__ == "__main__":
                 urls_to_scrape.cancel_join_thread()
 
         count += 1
+
+
+if __name__ == "__main__":
+
+    logging.basicConfig(handlers=[
+        logging.FileHandler("logs/scrape_with_errors.py.log"),
+        logging.StreamHandler()
+    ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
+
+    parser = argparse.ArgumentParser(description="BBBScraper CLI to grab company and reviews from URL")
+    parser.add_argument("--no_of_threads", nargs='?', type=int, default=1, help="No of threads to run. Default 1")
+    parser.add_argument('--logfile', nargs='?', type=str, default=None,
+                        help='Path of the file where logs should be written')
+
+    args = parser.parse_args()
+
+    display = DisplayLoader()
+
+    try:
+        display.start()
+
+        main(args)
+    finally:
+        display.stop()
