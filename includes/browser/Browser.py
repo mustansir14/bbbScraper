@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any
 
+import psutil
 from undetected_chromedriver import Chrome as ChromeDriver
 from includes.browser.BrowserElement import BrowserElement
 
@@ -26,33 +27,12 @@ class Browser:
     def getProxy(self) -> str:
         return self.proxy
 
-    def killDriver(self, driver):
-        driver.quit()
-
-        # Info: after quite() in `ps aux` | grep chrome will show [chrome] <defunct>
-        # its not consume resources, but after 65k server cant create new processes
-        # code below waits while child processes closed
-        try:
-            pid = True
-            while pid:
-                pid = os.waitpid(-1, os.WNOHANG)
-                logging.info("Reaped child: %s" % str(pid))
-
-                # Wonka's Solution to avoid infinite loop cause pid value -> (0, 0)
-                try:
-                    if pid[0] == 0:
-                        pid = False
-                except:
-                    pass
-        except ChildProcessError:
-            pass
-
     def kill(self):
         try:
             if self.driver:
                 logging.info("Killing browser #" + self.getId())
 
-                self.killDriver(self.driver)
+                self.driver.quit()
         except Exception as e:
             logging.error("Kill browser exception: " + str(e))
         finally:

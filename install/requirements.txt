@@ -25,5 +25,6 @@ urllib3
 webdriver-manager
 Werkzeug
 zipp
+psutil
 undetected-chromedriver
 beautifulsoup4

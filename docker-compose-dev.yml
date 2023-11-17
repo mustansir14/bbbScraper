@@ -1,6 +1,9 @@
 version: "3.11"
 services:
     dev:
+        # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
+        # https://docs.docker.com/engine/reference/run/#specify-an-init-process
+        init: true
         build:
           dockerfile: Dockerfile-dev
         environment:

@@ -1,6 +1,9 @@
 version: "3.11"
 services:
     errors:
+        # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
+        # https://docs.docker.com/engine/reference/run/#specify-an-init-process
+        init: true
         restart: always
         build: .
         environment:
@@ -27,6 +30,9 @@ services:
           - ./logs/:/www/logs/
           
     sitemap:
+        # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
+        # https://docs.docker.com/engine/reference/run/#specify-an-init-process
+        init: true
         restart: always
         build: .
         environment:
@@ -52,6 +58,9 @@ services:
           - ./logs/:/www/logs/
     
     alldb:
+        # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
+        # https://docs.docker.com/engine/reference/run/#specify-an-init-process
+        init: true
         restart: always
         build: .
         environment:
@@ -77,6 +86,9 @@ services:
           - ./logs/:/www/logs/
         
     api:
+        # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
+        # https://docs.docker.com/engine/reference/run/#specify-an-init-process
+        init: true
         restart: always
         build: .
         ports:
