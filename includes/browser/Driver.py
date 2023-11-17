@@ -1,4 +1,7 @@
 import logging
+import time
+import traceback
+
 import undetected_chromedriver as uc
 
 from includes.browser.Browser import Browser
@@ -25,12 +28,7 @@ class Driver:
         self.urlsBlocker = DriverUrlsBlocker()
         self.binary = DriverBinary()
 
-    def createBrowser(self) -> Browser:
-        self.dumpsCleaner.clean()
-
-        proxy = getProxy()
-        proxy = proxy['proxy'] + ":" + proxy['proxy_port']
-
+    def createDriver(self, proxy: str):
         driver = uc.Chrome(
             options=self.options.create(proxy),
             version_main=self.binary.getVersion(),
@@ -38,6 +36,23 @@ class Driver:
         )
 
         self.urlsBlocker.set(driver)
+
+        return driver
+
+    def createBrowser(self) -> Browser:
+        self.dumpsCleaner.clean()
+
+        proxy = getProxy()
+        proxy = proxy['proxy'] + ":" + proxy['proxy_port']
+
+        try:
+            driver = self.createDriver(proxy)
+        except Exception:
+            logging.error("Create driver exception: " + traceback.format_exc())
+
+            time.sleep(3)
+
+            driver = self.createDriver(proxy)
 
         browser = Browser(driver)
         browser.setProxy(proxy)
