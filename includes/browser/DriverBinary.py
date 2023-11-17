@@ -4,25 +4,43 @@ import os
 import sys
 import zipfile
 import shutil
+import re
 from urllib.request import urlretrieve
 
 
 class DriverBinary:
-    versions: dict[int, str]
-    version: int
+    mainVersion: int
+    fullVersion: str
 
     def __init__(self):
-        self.version = 119
-        self.versions = {
-            116: "116.0.5845.96",
-            119: "119.0.6045.105",
+        versionData = self.detectInstalledChromeVersion()
+
+        self.fullVersion = versionData['full']
+        self.mainVersion = versionData['main']
+
+        logging.info(
+            "Detected chrome version in system: " + self.fullVersion + ", main version: " + str(self.mainVersion))
+
+    def detectInstalledChromeVersion(self) -> dict:
+        path = "/opt/google/chrome/chrome"
+        if not os.path.isfile(path):
+            raise Exception("Can not find chrome binary in: " + path)
+
+        output = os.popen(f"{path} --version").read().strip()
+        result = re.search("[0-9\.]{4,}", output)
+        if not result:
+            raise Exception("Can not find version in: " + output)
+
+        return {
+            "full": result.group(0),
+            "main": int(result.group(0).split(".")[0])
         }
 
     def getVersion(self) -> int:
-        return self.version
+        return self.mainVersion
 
     def getBinary(self):
-        original = os.path.join(tempfile.gettempdir(), "chrome_" + self.versions[self.getVersion()] + "_origin")
+        original = os.path.join(tempfile.gettempdir(), "chrome_" + self.fullVersion + "_origin")
 
         if sys.platform.endswith("win32"):
             original += ".exe"
@@ -36,8 +54,7 @@ class DriverBinary:
                 platform = "win64"
 
             # https://googlechromelabs.github.io/chrome-for-testing/
-            packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + self.versions[
-                self.getVersion()] + "/" + platform + "/chromedriver-" + platform + ".zip"
+            packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + self.fullVersion + "/" + platform + "/chromedriver-" + platform + ".zip"
             logging.info(packageUrl)
 
             filename, headers = urlretrieve(packageUrl)
