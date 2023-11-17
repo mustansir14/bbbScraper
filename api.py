@@ -8,6 +8,8 @@ from flask import Flask, json, request, send_file
 from multiprocessing import Process
 import time, re
 import requests, os
+
+from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from includes.proxies import getProxy
 from sys import platform
@@ -122,4 +124,11 @@ from (
     return response( errors, row )
     
 if __name__ == "__main__":
-    api.run(host='0.0.0.0',port=3060)
+    display = DisplayLoader()
+
+    try:
+        display.start()
+
+        api.run(host='0.0.0.0',port=3060)
+    finally:
+        display.stop()
