@@ -55,8 +55,6 @@ def checkSocks5Proxy(proxy):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
         }
 
-        logging.info("Check proxy: " + proxy)
-
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         proxies = {
@@ -69,11 +67,11 @@ def checkSocks5Proxy(proxy):
 
         status_code = response.status_code
 
-        logging.info("code: " + str(status_code))
-
         if status_code == 200:
             c = CompanyParser()
             c.checkErrorsPage(str(response.content))
+
+            logging.info(proxy + ", code: " + str(status_code))
             return True
     except Exception as e:
         logging.info(str(e))
@@ -92,6 +90,8 @@ def getProxy(useProxy=None):
 
     if not useProxy:
         get_proxy_list()
+
+        logging.info("Try find not banned proxy")
 
         proxy = None
         while len(proxyList) > 0:

@@ -8,17 +8,21 @@ from urllib.request import urlretrieve
 
 
 class DriverBinary:
+    versions: dict[int, str]
     version: int
 
     def __init__(self):
         self.version = 119
+        self.versions = {
+            116: "116.0.5845.96",
+            119: "119.0.6045.105",
+        }
 
     def getVersion(self) -> int:
         return self.version
 
     def getBinary(self):
-        version = "119.0.6045.105"
-        original = os.path.join(tempfile.gettempdir(), "chrome_" + str(version) + "_origin")
+        original = os.path.join(tempfile.gettempdir(), "chrome_" + self.versions[self.getVersion()] + "_origin")
 
         if sys.platform.endswith("win32"):
             original += ".exe"
@@ -31,7 +35,9 @@ class DriverBinary:
             if sys.platform.endswith("win32"):
                 platform = "win64"
 
-            packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + version + "/" + platform + "/chromedriver-" + platform + ".zip"
+            # https://googlechromelabs.github.io/chrome-for-testing/
+            packageUrl = "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/" + self.versions[
+                self.getVersion()] + "/" + platform + "/chromedriver-" + platform + ".zip"
             logging.info(packageUrl)
 
             filename, headers = urlretrieve(packageUrl)
