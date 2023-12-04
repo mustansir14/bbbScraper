@@ -15,8 +15,10 @@ class CompanyUrlHelper:
 
     @staticmethod
     def getUrlParts(companyUrl: str):
-        result = re.search(r'([0-9]{1,8})\-([0-9]{1,9})$', companyUrl)
+        modifiedUrl = re.sub(r'(\-[0-9]{1,8}\-[0-9]{1,20})/(complaints|customer\-reviews|details).*$', '$1', companyUrl)
+
+        result = re.search(r'([0-9]{1,8})\-([0-9]{1,20})$', modifiedUrl)
         if not result:
-            raise Exception("Url not valid")
+            raise Exception("Url not valid: " + companyUrl)
 
         return result
