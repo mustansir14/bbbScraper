@@ -32,7 +32,7 @@ def main(args):
     while True:
         fromCompanyId = scraper.db.getSettingInt(scraper.rescrapeSettingKey, 0)
 
-        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} order by company_id LIMIT " + str(
+        sql = f"SELECT company_id, url from company where company_id > {fromCompanyId} and status <> 'removed' order by company_id LIMIT " + str(
             no_of_threads) + ";"
         logging.info(sql)
 

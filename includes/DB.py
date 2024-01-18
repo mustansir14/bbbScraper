@@ -72,6 +72,9 @@ class DB:
                 self.removeCompanyByUrl(companyUrl)
 
                 return True
+            else:
+                self.execSQL("update company set status = ?, log = ? where url = ?",
+                             ("removed", "Http code 404, but company not empty", companyUrl,))
 
         return False
 
@@ -332,29 +335,32 @@ class DB:
                         source_code_details = ? 
                         where company_id = ?"""
                     args = (
-                    company.name, company.alternate_business_name, company.url, company.logo, company.categories,
-                    company.phone, company.address,
-                    company.street_address, company.address_locality, company.address_region, company.postal_code,
-                    company.website, company.hq, company.is_accredited, company.bbb_file_opened,
-                    company.years_in_business, company.accredited_since, company.rating, company.original_working_hours,
-                    company.working_hours, company.number_of_stars,
-                    company.number_of_reviews, company.number_of_complaints, company.overview,
-                    company.products_and_services, company.business_started,
-                    company.business_incorporated, company.type_of_entity, company.number_of_employees,
-                    company.original_business_management, company.business_management,
-                    company.original_contact_information,
-                    company.contact_information, company.original_customer_contact, company.customer_contact,
-                    company.fax_numbers, company.additional_phones, company.additional_websites,
-                    company.additional_faxes, company.serving_area, company.payment_methods,
-                    company.referral_assistance, company.refund_and_exchange_policy, company.business_categories,
-                    company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin,
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), company.status, company.log,
-                    company.half_scraped, company.country, company.source_code, company.source_code_details, company_id)
+                        company.name, company.alternate_business_name, company.url, company.logo, company.categories,
+                        company.phone, company.address,
+                        company.street_address, company.address_locality, company.address_region, company.postal_code,
+                        company.website, company.hq, company.is_accredited, company.bbb_file_opened,
+                        company.years_in_business, company.accredited_since, company.rating,
+                        company.original_working_hours,
+                        company.working_hours, company.number_of_stars,
+                        company.number_of_reviews, company.number_of_complaints, company.overview,
+                        company.products_and_services, company.business_started,
+                        company.business_incorporated, company.type_of_entity, company.number_of_employees,
+                        company.original_business_management, company.business_management,
+                        company.original_contact_information,
+                        company.contact_information, company.original_customer_contact, company.customer_contact,
+                        company.fax_numbers, company.additional_phones, company.additional_websites,
+                        company.additional_faxes, company.serving_area, company.payment_methods,
+                        company.referral_assistance, company.refund_and_exchange_policy, company.business_categories,
+                        company.facebook, company.instagram, company.twitter, company.pinterest, company.linkedin,
+                        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), company.status, company.log,
+                        company.half_scraped, company.country, company.source_code, company.source_code_details,
+                        company_id)
                 else:
                     sql = """update company set source_code = ?, source_code_details = ?, status = ?, log = ?, half_scraped = ?, country = ?, date_updated = now() where company_id = ?;"""
                     args = (
-                    company.source_code, company.source_code_details, company.status, company.log, company.half_scraped,
-                    company.country, company_id)
+                        company.source_code, company.source_code_details, company.status, company.log,
+                        company.half_scraped,
+                        company.country, company_id)
 
                 success_statement = "Company " + company.url + " details updated successfully!"
             else:
@@ -493,12 +499,13 @@ class DB:
                         log = ?
                     """
                     args = (
-                    review.company_id, review.review_date, review.username, review.review_text, review.review_rating,
-                    review.company_response_text,
-                    review.company_response_date, review.source_code,
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    review.status, review.log)
+                        review.company_id, review.review_date, review.username, review.review_text,
+                        review.review_rating,
+                        review.company_response_text,
+                        review.company_response_date, review.source_code,
+                        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        review.status, review.log)
 
                 # logging.info(review)
                 # logging.info('\n')
@@ -533,7 +540,8 @@ class DB:
                 row = self.queryRow(
                     "SELECT complaint_id from complaint where company_id = ? and complaint_date = ? and complaint_type = ? and complaint_text = ?;",
                     (
-                    complaint.company_id, complaint.complaint_date, complaint.complaint_type, complaint.complaint_text))
+                        complaint.company_id, complaint.complaint_date, complaint.complaint_type,
+                        complaint.complaint_text))
                 if row is not None:
                     complaint_id = row['complaint_id']
 
@@ -566,12 +574,13 @@ class DB:
                         status = ?, 
                         log = ?"""
                     args = (
-                    complaint.company_id, complaint.complaint_type, complaint.complaint_date, complaint.complaint_text,
-                    complaint.company_response_text,
-                    complaint.company_response_date, complaint.source_code,
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    complaint.status, complaint.log)
+                        complaint.company_id, complaint.complaint_type, complaint.complaint_date,
+                        complaint.complaint_text,
+                        complaint.company_response_text,
+                        complaint.company_response_date, complaint.source_code,
+                        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        complaint.status, complaint.log)
 
                 # logging.info(complaint)
                 # logging.info('\n')
