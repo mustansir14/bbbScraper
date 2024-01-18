@@ -31,6 +31,7 @@ class CompanyParser(ParserInterface):
         if not companyPreloadState:
             raise Exception("No preload state")
 
+        self.company.url = companyPreloadState['businessProfile']['urls']['profile']
         self.company.name = localBusiness['name']
         self.company.categories = "\n".join(
             [x['title'] for x in companyPreloadState['businessProfile']['categories']['links']])

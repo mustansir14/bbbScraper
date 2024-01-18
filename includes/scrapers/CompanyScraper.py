@@ -53,7 +53,10 @@ class CompanyScraper(AbstractScraper):
             detailsScraper = CompanyDetailsScraper()
             detailsScraper.setBrowserLoader(self.getBrowserLoader())
             detailsScraper.setCompany(company)
-            detailsScraper.scrape(companyUrl)
+            # attention company url may be incorrect
+            # https://www.bbb.org/us/tx/houston/profile/restaurants/landrys-seafood-1296-90225256/addressId/697351
+            # thats why company.url may be changed
+            detailsScraper.scrape(company.url)
         except Exception:
             return self.failReturn(company, traceback.format_exc(), True)
 
