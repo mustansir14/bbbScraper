@@ -50,12 +50,16 @@ class CompanyScraper(AbstractScraper):
             cp.setCompany(company)
             cp.parse(browser.getPageSource())
 
+            # attention company url may be incorrect
+            # https://www.bbb.org/us/tx/houston/profile/restaurants/landrys-seafood-1296-90225256/addressId/697351 - addressId
+            # https://www.bbb.org/us/co/windsor/profile/electrician/conduct-all-electric-0805-46101614/ - last /
+            # that's why company.url may be changed
+            if companyUrl != company.url:
+                self.db.execSQL("update company set url = ? where url = ?", (company.url, companyUrl,))
+
             detailsScraper = CompanyDetailsScraper()
             detailsScraper.setBrowserLoader(self.getBrowserLoader())
             detailsScraper.setCompany(company)
-            # attention company url may be incorrect
-            # https://www.bbb.org/us/tx/houston/profile/restaurants/landrys-seafood-1296-90225256/addressId/697351
-            # thats why company.url may be changed
             detailsScraper.scrape(company.url)
         except Exception:
             return self.failReturn(company, traceback.format_exc(), True)
