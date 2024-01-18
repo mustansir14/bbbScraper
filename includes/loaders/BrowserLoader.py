@@ -46,19 +46,21 @@ class BrowserLoader:
                 c = CompanyParser()
                 c.checkErrorsPage(self.browser.getPageSource())
 
-                logging.info(str(tryNbr) + ") No errors for return browser")
-
                 if self.OptionRunCompanyParser in options:
                     c.setCompany(Company())
                     c.parse(self.browser.getPageSource())
 
+                logging.info(str(tryNbr) + ") Done, return browser")
+
                 return self.browser
             except PageNotFoundException as e:
-                logging.info(str(tryNbr) + ") Page not found (" + pageUrl + "), return None")
+                logging.error(str(tryNbr) + ") Page not found (" + pageUrl + "), return None")
                 return 404
             except (PageNotLoadedException, PageWoopsException) as e:
-                logging.info(str(tryNbr) + ") Page error: " + str(e) + ", recreate browser")
+                logging.error(str(tryNbr) + ") Page error: " + str(e) + ", recreate browser")
 
                 self.browser = self.browserCreator.createBrowserSingleton()
+
+        logging.error("loadPage return None")
 
         return None

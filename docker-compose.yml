@@ -56,7 +56,6 @@ services:
             max-file: "2"
         volumes:
           - ./logs/:/www/logs/
-    
     alldb:
         # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process

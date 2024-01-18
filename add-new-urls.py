@@ -1,19 +1,22 @@
 from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
-from sys import platform
-from includes.proxies import getProxy
-from multiprocessing import Queue, Process
-import argparse, time
+from includes.scrapers.SitemapScraper import SitemapScraper
+from includes.DB import DB
 import logging
-from logging.handlers import RotatingFileHandler
 
 logging.basicConfig(handlers=[
     logging.FileHandler("logs/scrape_with_errors.py.log"),
     logging.StreamHandler()
 ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
-def main():
 
+def scrapeSitemaps():
+    sc = SitemapScraper()
+    sc.setDatabase(DB())
+    sc.scrape("")
+
+
+def scrapeNewUrls():
     scraper = BBBScraper()
 
     companies = scraper.db.queryArray(
@@ -25,7 +28,11 @@ def main():
             except Exception as e:
                 logging.error("scrape_url exception: " + str(e))
 
-    scraper.addNewUrls()
+
+def main():
+    scrapeSitemaps()
+    scrapeNewUrls()
+
 
 if __name__ == "__main__":
     display = DisplayLoader()

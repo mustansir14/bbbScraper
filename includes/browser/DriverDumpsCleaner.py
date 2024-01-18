@@ -22,8 +22,8 @@ class DriverDumpsCleaner:
             try:
                 ctime = os.stat(file).st_ctime
 
-                logging.info("Remove: " + file + ", created: " + datetime.datetime.fromtimestamp(ctime).strftime(
-                    '%Y-%m-%d %H:%M:%S'))
+                #logging.info("Remove: " + file + ", created: " + datetime.datetime.fromtimestamp(ctime).strftime(
+                #    '%Y-%m-%d %H:%M:%S'))
 
                 if ctime < time.time() - longerThanSeconds:
                     if os.path.isdir(file):
