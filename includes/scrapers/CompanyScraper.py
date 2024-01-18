@@ -35,27 +35,34 @@ class CompanyScraper(AbstractScraper):
             # old url: https://www.bbb.org/us/nd/fargo/profile/bank/bell-bank-0704-96381846
             # new url: https://www.bbb.org/us/mn/saint-louis-park/profile/real-estate-loans/bell-mortgage-0704-96148267
 
-            newUrl = browser.getCurrentUrl().split("?")[0]
+            company.url = browser.getCurrentUrl().split("?")[0]
 
             logging.info("Company url changed, move data to new url")
             logging.info("Old url: " + companyUrl)
-            logging.info("New url: " + newUrl)
+            logging.info("New url: " + company.url)
 
-            self.db.move_company_to_other_company(companyUrl, newUrl)
-
-            company.url = newUrl
+            self.db.move_company_to_other_company(companyUrl, company.url)
 
         try:
             cp = CompanyParser()
-            cp.setCompany(company)
-            cp.parse(browser.getPageSource())
 
             # attention company url may be incorrect
             # https://www.bbb.org/us/tx/houston/profile/restaurants/landrys-seafood-1296-90225256/addressId/697351 - addressId
             # https://www.bbb.org/us/co/windsor/profile/electrician/conduct-all-electric-0805-46101614/ - last /
             # that's why company.url may be changed
-            if companyUrl != company.url:
-                self.db.execSQL("update company set url = ? where url = ?", (company.url, companyUrl,))
+            profileUrl = cp.getCompanyProfileUrl(browser.getPageSource())
+
+            if profileUrl != company.url:
+                logging.info("Company url no same as profileUrl, move data to new url")
+                logging.info("Old url: " + company.url)
+                logging.info("New url: " + profileUrl)
+
+                self.db.move_company_to_other_company(company.url, profileUrl)
+
+                company.url = profileUrl
+
+            cp.setCompany(company)
+            cp.parse(browser.getPageSource())
 
             detailsScraper = CompanyDetailsScraper()
             detailsScraper.setBrowserLoader(self.getBrowserLoader())

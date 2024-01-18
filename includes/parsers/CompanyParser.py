@@ -14,6 +14,18 @@ class CompanyParser(ParserInterface):
     def setCompany(self, company: Company):
         self.company = company
 
+    def getCompanyProfileUrl(self, html: str)-> str:
+        if not html:
+            raise Exception("No html")
+
+        self.checkErrorsPage(html)
+
+        companyPreloadState = ScriptTagParser.getScriptVar(html, '__PRELOADED_STATE__')
+        if not companyPreloadState:
+            raise Exception("No preload state")
+
+        return companyPreloadState['businessProfile']['urls']['profile']
+
     def parse(self, html: str):
         if not html:
             raise Exception("No html")
