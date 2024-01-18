@@ -85,6 +85,9 @@ def main(args):
 
         count += 1
 
+    logging.info("Sleep 4h")
+    time.sleep(4*3600)
+
 
 if __name__ == "__main__":
 
