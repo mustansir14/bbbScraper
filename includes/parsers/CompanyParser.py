@@ -81,6 +81,9 @@ class CompanyParser(ParserInterface):
         if "<title>Page not found |" in html:
             raise PageNotFoundException("On url request returned: 404 - Whoops! Page not found!")
 
+        if "<title>Charity Report" in html:
+            raise PageNotFoundException("Charity Report")
+
         if "<title>502 Bad Gateway" in html:
             raise PageNotLoadedException("502 Bad Gateway")
 
