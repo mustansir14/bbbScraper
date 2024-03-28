@@ -33,9 +33,6 @@ class CompanyDetailsScraper(AbstractScraper):
 
         self.company.source_code_details = browser.getPageSource()
 
-        with open('details.htm', 'w') as fd:
-            fd.write(browser.getPageSource())
-
         detailRoot = self.getDetailsRoot(browser)
         self.parseDetailRoot(browser, detailRoot)
 
