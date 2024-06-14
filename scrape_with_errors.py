@@ -1,3 +1,4 @@
+from includes.browser.DriverBinary import DriverBinary
 from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from sys import platform
@@ -34,6 +35,8 @@ def scraperUrlsFromQueueIgnoreExceptions(q, scrape_reviews_and_complaints=True, 
 
 
 def main(args):
+    DriverBinary().getBinary()
+
     db = DB()
     count = 0
     while count < 1:
@@ -92,7 +95,6 @@ def main(args):
 if __name__ == "__main__":
 
     logging.basicConfig(handlers=[
-        logging.FileHandler("logs/scrape_with_errors.py.log"),
         logging.StreamHandler()
     ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 

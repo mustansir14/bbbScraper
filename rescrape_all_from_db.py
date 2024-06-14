@@ -1,3 +1,4 @@
+from includes.browser.DriverBinary import DriverBinary
 from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from sys import platform
@@ -7,25 +8,15 @@ import argparse
 import logging
 from logging.handlers import RotatingFileHandler
 
-rfh = RotatingFileHandler(
-    filename="logs/rescrape_all_from_db.py.log",
-    mode='a',
-    maxBytes=20 * 1024 * 1024,
-    backupCount=1,
-    delay=0,
-    encoding=None
-)
-rfh.setFormatter(logging.Formatter('%(asctime)s Process ID %(process)d: %(message)s'))
-rfh.setLevel(level=logging.DEBUG)
-
 root = logging.getLogger('root')
 root.setLevel(logging.INFO)
-root.addHandler(rfh)
 root.addHandler(logging.StreamHandler())
 
 
 def main(args):
     no_of_threads = args.no_of_threads
+
+    DriverBinary().getBinary()
 
     scraper = BBBScraper()
 

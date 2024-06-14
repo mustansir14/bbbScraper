@@ -6,6 +6,7 @@ services:
         init: true
         restart: always
         build: .
+        command: python scrape_with_errors.py --no_of_threads 1
         environment:
           - USE_MARIA_DB=1
           - GET_SOURCE_CODE=1
@@ -13,8 +14,6 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-          - APP_TARGET=scrape_with_errors.py
-          - APP_NO_OF_THREADS=1
         deploy:
           resources:
             limits:
@@ -25,9 +24,12 @@ services:
           options:
             max-size: "10m"
             max-file: "2"
-
         volumes:
-          - ./logs/:/www/logs/
+          # Do not store executable files on tmpfs docker does not support executable bit
+          - type: tmpfs
+            tmpfs:
+              size: 1G
+            target: /tmp
           
     sitemap:
         # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
@@ -35,6 +37,7 @@ services:
         init: true
         restart: always
         build: .
+        command: python add-new-urls.py --no_of_threads 1
         environment:
           - USE_MARIA_DB=1
           - GET_SOURCE_CODE=1
@@ -42,26 +45,29 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-          - APP_TARGET=add-new-urls.py
-          - APP_NO_OF_THREADS=1
         deploy:
           resources:
             limits:
               cpus: "1"
-              memory: 5G
+              memory: 3G
         logging:
           driver: "json-file"
           options:
             max-size: "10m"
             max-file: "2"
         volumes:
-          - ./logs/:/www/logs/
+          # Do not store executable files on tmpfs docker does not support executable bit
+          - type: tmpfs
+            tmpfs:
+              size: 1G
+            target: /tmp
     alldb:
         # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process
         init: true
         restart: always
         build: .
+        command: python rescrape_all_from_db.py --no_of_threads 3
         environment:
           - USE_MARIA_DB=1
           - GET_SOURCE_CODE=1
@@ -69,12 +75,10 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-          - APP_TARGET=rescrape_all_from_db.py
-          - APP_NO_OF_THREADS=3
         deploy:
           resources:
             limits:
-              cpus: "4"
+              cpus: "3"
               memory: 10G
         logging:
           driver: "json-file"
@@ -82,8 +86,11 @@ services:
             max-size: "10m"
             max-file: "2"
         volumes:
-          - ./logs/:/www/logs/
-        
+          # Do not store executable files on tmpfs docker does not support executable bit
+          - type: tmpfs
+            tmpfs:
+              size: 4G
+            target: /tmp
     api:
         # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process
@@ -106,5 +113,3 @@ services:
             limits:
               cpus: "1"
               memory: 256M
-        volumes:
-          - ./logs/:/www/logs/

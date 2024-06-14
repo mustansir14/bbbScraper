@@ -18,20 +18,9 @@ from includes.DB import DB
 import logging
 from logging.handlers import RotatingFileHandler
 
-rfh = RotatingFileHandler(
-    filename="logs/api.py.log", 
-    mode='a',
-    maxBytes=20*1024*1024,
-    backupCount=1,
-    delay=0,
-    encoding=None
-)
-rfh.setFormatter(logging.Formatter('%(asctime)s Process ID %(process)d: %(message)s'))
-rfh.setLevel(level=logging.DEBUG)
-
-root = logging.getLogger('root')
-root.setLevel(logging.INFO)
-root.addHandler(rfh)
+logging.basicConfig(handlers=[
+    logging.StreamHandler()
+], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
 api = Flask(__name__)
 

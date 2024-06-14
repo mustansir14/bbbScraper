@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 import tempfile
 import os
 import sys
@@ -6,7 +8,7 @@ import zipfile
 import shutil
 import re
 from urllib.request import urlretrieve
-
+from pathlib import Path
 
 class DriverBinary:
     mainVersion: int
@@ -40,7 +42,11 @@ class DriverBinary:
         return self.mainVersion
 
     def getBinary(self):
-        original = os.path.join(tempfile.gettempdir(), "chrome_" + self.fullVersion + "_origin")
+        #rnd = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        #dst = os.path.join(tempfile.gettempdir(), "chrome_" + self.fullVersion + "_" + str(rnd))
+        #shutil.copyfile("/opt/google/chrome/chrome", dst)
+        #return dst
+        original = os.path.join(Path.home(), "chrome_" + self.fullVersion + "_origin")
 
         if sys.platform.endswith("win32"):
             original += ".exe"
@@ -75,7 +81,7 @@ class DriverBinary:
             os.remove(filename)
 
             logging.info("Set permissions to: " + original)
-            os.chmod(original, 0o755)
+            os.chmod(original, 0o777)
 
             if not os.path.isfile(original):
                 raise Exception("No origin executable")

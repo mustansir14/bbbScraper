@@ -200,7 +200,6 @@ def main(args):
 
 if __name__ == '__main__':
     logging.basicConfig(handlers=[
-        logging.FileHandler("logs/scrape.py.log"),
         logging.StreamHandler()
     ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 

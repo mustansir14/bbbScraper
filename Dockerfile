@@ -4,7 +4,7 @@ WORKDIR /www
 
 RUN apt-get update
 RUN pip3 install --upgrade pip
-RUN apt install -y wget curl gpg
+RUN apt install -y wget curl gpg iotop
 
 RUN wget https://r.mariadb.com/downloads/mariadb_repo_setup
 RUN chmod +x mariadb_repo_setup
@@ -22,5 +22,3 @@ COPY ./install/requirements.txt ./install/requirements.txt
 RUN pip3 install -r ./install/requirements.txt
 
 COPY . /www
-
-CMD python "${APP_TARGET}" --no_of_threads ${APP_NO_OF_THREADS}

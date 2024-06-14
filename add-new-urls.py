@@ -1,3 +1,4 @@
+from includes.browser.DriverBinary import DriverBinary
 from includes.loaders.DisplayLoader import DisplayLoader
 from scrape import BBBScraper
 from includes.scrapers.SitemapScraper import SitemapScraper
@@ -5,7 +6,6 @@ from includes.DB import DB
 import logging
 
 logging.basicConfig(handlers=[
-    logging.FileHandler("logs/scrape_with_errors.py.log"),
     logging.StreamHandler()
 ], format='%(asctime)s Process ID %(process)d: %(message)s', datefmt='%m/%d/%Y %H:%M:%S', level=logging.INFO)
 
@@ -30,7 +30,8 @@ def scrapeNewUrls():
 
 
 def main():
-    scrapeSitemaps()
+    DriverBinary().getBinary()
+    #scrapeSitemaps()
     scrapeNewUrls()
 
 
