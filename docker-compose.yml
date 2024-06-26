@@ -97,6 +97,7 @@ services:
         init: true
         restart: always
         build: .
+        command: python api.py
         ports:
           - 3060:3060
         environment:
