@@ -43,7 +43,7 @@ def main(args):
         logging.info("Get companies...")
 
         companies = db.queryArray(
-            f"SELECT company_id, url from company where status = 'error' limit 1000")
+            f"SELECT company_id, url from company where status = 'error' and date_updated < now() - interval 7 day limit 1000")
         if not companies:
             logging.info('No companies wait hour')
             time.sleep(3600)
