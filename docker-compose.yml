@@ -18,6 +18,10 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
+        ulimits:
+          nofile:
+            soft: 1024
+            hard: 2048
         deploy:
           resources:
             limits:
@@ -53,6 +57,10 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
+        ulimits:
+          nofile:
+            soft: 1024
+            hard: 2048
         deploy:
           resources:
             limits:
@@ -87,6 +95,10 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
+        ulimits:
+          nofile:
+            soft: 1024
+            hard: 2048
         deploy:
           resources:
             limits:
@@ -125,6 +137,10 @@ services:
           - DB_NAME=${DB_NAME}
           - APP_TARGET=api.py
           - APP_NO_OF_THREADS=1
+        ulimits:
+          nofile:
+            soft: 1024
+            hard: 2048
         deploy:
           resources:
             limits:
