@@ -1,24 +1,32 @@
-FROM python:3.11.1-bullseye
+FROM python:3.13-rc-bookworm
 
-WORKDIR /www
+ARG UID
+ARG GID
 
-RUN apt-get update
-RUN pip3 install --upgrade pip
-RUN apt install -y wget curl gpg iotop
+RUN addgroup --gid $GID nonroot && \
+    adduser --uid $UID --gid $GID --disabled-password --gecos "" nonroot && \
+    echo 'nonroot ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-RUN wget https://r.mariadb.com/downloads/mariadb_repo_setup
-RUN chmod +x mariadb_repo_setup
-RUN ./mariadb_repo_setup --mariadb-server-version="mariadb-10.9"
+RUN apt-get update && \
+    pip3 install --upgrade pip && \
+    apt install -y wget curl gpg iotop xvfb libmariadb3 libmariadb-dev
 
-RUN apt install -y libmariadb3 libmariadb-dev
-RUN apt install -y xvfb
+ENV CHROME_VERSION=119.0.6045.105-1
+RUN wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb && \
+    apt install -y ./google-chrome-stable_${CHROME_VERSION}_amd64.deb
+
+RUN wget https://r.mariadb.com/downloads/mariadb_repo_setup && \
+    chmod +x mariadb_repo_setup && \
+    ./mariadb_repo_setup
+#    ./mariadb_repo_setup --mariadb-server-version="mariadb-10.9"
 
 # chrome version + "-1"
-ENV CHROME_VERSION=119.0.6045.105-1
-RUN wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb
-RUN apt install -y ./google-chrome-stable_${CHROME_VERSION}_amd64.deb
 
-COPY ./install/requirements.txt ./install/requirements.txt
+
+USER nonroot
+WORKDIR /www
+
+COPY --chown=nonroot:nonroot ./install/requirements.txt ./install/requirements.txt
 RUN pip3 install -r ./install/requirements.txt
 
-COPY . /www
+COPY --chown=nonroot:nonroot . /www

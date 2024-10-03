@@ -28,3 +28,4 @@ zipp
 psutil
 undetected-chromedriver
 beautifulsoup4
+setuptools

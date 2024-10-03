@@ -5,7 +5,11 @@ services:
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process
         init: true
         restart: always
-        build: .
+        build:
+          context: .
+          args:
+            UID: ${UID}
+            GID: ${GID}
         command: python scrape_with_errors.py --no_of_threads 1
         environment:
           - USE_MARIA_DB=1
@@ -36,7 +40,11 @@ services:
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process
         init: true
         restart: always
-        build: .
+        build:
+          context: .
+          args:
+            UID: ${UID}
+            GID: ${GID}
         command: python add-new-urls.py --no_of_threads 1
         environment:
           - USE_MARIA_DB=1
@@ -66,7 +74,11 @@ services:
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process
         init: true
         restart: always
-        build: .
+        build:
+          context: .
+          args:
+            UID: ${UID}
+            GID: ${GID}
         command: python rescrape_all_from_db.py --no_of_threads 3
         environment:
           - USE_MARIA_DB=1
@@ -96,7 +108,11 @@ services:
         # https://docs.docker.com/engine/reference/run/#specify-an-init-process
         init: true
         restart: always
-        build: .
+        build:
+          context: .
+          args:
+            UID: ${UID}
+            GID: ${GID}
         command: python api.py
         ports:
           - 3060:3060
