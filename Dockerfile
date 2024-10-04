@@ -9,7 +9,7 @@ RUN addgroup --gid $GID nonroot && \
 
 RUN apt-get update && \
     pip3 install --upgrade pip && \
-    apt install -y wget curl gpg iotop xvfb libmariadb3 libmariadb-dev
+    apt install -y wget curl gpg iotop xvfb lsof libmariadb3 libmariadb-dev
 
 ENV CHROME_VERSION=119.0.6045.105-1
 RUN wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb && \
