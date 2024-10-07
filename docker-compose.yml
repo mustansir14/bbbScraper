@@ -1,4 +1,8 @@
 version: "3.11"
+
+# Attention!!! do not use ulimits because this settings is not per container but per host user
+# https://stackoverflow.com/questions/72098942/docker-nproc-limit-has-to-be-set-seemingly-too-high-in-order-for-a-container-t
+
 services:
     errors:
         # Fix: use init or will be many chrome (defunct) which overflow process table and server freeze
@@ -18,18 +22,12 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-        ulimits:
-          # 1 chrome = xvfb + chrome + (2 x crashpad + 2 x utility + 2 x render + gpu) == ~9-10 processes
-          # docker-init + other system processes + may be temp processes + chromes
-          nproc: 45
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
               cpus: "1"
               memory: 3G
+              pids: 10
         logging:
           driver: "json-file"
           options:
@@ -60,16 +58,12 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-        ulimits:
-          nproc: 40
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
               cpus: "1"
               memory: 3G
+              pids: 10
         logging:
           driver: "json-file"
           options:
@@ -99,16 +93,12 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-        ulimits:
-          nproc: 70
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
               cpus: "3"
               memory: 10G
+              pids: 50
         logging:
           driver: "json-file"
           options:
@@ -142,16 +132,12 @@ services:
           - DB_NAME=${DB_NAME}
           - APP_TARGET=api.py
           - APP_NO_OF_THREADS=1
-        ulimits:
-          nproc: 50
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
               cpus: "1"
               memory: 256M
+              pids: 15
         logging:
           driver: "json-file"
           options:
