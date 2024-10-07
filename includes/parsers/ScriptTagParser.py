@@ -30,7 +30,7 @@ class ScriptTagParser:
         if not name:
             raise Exception("No name")
 
-        data = re.search(r"<script>window\\." + name + "\s*?=(.*?);</script>", html)
+        data = re.search(r"<script>window\\." + name + "\\s*?=(.*?);</script>", html)
 
         if not data:
             raise Exception("Can not get window." + name)
