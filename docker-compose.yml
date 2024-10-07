@@ -10,6 +10,11 @@ services:
           args:
             UID: ${UID}
             GID: ${GID}
+          ulimits:
+            nproc: 20
+            nofile:
+              soft: 2048
+              hard: 2048
         command: python scrape_with_errors.py --no_of_threads 1
         environment:
           - USE_MARIA_DB=1
@@ -18,10 +23,6 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-        ulimits:
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
@@ -49,6 +50,11 @@ services:
           args:
             UID: ${UID}
             GID: ${GID}
+          ulimits:
+            nproc: 20
+            nofile:
+              soft: 2048
+              hard: 2048
         command: python add-new-urls.py --no_of_threads 1
         environment:
           - USE_MARIA_DB=1
@@ -57,10 +63,6 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-        ulimits:
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
@@ -87,6 +89,11 @@ services:
           args:
             UID: ${UID}
             GID: ${GID}
+          ulimits:
+            nproc: 40
+            nofile:
+              soft: 2048
+              hard: 2048
         command: python rescrape_all_from_db.py --no_of_threads 3
         environment:
           - USE_MARIA_DB=1
@@ -95,10 +102,6 @@ services:
           - DB_USER=${DB_USER}
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
-        ulimits:
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
@@ -125,6 +128,11 @@ services:
           args:
             UID: ${UID}
             GID: ${GID}
+          ulimits:
+            nproc: 15
+            nofile:
+              soft: 2048
+              hard: 2048
         command: python api.py
         ports:
           - 3060:3060
@@ -137,10 +145,6 @@ services:
           - DB_NAME=${DB_NAME}
           - APP_TARGET=api.py
           - APP_NO_OF_THREADS=1
-        ulimits:
-          nofile:
-            soft: 2048
-            hard: 2048
         deploy:
           resources:
             limits:
