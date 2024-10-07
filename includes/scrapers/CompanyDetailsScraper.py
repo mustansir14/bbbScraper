@@ -146,8 +146,8 @@ class CompanyDetailsScraper(AbstractScraper):
                     dayName = short2longName[shortDayOfWeek]
 
                     if len(data['hours']) > 0:
-                        open = re.search('T([0-9]{1,2}\:[0-9]{1,2})', data['hours'][0]['openDate']).group(1)
-                        close = re.search('T([0-9]{1,2}\:[0-9]{1,2})', data['hours'][0]['closeDate']).group(1)
+                        open = re.search('T([0-9]{1,2}\\:[0-9]{1,2})', data['hours'][0]['openDate']).group(1)
+                        close = re.search('T([0-9]{1,2}\\:[0-9]{1,2})', data['hours'][0]['closeDate']).group(1)
 
                         result[dayName] = open + "-" + close
                     else:
