@@ -27,7 +27,6 @@ services:
             limits:
               cpus: "1"
               memory: 3G
-              pids: 30
         logging:
           driver: "json-file"
           options:
@@ -63,7 +62,6 @@ services:
             limits:
               cpus: "1"
               memory: 3G
-              pids: 10
         logging:
           driver: "json-file"
           options:
@@ -98,7 +96,6 @@ services:
             limits:
               cpus: "3"
               memory: 10G
-              pids: 50
         logging:
           driver: "json-file"
           options:
@@ -137,7 +134,6 @@ services:
             limits:
               cpus: "1"
               memory: 256M
-              pids: 15
         logging:
           driver: "json-file"
           options:
