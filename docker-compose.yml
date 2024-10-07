@@ -19,7 +19,9 @@ services:
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
         ulimits:
-          nproc: 20
+          # 1 chrome = xvfb + chrome + (2 x crashpad + 2 x utility + 2 x render + gpu) == ~9-10 processes
+          # docker-init + other system processes + may be temp processes + chromes
+          nproc: 45
           nofile:
             soft: 2048
             hard: 2048
@@ -59,7 +61,7 @@ services:
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
         ulimits:
-          nproc: 20
+          nproc: 40
           nofile:
             soft: 2048
             hard: 2048
@@ -98,7 +100,7 @@ services:
           - DB_PASS=${DB_PASS}
           - DB_NAME=${DB_NAME}
         ulimits:
-          nproc: 30
+          nproc: 70
           nofile:
             soft: 2048
             hard: 2048
@@ -141,7 +143,7 @@ services:
           - APP_TARGET=api.py
           - APP_NO_OF_THREADS=1
         ulimits:
-          nproc: 20
+          nproc: 50
           nofile:
             soft: 2048
             hard: 2048
