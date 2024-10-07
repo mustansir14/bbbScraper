@@ -29,7 +29,7 @@ class DriverBinary:
             raise Exception("Can not find chrome binary in: " + path)
 
         output = os.popen(f"{path} --version").read().strip()
-        result = re.search("[0-9\.]{4,}", output)
+        result = re.search("[0-9\\.]{4,}", output)
         if not result:
             raise Exception("Can not find version in: " + output)
 
