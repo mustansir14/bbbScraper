@@ -27,7 +27,7 @@ services:
             limits:
               cpus: "1"
               memory: 3G
-              pids: 10
+              pids: 20
         logging:
           driver: "json-file"
           options:
